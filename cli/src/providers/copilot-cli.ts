@@ -174,7 +174,7 @@ function parseCopilotSession(filePath: string): ParsedSession | null {
 
     // Parse events
     const messages: ParsedMessage[] = [];
-    let lastTimestamp = new Date();
+    let lastTimestamp = fs.statSync(filePath).mtime;
     let firstTimestamp: Date | null = null;
 
     // Accumulator for current assistant turn
@@ -367,7 +367,7 @@ function parseCopilotSession(filePath: string): ParsedSession | null {
       assistantMessageCount: assistantMessages.length,
       toolCallCount,
       gitBranch: null,
-      claudeVersion: null,
+      claudeVersion: model || null,
       sourceTool: 'copilot-cli',
       messages,
     };
