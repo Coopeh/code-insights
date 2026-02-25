@@ -81,7 +81,7 @@ export function showTelemetryNoticeIfNeeded(): boolean {
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
     }
-    fs.writeFileSync(NOTICE_FILE, '', 'utf-8');
+    fs.writeFileSync(NOTICE_FILE, '', { encoding: 'utf-8', mode: 0o600 });
   } catch {
     // Non-fatal — if we can't write the touch file, we'll show the notice again
     // next time. That's acceptable; we don't want to break the CLI over this.
@@ -141,7 +141,7 @@ function buildEvent(command: string, success: boolean, subcommand?: string): Tel
     subcommand,
     success,
     cliVersion: getCliVersion(),
-    nodeVersion: process.version,
+    nodeVersion: process.version.replace('v', ''),
     os: process.platform,
     arch: process.arch,
     providers: detectProviders(),
@@ -168,7 +168,15 @@ function getMachineId(): string {
   // YYYY-MM format for monthly rotation
   const monthSalt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  const input = [os.hostname(), os.userInfo().username, `code-insights-${monthSalt}`].join(':');
+  let username: string;
+  try {
+    username = os.userInfo().username;
+  } catch {
+    // os.userInfo() throws in Docker/CI when UID has no /etc/passwd entry
+    username = `uid-${process.getuid?.() ?? 'unknown'}`;
+  }
+
+  const input = [os.hostname(), username, `code-insights-${monthSalt}`].join(':');
 
   return crypto.createHash('sha256').update(input).digest('hex').slice(0, 16);
 }
