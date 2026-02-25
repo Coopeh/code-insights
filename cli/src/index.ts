@@ -10,6 +10,7 @@ import { openCommand } from './commands/open.js';
 import { resetCommand } from './commands/reset.js';
 import { statsCommand } from './commands/stats/index.js';
 import { configCommand } from './commands/config.js';
+import { telemetryCommand } from './commands/telemetry.js';
 
 const program = new Command();
 
@@ -66,5 +67,6 @@ program
 program.addCommand(resetCommand);
 program.addCommand(statsCommand);
 program.addCommand(configCommand);
+program.addCommand(telemetryCommand);
 
 program.parse();
