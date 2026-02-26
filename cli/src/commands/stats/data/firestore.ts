@@ -170,14 +170,20 @@ export class FirestoreDataSource implements StatsDataSource {
     );
   }
 
-  async getLastSession(): Promise<SessionRow | null> {
+  async getLastSession(opts?: Pick<SessionQueryOptions, 'sourceTool' | 'projectId'>): Promise<SessionRow | null> {
     const firestore = getDb();
-    const snapshot = await firestore
-      .collection('sessions')
-      .orderBy('startedAt', 'desc')
-      .limit(1)
-      .get();
+    let query: admin.firestore.Query = firestore.collection('sessions');
 
+    if (opts?.sourceTool) {
+      query = query.where('sourceTool', '==', opts.sourceTool);
+    }
+    if (opts?.projectId) {
+      query = query.where('projectId', '==', opts.projectId);
+    }
+
+    query = query.orderBy('startedAt', 'desc').limit(1);
+
+    const snapshot = await query.get();
     if (snapshot.empty) return null;
     return docToSessionRow(snapshot.docs[0]);
   }
