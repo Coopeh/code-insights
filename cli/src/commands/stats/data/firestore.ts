@@ -183,8 +183,21 @@ export class FirestoreDataSource implements StatsDataSource {
 
     query = query.orderBy('startedAt', 'desc').limit(1);
 
-    const snapshot = await query.get();
-    if (snapshot.empty) return null;
-    return docToSessionRow(snapshot.docs[0]);
+    try {
+      const snapshot = await query.get();
+      if (snapshot.empty) return null;
+      return docToSessionRow(snapshot.docs[0]);
+    } catch (error: unknown) {
+      if (isFirestoreIndexError(error)) {
+        const url = extractIndexUrl(error);
+        throw new FirestoreIndexError(
+          url
+            ? `Missing Firestore index. Create it here: ${url}`
+            : 'Missing Firestore composite index. Check the error details in Firebase console.',
+          url ?? ''
+        );
+      }
+      throw error;
+    }
   }
 }

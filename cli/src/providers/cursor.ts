@@ -384,9 +384,9 @@ function extractMessages(
     // Only log when the composerData has keys but none match our known formats
     // (empty objects = legitimately empty sessions, not a format issue).
     const topLevelKeys = Object.keys(composerData);
-    const knownKeys = new Set([...CURSOR_MESSAGE_ARRAY_KEYS, 'fullConversationHeadersOnly'] as const);
+    const knownKeys = new Set<string>([...CURSOR_MESSAGE_ARRAY_KEYS, 'fullConversationHeadersOnly']);
     const hasUnknownArrayKeys = topLevelKeys.some(
-      k => !knownKeys.has(k as typeof CURSOR_MESSAGE_ARRAY_KEYS[number] | 'fullConversationHeadersOnly') && Array.isArray(composerData[k])
+      k => !knownKeys.has(k) && Array.isArray(composerData[k])
     );
     if (topLevelKeys.length > 0 && hasUnknownArrayKeys) {
       process.stderr.write(
