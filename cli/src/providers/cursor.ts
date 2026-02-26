@@ -248,7 +248,9 @@ function parseCursorSession(dbPath: string, composerId: string): ParsedSession |
     if (!composerData) return null;
 
     // Extract messages from composer data
-    const messages = extractMessages(composerData, composerId);
+    // Pass db handle for the fullConversationHeadersOnly format where
+    // bubble content is stored in separate cursorDiskKV rows.
+    const messages = extractMessages(composerData, composerId, db);
     if (messages.length === 0) return null;
 
     // Resolve project path from workspace directory
@@ -346,10 +348,35 @@ function findMessageArray(composerData: Record<string, unknown>): [Array<Record<
 
 /**
  * Extract parsed messages from Cursor composer data.
+ *
+ * Handles two storage formats:
+ * 1. Inline: composerData has a `conversation` (or `messages`, etc.) array with full bubble content.
+ * 2. Headers-only (Cursor v3+/v6): composerData has `fullConversationHeadersOnly` with bubble IDs
+ *    and types only. Full bubble content is stored in separate `bubbleId:<composerId>:<bubbleId>`
+ *    rows in the same cursorDiskKV table.
  */
-function extractMessages(composerData: Record<string, unknown>, sessionId: string): ParsedMessage[] {
+function extractMessages(
+  composerData: Record<string, unknown>,
+  sessionId: string,
+  db: InstanceType<typeof Database> | null,
+): ParsedMessage[] {
   const messages: ParsedMessage[] = [];
 
+  // Strategy 1: Try fullConversationHeadersOnly (newer Cursor format, ~72% of sessions)
+  const headers = composerData.fullConversationHeadersOnly;
+  if (Array.isArray(headers) && headers.length > 0 && db) {
+    const conversation = loadBubblesFromHeaders(
+      headers as Array<{ bubbleId: string; type: number }>,
+      sessionId,
+      db,
+    );
+    if (conversation.length > 0) {
+      return parseBubbles(conversation, sessionId);
+    }
+    // If all bubble lookups failed, fall through to inline check
+  }
+
+  // Strategy 2: Try inline message arrays (older Cursor format)
   const [conversation, keyUsed] = findMessageArray(composerData);
 
   if (conversation.length === 0) {
@@ -357,9 +384,9 @@ function extractMessages(composerData: Record<string, unknown>, sessionId: strin
     // Only log when the composerData has keys but none match our known formats
     // (empty objects = legitimately empty sessions, not a format issue).
     const topLevelKeys = Object.keys(composerData);
-    const knownKeys = new Set(CURSOR_MESSAGE_ARRAY_KEYS as readonly string[]);
+    const knownKeys = new Set([...CURSOR_MESSAGE_ARRAY_KEYS, 'fullConversationHeadersOnly'] as const);
     const hasUnknownArrayKeys = topLevelKeys.some(
-      k => !knownKeys.has(k) && Array.isArray(composerData[k])
+      k => !knownKeys.has(k as typeof CURSOR_MESSAGE_ARRAY_KEYS[number] | 'fullConversationHeadersOnly') && Array.isArray(composerData[k])
     );
     if (topLevelKeys.length > 0 && hasUnknownArrayKeys) {
       process.stderr.write(
@@ -376,6 +403,44 @@ function extractMessages(composerData: Record<string, unknown>, sessionId: strin
       `[code-insights] cursor: session ${sessionId} — messages found under key "${keyUsed}"\n`
     );
   }
+
+  return parseBubbles(conversation, sessionId);
+}
+
+/**
+ * Load full bubble data from individual cursorDiskKV rows.
+ * Each bubble is stored at key `bubbleId:<composerId>:<bubbleId>`.
+ */
+function loadBubblesFromHeaders(
+  headers: Array<{ bubbleId: string; type: number }>,
+  composerId: string,
+  db: InstanceType<typeof Database>,
+): Array<Record<string, unknown>> {
+  const bubbles: Array<Record<string, unknown>> = [];
+  const stmt = db.prepare("SELECT value FROM cursorDiskKV WHERE key = ?");
+
+  for (const header of headers) {
+    if (!header.bubbleId) continue;
+    try {
+      const row = stmt.get(`bubbleId:${composerId}:${header.bubbleId}`) as { value: string } | undefined;
+      if (row?.value) {
+        const bubble = JSON.parse(row.value) as Record<string, unknown>;
+        bubbles.push(bubble);
+      }
+    } catch {
+      // Individual bubble parse failure — skip it, keep loading others
+    }
+  }
+
+  return bubbles;
+}
+
+/**
+ * Parse an array of bubble objects into ParsedMessage[].
+ * Shared by both inline and headers-only code paths.
+ */
+function parseBubbles(conversation: Array<Record<string, unknown>>, sessionId: string): ParsedMessage[] {
+  const messages: ParsedMessage[] = [];
 
   for (let i = 0; i < conversation.length; i++) {
     const bubble = conversation[i];
