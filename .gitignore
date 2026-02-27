@@ -37,6 +37,7 @@ coverage/
 # Claude local settings (user-specific)
 .claude/*
 !.claude/agents/
+!.claude/commands/
 !.claude/hookify.*.md
 .code-insights/
 

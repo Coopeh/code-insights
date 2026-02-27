@@ -1,6 +1,20 @@
-# CLAUDE.md
+# CLAUDE.md — Code Insights
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **Primary Claude Code workspace.** All sessions run from this repo root.
+
+---
+
+## Project Overview
+
+**Code Insights** is an open-source CLI tool and embedded dashboard for analyzing AI coding sessions. It parses session history from multiple AI coding tools (Claude Code, Cursor, Codex CLI, Copilot CLI), stores structured data in a local SQLite database, and provides both terminal analytics and a browser-based dashboard with LLM-powered insights.
+
+**Architecture:** Single-repo pnpm workspace monorepo with three packages: CLI, dashboard (Vite + React SPA), and server (Hono API).
+
+**Privacy model:** Fully local-first. No cloud accounts, no sign-ups, no data leaves the machine. SQLite database at `~/.code-insights/data.db`.
+
+**This is an OSS portfolio project** — no monetization planned.
+
+---
 
 ## Configuration Hierarchy
 
@@ -19,13 +33,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Review Process | Single reviewer | Triple-layer (TA Insider + Outsider + Synthesis) |
 | PR Merges | Normal | **BLOCKED** — only founder merges |
 
-## Project Overview
+---
 
-Code Insights CLI (`code-insights`) parses AI coding session history from multiple tools and syncs structured data to the user's own Firebase Firestore. It follows a **Bring Your Own Firebase (BYOF)** privacy model - no central server, users own all their data.
+## Repository Structure
 
-This repo contains the **open-source CLI tool only**. The web dashboard lives in a separate closed-source repo (`code-insights-web`).
+```
+code-insights/
+├── cli/                    # Node.js CLI (Commander.js, SQLite, providers)
+│   └── src/
+│       ├── commands/       # CLI commands (init, sync, status, stats, dashboard, config)
+│       ├── commands/stats/ # Stats command suite (4-layer architecture)
+│       ├── providers/      # Source tool providers (claude-code, cursor, codex, copilot-cli)
+│       ├── parser/         # JSONL parsing, title generation
+│       ├── db/             # SQLite schema, migrations, queries
+│       ├── utils/          # Config, device, paths
+│       ├── types.ts        # Type definitions (SINGLE SOURCE OF TRUTH)
+│       └── index.ts        # CLI entry point
+├── dashboard/              # Vite + React SPA (to be created in Phase 3)
+│   └── src/
+│       ├── components/     # React components (shadcn/ui)
+│       ├── hooks/          # React Query hooks
+│       ├── lib/            # LLM providers, utilities
+│       └── App.tsx         # SPA entry point
+├── server/                 # Hono API server (to be created in Phase 3)
+│   └── src/
+│       ├── routes/         # REST API endpoints
+│       └── index.ts        # Server entry point
+├── docs/                   # Product docs, plans, architecture, roadmap
+│   ├── architecture/       # Architecture docs, ADRs
+│   ├── plans/              # Design plans, migration plans
+│   ├── chronicle/          # Journey moments, thematic arcs
+│   └── archive/            # Archived content from previous architecture
+└── .claude/                # Agent definitions, commands, hookify rules
+    ├── agents/             # Agent definitions (engineer, TA, PM, etc.)
+    └── commands/           # Team commands (start-feature, start-review)
+```
 
-### Supported Source Tools
+**Note:** `dashboard/` and `server/` packages will be created in Phase 3 of the local-first migration. They do not exist yet.
+
+---
+
+## Supported Source Tools
 
 | Source Tool | Provider ID | Provider Class | Data Format | Location |
 |-------------|-------------|---------------|-------------|----------|
@@ -34,18 +82,7 @@ This repo contains the **open-source CLI tool only**. The web dashboard lives in
 | Codex CLI | `codex-cli` | `CodexProvider` | JSONL (rollout files) | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` |
 | Copilot CLI | `copilot-cli` | `CopilotCliProvider` | JSONL (events) | `~/.copilot/session-state/{id}/events.jsonl` |
 
-## Repository Structure
-
-```
-codeInsights/
-├── code-insights/          # THIS REPO — Open-source CLI tool
-│   ├── cli/                # Node.js CLI (code-insights)
-│   ├── docs/               # Product docs, roadmap, vision
-│   └── .claude/agents/     # Agent definitions (TA, fullstack-engineer, ux-designer, PM, chronicler)
-│
-└── code-insights-web/      # SEPARATE REPO — Closed-source web dashboard
-    └── src/                # Next.js 16 app (Supabase Auth, Firebase data)
-```
+---
 
 ## Commands
 
@@ -58,25 +95,20 @@ pnpm lint             # Run ESLint (no config file yet - needs setup)
 
 # After building, link for local testing:
 npm link
-code-insights init                     # Interactive setup (prompts for data source + Firebase)
-code-insights init --from-json <path>  # Import service account from JSON file
-code-insights init --web-config <path> # Import web SDK config from JSON file
-code-insights sync                     # Sync sessions to Firestore
+code-insights init                     # Interactive setup
+code-insights sync                     # Sync sessions to SQLite
 code-insights sync --force             # Re-sync all sessions
 code-insights sync --dry-run           # Preview without changes
 code-insights sync -q                  # Quiet mode (for hook usage)
 code-insights sync --source cursor     # Sync only from a specific tool
-code-insights sync --force-remote      # Sync even when data source is local
-code-insights status                   # Show sync statistics + data source preference
-code-insights connect                  # Generate dashboard connection URL
+code-insights status                   # Show sync statistics
+code-insights dashboard                # Open the dashboard in browser
 code-insights install-hook             # Auto-sync on session end
 code-insights uninstall-hook           # Remove auto-sync hook
-code-insights reset --confirm          # Delete all Firestore data
 code-insights config                   # Show current configuration
-code-insights config set-source local  # Switch to local-only mode (no Firebase)
-code-insights config set-source firebase  # Switch to Firebase mode
+code-insights reset --confirm          # Delete all local data
 
-# Stats — terminal analytics (works without Firebase)
+# Stats — terminal analytics
 code-insights stats                    # Dashboard overview (last 7 days)
 code-insights stats cost               # Cost breakdown by project and model
 code-insights stats projects           # Per-project detail cards
@@ -84,34 +116,30 @@ code-insights stats today              # Today's sessions with details
 code-insights stats models             # Model usage distribution
 
 # Stats shared flags:
-#   --local              Force local data source
-#   --remote             Force Firestore data source
 #   --period 7d|30d|90d|all   Time range (default: 7d)
 #   --project <name>     Scope to a specific project
 #   --source <tool>      Filter by source tool
 #   --no-sync            Skip auto-sync before showing stats
 ```
 
+---
+
 ## Architecture
 
 ### Data Flow
+
 ```
-Source tool session files → Provider (discover + parse) → Firestore → Web Dashboard (separate repo)
-                                                       ↘ Local stats cache → CLI stats commands
+Source tool session files -> Provider (discover + parse) -> SQLite -> Dashboard (localhost)
+                                                         -> CLI stats commands
 ```
 
-### Data Source Abstraction
+### SQLite Database
 
-The CLI supports two data sources, selectable via `config set-source` or `--local`/`--remote` flags:
-
-| Source | Class | When Used | Requires Firebase |
-|--------|-------|-----------|-------------------|
-| Local | `LocalDataSource` | Zero-config default, `--local` flag | No |
-| Firestore | `FirestoreDataSource` | `config set-source firebase`, `--remote` flag | Yes |
-
-**Resolution priority:** `--local` flag > `--remote` flag > `config.dataSource` > inferred from Firebase creds > local fallback
-
-Both sources produce identical `SessionRow` arrays consumed by the aggregation layer. The `StatsDataSource` interface (`commands/stats/data/types.ts`) defines the contract.
+- Location: `~/.code-insights/data.db`
+- WAL mode enabled for concurrent reads during CLI sync
+- Uses better-sqlite3 (synchronous, fast, no async overhead)
+- Schema managed via versioned migrations applied on startup
+- All timestamps stored as ISO 8601 strings
 
 ### Provider Architecture
 
@@ -128,15 +156,17 @@ interface SessionProvider {
 Providers are registered in `providers/registry.ts`. To add a new source tool:
 1. Create `providers/<name>.ts` implementing `SessionProvider`
 2. Register it in `providers/registry.ts`
-3. Update web dashboard (see "Adding a new source tool" in web CLAUDE.md)
+3. Add color entry to dashboard `SOURCE_TOOL_COLORS`
+4. Add avatar case to dashboard `getAssistantConfig()`
+5. Add tool name aliases if tool names differ
+6. Add option to source filter dropdown
 
 ### Directory Structure (`/cli/src/`)
-- `commands/` - CLI commands (init, sync, status, connect, reset, install-hook, config)
+- `commands/` - CLI commands (init, sync, status, dashboard, reset, install-hook, config)
 - `commands/stats/` - Stats command suite (4-layer architecture):
   - `data/types.ts` - `StatsDataSource` interface, `SessionRow`, error classes
-  - `data/source.ts` - Data source factory (resolves local vs Firestore)
-  - `data/firestore.ts` - `FirestoreDataSource` implementation
-  - `data/local.ts` - `LocalDataSource` implementation
+  - `data/source.ts` - Data source factory
+  - `data/local.ts` - SQLite data source implementation
   - `data/cache.ts` - Disk-based stats cache (`~/.code-insights/stats-cache.json`)
   - `data/aggregation.ts` - Pure compute functions (overview, cost, projects, today, models)
   - `data/fuzzy-match.ts` - Levenshtein distance for `--project` name matching
@@ -149,39 +179,43 @@ Providers are registered in `providers/registry.ts`. To add a new source tool:
 - `providers/registry.ts` - Provider registration and lookup
 - `parser/jsonl.ts` - JSONL file parsing (used by ClaudeCodeProvider)
 - `parser/titles.ts` - Smart session title generation (5-tier fallback strategy)
-- `firebase/client.ts` - Firebase Admin SDK for Firestore reads/writes
+- `db/` - SQLite schema, migrations, query functions
 - `utils/config.ts` - Configuration management (~/.code-insights/config.json)
 - `utils/device.ts` - Device ID generation, git remote detection, stable project IDs
 - `utils/paths.ts` - Virtual path handling (shared by sync and stats)
-- `types.ts` - TypeScript type definitions
+- `types.ts` - TypeScript type definitions (SINGLE SOURCE OF TRUTH)
 - `index.ts` - CLI entry point (Commander.js)
 
-### Firestore Collections
+### SQLite Tables
 - `projects` - Project metadata (id is hash of git remote URL or path)
 - `sessions` - Session metadata with generated titles, character classification, device info
 - `insights` - LLM-generated insights (types: summary, decision, learning, technique, prompt_quality)
-- `messages` - Full message content (uploaded during sync)
+- `messages` - Full message content (stored during sync)
 
-### Cross-Repo Type Contract (CRITICAL)
+---
 
-Types are duplicated between repos. Manual alignment is required.
+## Type Architecture (CRITICAL)
+
+Types are defined **once** in `cli/src/types.ts`. This is the single source of truth for the entire monorepo.
 
 ```
-CLI (code-insights/cli/src/types.ts)     → Writes to Firestore
-Web (code-insights-web/src/lib/types.ts) → Reads from Firestore
+CLI (cli/src/types.ts)       -> Writes to SQLite
+Server (server/src/)         -> Reads from SQLite, exposes via API
+Dashboard (dashboard/src/)   -> Reads from Server API
 ```
-
-| Type | CLI | Web | Firestore Collection |
-|------|-----|-----|---------------------|
-| Project | ✅ | ✅ | `projects` |
-| Session (ParsedSession) | ✅ | ✅ | `sessions` |
-| Insight | ✅ | ✅ | `insights` |
-| Message (ClaudeMessage) | ✅ | ✅ | `messages` |
 
 **Rules:**
-- New Firestore fields MUST be optional (backward compatible with existing data)
-- Type changes in one repo require updating the other
+- New SQLite columns MUST have defaults or be nullable (backward compatible)
+- Type changes in `types.ts` must be reflected in SQLite migrations
 - TA owns this contract — flag all type changes to `technical-architect`
+
+### Key Types (`cli/src/types.ts`)
+- `ClaudeMessage` - Individual message entry
+- `ParsedSession` - Aggregated session with metadata, title, character
+- `Insight` - Types: summary | decision | learning | technique | prompt_quality; source: 'llm'
+- `SessionCharacter` - 7 session classifications: deep_focus | bug_hunt | feature_build | exploration | refactor | learning | quick_task
+- `ClaudeInsightConfig` - Config format
+- `SyncState` - File modification tracking for incremental sync
 
 ---
 
@@ -189,18 +223,17 @@ Web (code-insights-web/src/lib/types.ts) → Reads from Firestore
 
 ### Agent Suite
 
-| Agent | Model | Domain | Repo Scope |
-|-------|-------|--------|------------|
-| `technical-architect` | opus | Cross-repo architecture, type alignment, code review, LLD standards | Both repos |
-| `fullstack-engineer` | sonnet | Implementation across CLI and web — features, fixes, tests | Both repos |
-| `web-engineer` | sonnet | Web dashboard features, fixes, UI | Web only |
-| `ux-engineer` | opus | UI/UX components, chat views, data visualizations | Web only |
-| `ux-designer` | opus | ASCII wireframes, user flows, personas, UX validation | Design docs |
-| `product-manager` | sonnet | Task tracking (GitHub Issues), sprint planning, ceremony coordination | Both repos |
-| `journey-chronicler` | opus | Capture learning moments, breakthroughs, course corrections | `docs/chronicle/` |
-| `devtools-cofounder` | opus | DevTools strategy, DX critique, competitive positioning | Both repos |
+| Agent | Model | Domain |
+|-------|-------|--------|
+| `engineer` | sonnet | Implementation across CLI, dashboard, and server — features, fixes, tests |
+| `technical-architect` | opus | Architecture, type alignment, SQLite schema, code review, LLD standards |
+| `ux-engineer` | opus | UI/UX components, chat views, data visualizations |
+| `ux-designer` | opus | ASCII wireframes, user flows, personas, UX validation |
+| `product-manager` | sonnet | Task tracking (GitHub Issues), sprint planning, ceremony coordination |
+| `journey-chronicler` | opus | Capture learning moments, breakthroughs, course corrections |
+| `devtools-cofounder` | opus | DevTools strategy, DX critique, competitive positioning (on-demand, not standard ceremony) |
 
-Agent definitions live in `../code-insights-web/.claude/agents/`.
+Agent definitions live in `.claude/agents/`.
 
 ### Orchestrator Role (Main Claude)
 
@@ -227,14 +260,14 @@ Before parallelizing agents, verify:
 4. Decide: **Sequential or Parallel**
 
 **Safe to Parallelize:**
-- Independent domains with no shared types or Firestore changes
+- Independent domains with no shared types or schema changes
 - Read-only research tasks
-- CLI bug fix + Web UI fix (if no shared state)
+- CLI bug fix + Dashboard UI fix (if no shared state)
 
 **Must Run Sequentially:**
-- TA (type decision) → CLI engineer (implement types) → Web engineer (mirror types)
-- TA (schema decision) → Either engineer (implement)
-- Any change touching `types.ts` in either repo
+- TA (type decision) -> Engineer (implement types)
+- TA (schema decision) -> Engineer (implement)
+- Any change touching `types.ts`
 
 ---
 
@@ -246,7 +279,7 @@ All feature work follows this 10-step ceremony:
 Step 1:  Founder assigns task or identifies work
 Step 2:  Orchestrator identifies the right agent(s)
 Step 3:  Dev agent reviews context (source files, types, existing patterns)
-Step 4:  Dev agent clarifies with TA (if cross-repo impact)
+Step 4:  Dev agent clarifies with TA (if schema impact)
 Step 5:  TA reviews approach and gives approval
 Step 6:  Consensus checkpoint (TA + dev agent agree on approach)
 Step 7:  Dev agent: git prechecks + create feature branch
@@ -261,7 +294,7 @@ Step 10: Founder merges PR
 |------|-------|---------------|
 | 1-2 | Orchestrator | Correct agent identified |
 | 3 | Dev agent | Files reviewed, understanding confirmed |
-| 4 | Dev agent → TA | Questions resolved, no assumptions |
+| 4 | Dev agent -> TA | Questions resolved, no assumptions |
 | 5 | TA | Explicit approval or changes requested |
 | 6 | TA + Dev agent | Both confirm ready to implement |
 | 7 | Dev agent | Clean repo, feature branch created |
@@ -271,17 +304,18 @@ Step 10: Founder merges PR
 
 ### When to Engage TA (Steps 4-5)
 
-**Required (cross-repo impact):**
-- Adding/modifying Firestore document fields
+**Required (schema/contract impact):**
+- Adding/modifying SQLite columns or tables
 - Changing type definitions in `types.ts`
-- Modifying sync contract (what data flows to web)
+- Modifying data contract (what providers write vs what dashboard reads)
 - Changing configuration format
+- Adding new server API endpoints
 
 **Not required (domain-internal):**
 - New command flags
 - Parser improvements
 - Terminal UI changes
-- Web component styling
+- Dashboard component styling
 - LLM provider additions
 
 ### CI Simulation Gate (Step 8 — BLOCKING)
@@ -289,14 +323,60 @@ Step 10: Founder merges PR
 Before creating ANY PR:
 
 ```bash
-# CLI repo
-cd cli && pnpm build
-
-# Web repo
-cd code-insights-web && pnpm build && pnpm lint
+pnpm build    # Must pass across the workspace
 ```
 
 **If ANY check fails:** Fix before creating PR. Never rely on CI.
+
+---
+
+## Dynamic Team Workflow (Feature Development)
+
+For non-trivial features, use `/start-feature` to spin up a coordinated agent team. This is the **standard approach** for feature development.
+
+### Commands
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/start-feature <description>` | Creates worktree, team, and spawns PM to lead ceremony | Any feature requiring 3+ files or architectural decisions |
+| `/start-review <PR#>` | Runs triple-layer code review (TA insider + outsider + synthesis) | After dev creates a PR |
+
+### Team Structure
+
+```
+/start-feature "add demo mode onboarding"
+    |
+    +-- Orchestrator: Creates worktree + team, spawns PM
+    |
+    +-- PM (team lead): Scopes feature, creates task graph, spawns agents
+    |     |
+    |     +-- TA: Reviews architecture alignment (skipped for internal changes)
+    |     +-- Dev (engineer): Implements in worktree, creates PR
+    |
+    +-- /start-review (triggered by PM after PR created)
+          |
+          +-- TA (insider review)
+          +-- Outsider review
+          +-- Wild card (if needed)
+          |
+          +-- TA synthesis -> Consolidated fix list -> Dev implements fixes
+```
+
+### When to Use Teams vs Direct Delegation
+
+| Scenario | Approach |
+|----------|----------|
+| Multi-file feature, architectural decisions | `/start-feature` (full ceremony) |
+| Internal change, clear scope, <3 files | Direct `engineer` dispatch (skip ceremony overhead) |
+| Bug fix with clear root cause | Direct `engineer` dispatch |
+| Code review for any PR | `/start-review` |
+
+### Worktree Naming
+
+```bash
+# Feature worktrees live alongside the main repo:
+../code-insights-<feature-slug>/    # e.g., ../code-insights-add-demo-mode-onboarding/
+```
 
 ---
 
@@ -308,7 +388,7 @@ All PRs go through multi-layer review:
 
 | Role | Reviewer | Focus |
 |------|----------|-------|
-| **INSIDER** | `technical-architect` | Type alignment, Firestore contract, cross-repo impact, patterns |
+| **INSIDER** | `technical-architect` | Type alignment, schema contract, architecture patterns |
 | **OUTSIDER** | `code-review:code-review` skill | Security, best practices, logic bugs, fresh perspective |
 
 **CRITICAL:** Phase 1 reviews run in parallel. TA must NOT read outsider comments during initial review.
@@ -333,11 +413,11 @@ TA reads outsider comments, does 2nd pass, and creates consolidated list:
 
 Dev agent receives consolidated list, implements fixes, re-runs CI gate, updates PR.
 
-### ⛔ CRITICAL: Agents NEVER Merge PRs
+### CRITICAL: Agents NEVER Merge PRs
 
 ```
-❌ FORBIDDEN: gh pr merge (or any merge command)
-✅ CORRECT: Report "PR #XX is ready for merge" and STOP
+FORBIDDEN: gh pr merge (or any merge command)
+CORRECT: Report "PR #XX is ready for merge" and STOP
 ```
 
 **Only the founder merges PRs.** This is enforced by hookify rule `block-pr-merge`.
@@ -351,8 +431,9 @@ Orchestrator MUST NOT directly edit documents it doesn't own. Always delegate.
 | Document Type | Owner Agent | Action |
 |---------------|------------|--------|
 | `CLAUDE.md` | **Orchestrator** | Direct edit allowed |
-| CLI code (`cli/src/`) | `fullstack-engineer` | Delegate to fullstack engineer |
-| Web code (`code-insights-web/src/`) | `fullstack-engineer` | Delegate to fullstack engineer |
+| CLI code (`cli/src/`) | `engineer` | Delegate to engineer |
+| Dashboard code (`dashboard/src/`) | `engineer` | Delegate to engineer |
+| Server code (`server/src/`) | `engineer` | Delegate to engineer |
 | Type alignment decisions | `technical-architect` | Delegate to TA |
 | Architecture docs (`docs/`) | `technical-architect` | Delegate to TA |
 | UX specs (`docs/ux/`) | `ux-designer` | Delegate to UX designer |
@@ -366,7 +447,7 @@ Orchestrator MUST NOT directly edit documents it doesn't own. Always delegate.
 
 ## Branch Discipline (CRITICAL)
 
-`main` is protected. Only receives commits via merged PRs.
+`main` is the production branch. Only receives commits via merged PRs.
 
 **Rules for ALL agents:**
 
@@ -374,7 +455,7 @@ Orchestrator MUST NOT directly edit documents it doesn't own. Always delegate.
 # BEFORE ANY COMMIT:
 git branch  # Must show feature branch, NOT main
 
-# If on main → STOP:
+# If on main -> STOP:
 git checkout -b feature/description
 
 # After EVERY commit:
@@ -385,10 +466,11 @@ git push origin $(git branch --show-current)  # Push IMMEDIATELY
 - `feature/description` (new functionality)
 - `fix/description` (bug fixes)
 - `docs/description` (documentation only)
+- `chore/description` (maintenance, deps, config)
 
 **Pre-commit checklist (ALL agents):**
 1. `git branch` — Am I on feature branch?
-2. If on `main` → STOP, create feature branch
+2. If on `main` -> STOP, create feature branch
 3. Commit to feature branch
 4. Push immediately after commit
 
@@ -401,12 +483,12 @@ Sessions are classified into one of 7 types based on tool call patterns:
 - `deep_focus`, `bug_hunt`, `feature_build`, `exploration`, `refactor`, `learning`, `quick_task`
 
 ### Title Generation
-Multi-tier fallback: Claude summary → user message (scored) → character-based → generic fallback.
+Multi-tier fallback: Claude summary -> user message (scored) -> character-based -> generic fallback.
 
-### Firebase Integration
-- CLI uses Admin SDK with service account credentials
-- Batch writes capped at 500 operations per batch
-- Incremental sync tracks file modification times in ~/.code-insights/sync-state.json
+### SQLite Integration
+- Uses better-sqlite3 with WAL mode for concurrent access
+- Schema versioned via migrations applied on startup
+- Incremental sync tracks file modification times in `~/.code-insights/sync-state.json`
 - Project IDs derived from git remote URLs (stable across devices) with path-hash fallback
 
 ### Configuration
@@ -414,34 +496,46 @@ Multi-tier fallback: Claude summary → user message (scored) → character-base
 - Sync state at `~/.code-insights/sync-state.json`
 - Stats cache at `~/.code-insights/stats-cache.json` (mtime-based invalidation)
 - Device ID at `~/.code-insights/device-id`
+- SQLite database at `~/.code-insights/data.db`
 
 ### Hook Integration
 - `install-hook` modifies `~/.claude/settings.json` to add a Stop hook
 - Hook runs `code-insights sync -q` automatically when Claude Code sessions end
 
-### Types
-Key types defined in `/cli/src/types.ts`:
-- `ClaudeMessage` - Individual JSONL message entry
-- `ParsedSession` - Aggregated session with metadata, title, character
-- `Insight` - Types: summary | decision | learning | technique | prompt_quality; source: 'llm'
-- `SessionCharacter` - 7 session classifications
-- `ClaudeInsightConfig` - Config with optional `firebase` credentials and optional `dataSource` preference
-- `DataSourcePreference` - `'local' | 'firebase'` — controls where stats reads data from
-- `SyncState` - File modification tracking for incremental sync
+### Multi-Source Support
 
-Stats-specific types in `/cli/src/commands/stats/data/types.ts`:
-- `StatsDataSource` - Interface for data source implementations (5 methods + name)
-- `SessionRow` - Universal session shape produced by both data sources
-- `StatsFlags` - Shared CLI flags (period, project, source, local, remote, noSync)
+The CLI and dashboard support sessions from multiple AI coding tools via the `sourceTool` field.
+
+**Supported sources:** `'claude-code'` (default), `'cursor'`, `'codex-cli'`, `'copilot-cli'`
+
+**Adding a new source tool:**
+1. CLI: Create a new provider in `cli/src/providers/` implementing `SessionProvider`
+2. Register in `cli/src/providers/registry.ts`
+3. Dashboard: Add color entry to `SOURCE_TOOL_COLORS`
+4. Dashboard: Add avatar case to `getAssistantConfig()`
+5. Dashboard: Add tool name aliases (if tool names differ)
+6. Dashboard: Add option to source filter dropdown
+
+---
 
 ## Tech Stack
 
 - **Runtime**: Node.js (ES2022, ES Modules)
 - **CLI Framework**: Commander.js
-- **Firebase**: Admin SDK (^13.4.0) for Firestore writes
-- **UI**: Chalk (^5.4.1) for colors, Ora (^8.2.0) for spinners
-- **Prompts**: Inquirer (^12.6.1) for interactive setup
+- **Database**: SQLite (better-sqlite3) — WAL mode, local at `~/.code-insights/data.db`
+- **Dashboard**: Vite + React 19 SPA (to be created in Phase 3)
+- **Server**: Hono (to be created in Phase 3)
+- **UI**: Tailwind CSS 4 + shadcn/ui (New York), Lucide icons
+- **Server State**: React Query (TanStack Query)
+- **Charts**: Recharts 3
+- **LLM**: OpenAI, Anthropic, Gemini, Ollama (multi-provider abstraction)
+- **Terminal UI**: Chalk (colors), Ora (spinners), Inquirer (prompts)
 - **Utilities**: date-fns, uuid
+- **Package Manager**: pnpm (workspace monorepo)
+- **npm Package**: `@code-insights/cli`
+- **Binary**: `code-insights`
+
+---
 
 ## Hookify Rules
 
@@ -449,10 +543,13 @@ Stats-specific types in `/cli/src/commands/stats/data/types.ts`:
 |------|------|---------|
 | `block-pr-merge` | **block** | Agents never merge PRs — founder only |
 | `branch-discipline` | warn | Dev agents verify feature branch before coding |
-| `cross-repo-type-sync` | warn | Flag type changes that affect both repos |
 | `cli-binary-name` | warn | Prevent using `claudeinsight` instead of `code-insights` |
 | `agent-parallel-warning` | warn | Verify no dependencies before parallelizing agents |
 | `no-jira` | **block** | Prevent Jira/Atlassian API calls — use GitHub Issues instead |
+| `review-before-pr` | warn | Remind: code review required before PR creation (bash path) |
+| `review-before-pr-mcp` | warn | Remind: code review required before PR creation (MCP path) |
+
+---
 
 ## Development Notes
 
@@ -460,6 +557,6 @@ Stats-specific types in `/cli/src/commands/stats/data/types.ts`:
 - ES Modules (`import`/`export`, not `require`)
 - No test framework configured yet
 - No ESLint config file in CLI directory (lint script exists but needs config)
-- pnpm is the package manager
-- Dashboard URL: `https://code-insights.app`
+- pnpm is the package manager (workspace monorepo)
 - CLI binary is `code-insights`
+- npm package is `@code-insights/cli`
