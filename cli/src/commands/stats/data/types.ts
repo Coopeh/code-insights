@@ -49,7 +49,8 @@ export interface SessionRow {
   customTitle?: string;
   summary?: string;
   sessionCharacter?: string;
-  sourceTool?: string;
+  // Required: SQLite schema has source_tool NOT NULL DEFAULT 'claude-code'
+  sourceTool: string;
   usageSource?: string;
 }
 

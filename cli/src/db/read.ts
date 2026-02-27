@@ -101,7 +101,7 @@ export function getSessions(opts: SessionQueryOptions = {}): SessionRow[] {
     custom_title: string | null;
     summary: string | null;
     session_character: string | null;
-    source_tool: string | null;
+    source_tool: string; // NOT NULL in schema, DEFAULT 'claude-code'
     usage_source: string | null;
   }>;
 
@@ -126,7 +126,7 @@ export function getSessions(opts: SessionQueryOptions = {}): SessionRow[] {
     customTitle: r.custom_title ?? undefined,
     summary: r.summary ?? undefined,
     sessionCharacter: r.session_character ?? undefined,
-    sourceTool: r.source_tool ?? undefined,
+    sourceTool: r.source_tool,
     usageSource: r.usage_source ?? undefined,
   }));
 }
