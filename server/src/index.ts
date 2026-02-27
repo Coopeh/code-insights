@@ -2,8 +2,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { execFile } from 'child_process';
-import { existsSync } from 'fs';
-import { closeDb } from '@code-insights/cli/db/client';
+import { existsSync, readFileSync } from 'fs';
 import projectsRouter from './routes/projects.js';
 import sessionsRouter from './routes/sessions.js';
 import messagesRouter from './routes/messages.js';
@@ -30,6 +29,12 @@ export async function startServer(options: ServerOptions): Promise<void> {
 
   const app = new Hono();
 
+  // Global error handler — prevents stack trace leakage to clients
+  app.onError((err, c) => {
+    console.error(err);
+    return c.json({ error: 'Internal server error' }, 500);
+  });
+
   // API routes — all under /api
   app.route('/api/projects', projectsRouter);
   app.route('/api/sessions', sessionsRouter);
@@ -45,25 +50,13 @@ export async function startServer(options: ServerOptions): Promise<void> {
 
   // Static file serving — only if the dashboard has been built
   if (existsSync(staticDir)) {
-    app.use(
-      '/*',
-      serveStatic({
-        root: staticDir,
-        // Fallback to index.html for SPA client-side routing
-        rewriteRequestPath: (path) => {
-          // Let /api routes pass through (already handled above)
-          // For everything else, serve index.html so react-router handles it
-          if (path.startsWith('/api/')) return path;
-          return path;
-        },
-      }),
-    );
+    app.use('/*', serveStatic({ root: staticDir }));
 
-    // SPA fallback: any route not matched above serves index.html
-    app.get('*', async (c) => {
+    // SPA fallback: any non-API route not matched by serveStatic serves index.html
+    // so react-router can handle client-side routing.
+    app.get('*', (c) => {
       const indexPath = `${staticDir}/index.html`;
       if (existsSync(indexPath)) {
-        const { readFileSync } = await import('fs');
         const html = readFileSync(indexPath, 'utf-8');
         return c.html(html);
       }
@@ -83,9 +76,10 @@ export async function startServer(options: ServerOptions): Promise<void> {
     );
   }
 
-  // Graceful shutdown: close SQLite on SIGINT/SIGTERM
+  // Graceful shutdown: just call process.exit(0).
+  // The process 'exit' handler in cli/src/db/client.ts already calls closeDb()
+  // which runs WAL checkpoint. Calling closeDb() here would double-close.
   const shutdown = () => {
-    closeDb();
     process.exit(0);
   };
   process.on('SIGINT', shutdown);

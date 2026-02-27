@@ -5,13 +5,15 @@ const app = new Hono();
 
 app.get('/', (c) => {
   const db = getDb();
+  const { limit = '100', offset = '0' } = c.req.query();
   const projects = db.prepare(`
     SELECT id, name, path, git_remote_url, session_count, last_activity,
            total_input_tokens, total_output_tokens, cache_creation_tokens,
            cache_read_tokens, estimated_cost_usd, created_at, updated_at
     FROM projects
     ORDER BY last_activity DESC
-  `).all();
+    LIMIT ? OFFSET ?
+  `).all(parseInt(limit, 10), parseInt(offset, 10));
   return c.json({ projects });
 });
 

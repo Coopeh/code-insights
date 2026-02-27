@@ -6,7 +6,7 @@ const app = new Hono();
 
 app.get('/', (c) => {
   const db = getDb();
-  const { projectId, sessionId, type } = c.req.query();
+  const { projectId, sessionId, type, limit = '100', offset = '0' } = c.req.query();
 
   const conditions: string[] = [];
   const params: (string | number)[] = [];
@@ -32,7 +32,8 @@ app.get('/', (c) => {
     FROM insights
     ${where}
     ORDER BY timestamp DESC
-  `).all(...params);
+    LIMIT ? OFFSET ?
+  `).all(...params, parseInt(limit, 10), parseInt(offset, 10));
 
   return c.json({ insights });
 });
@@ -52,6 +53,14 @@ app.post('/', async (c) => {
     metadata?: Record<string, unknown>;
   }>();
 
+  // Validate required string fields
+  const required = ['sessionId', 'projectId', 'type', 'title', 'content'] as const;
+  for (const field of required) {
+    if (!body[field] || typeof body[field] !== 'string') {
+      return c.json({ error: `Missing or invalid field: ${field}` }, 400);
+    }
+  }
+
   const id = randomUUID();
   const now = new Date().toISOString();
 
@@ -64,13 +73,13 @@ app.post('/', async (c) => {
     id,
     body.sessionId,
     body.projectId,
-    body.projectName,
+    body.projectName ?? '',
     body.type,
     body.title,
     body.content,
-    body.summary,
+    body.summary ?? '',
     body.bullets ? JSON.stringify(body.bullets) : null,
-    body.confidence,
+    body.confidence ?? 0,
     body.metadata ? JSON.stringify(body.metadata) : null,
     now,
     now,

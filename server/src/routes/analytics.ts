@@ -3,10 +3,17 @@ import { getDb } from '@code-insights/cli/db/client';
 
 const app = new Hono();
 
+const VALID_RANGES = ['7d', '30d', '90d', 'all'] as const;
+type Range = typeof VALID_RANGES[number];
+
 // Dashboard overview stats for a given time range (e.g. ?range=7d|30d|90d|all)
 app.get('/dashboard', (c) => {
   const db = getDb();
   const { range = '7d' } = c.req.query();
+
+  if (!VALID_RANGES.includes(range as Range)) {
+    return c.json({ error: `Invalid range. Must be one of: ${VALID_RANGES.join(', ')}` }, 400);
+  }
 
   let periodStart: string | null = null;
   const now = new Date();
