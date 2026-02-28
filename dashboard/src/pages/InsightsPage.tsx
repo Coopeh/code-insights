@@ -4,7 +4,8 @@ import { useProjects } from '@/hooks/useProjects';
 import { InsightCard } from '@/components/insights/InsightCard';
 import { InsightListItem } from '@/components/insights/InsightListItem';
 import { PromptQualityCard } from '@/components/insights/PromptQualityCard';
-import { Skeleton } from '@/components/ui/skeleton';
+import { InsightCardSkeleton } from '@/components/skeletons/InsightCardSkeleton';
+import { ErrorCard } from '@/components/ErrorCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +34,7 @@ export default function InsightsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const { data: projects = [] } = useProjects();
-  const { data: insights = [], isLoading } = useInsights(
+  const { data: insights = [], isLoading, isError, refetch } = useInsights(
     projectFilter !== 'all' ? { projectId: projectFilter } : undefined
   );
 
@@ -141,18 +142,12 @@ export default function InsightsPage() {
       </div>
 
       {/* Content */}
-      {isLoading ? (
+      {isError && !isLoading ? (
+        <ErrorCard message="Failed to load insights" onRetry={refetch} />
+      ) : isLoading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="rounded-lg border px-4 py-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-5 w-20 rounded-full" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-              <Skeleton className="h-3.5 w-full" />
-              <Skeleton className="h-3.5 w-4/5" />
-              <Skeleton className="h-3 w-24 mt-1" />
-            </div>
+            <InsightCardSkeleton key={i} />
           ))}
         </div>
       ) : filtered.length === 0 ? (

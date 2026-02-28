@@ -16,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SessionCardSkeleton } from '@/components/skeletons/SessionCardSkeleton';
+import { ErrorCard } from '@/components/ErrorCard';
 import {
   MessageSquare,
   Wrench,
@@ -66,6 +67,7 @@ export default function SessionsPage() {
 
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
 
+
   const sessionParams = useMemo(() => {
     const params: { projectId?: string; sourceTool?: string; limit?: number } = { limit: 200 };
     if (projectFilter !== 'all') params.projectId = projectFilter;
@@ -73,7 +75,7 @@ export default function SessionsPage() {
     return params;
   }, [projectFilter, sourceFilter]);
 
-  const { data: sessions = [], isLoading: sessionsLoading } = useSessions(sessionParams);
+  const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions } = useSessions(sessionParams);
   const { data: insights = [], isLoading: insightsLoading } = useInsights();
 
   const analyzedSessionIds = useMemo(
@@ -197,26 +199,12 @@ export default function SessionsPage() {
       </div>
 
       {/* Session groups */}
-      {loading ? (
+      {sessionsError && !loading ? (
+        <ErrorCard message="Failed to load sessions" onRetry={refetchSessions} />
+      ) : loading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-lg border px-4 py-3 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-1.5 flex-1">
-                  <Skeleton className="h-4 w-3/4" />
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-20 rounded-full" />
-                    <Skeleton className="h-3.5 w-24" />
-                  </div>
-                </div>
-                <Skeleton className="h-4 w-20 shrink-0" />
-              </div>
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-3.5 w-20" />
-                <Skeleton className="h-3.5 w-16" />
-                <Skeleton className="h-3.5 w-14" />
-              </div>
-            </div>
+            <SessionCardSkeleton key={i} />
           ))}
         </div>
       ) : filteredSessions.length === 0 ? (

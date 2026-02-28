@@ -8,6 +8,8 @@ import { StatsHero } from '@/components/dashboard/StatsHero';
 import { DashboardActivityChart } from '@/components/dashboard/DashboardActivityChart';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { BulkAnalyzeButton } from '@/components/analysis/BulkAnalyzeButton';
+import { StatsHeroSkeleton } from '@/components/skeletons/StatsHeroSkeleton';
+import { ErrorCard } from '@/components/ErrorCard';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDurationMinutes } from '@/lib/utils';
@@ -25,13 +27,14 @@ function getGreeting(): string {
 export default function DashboardPage() {
   const [range, setRange] = useState<DashboardRange>('30d');
 
-  const { data: dashStats, isLoading: statsLoading } = useDashboardStats(range);
+  const { data: dashStats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useDashboardStats(range);
   const { data: usageStats } = useUsageStats();
-  const { data: sessions = [], isLoading: sessionsLoading } = useSessions({ limit: 20 });
+  const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions } = useSessions({ limit: 20 });
   const { data: insights = [], isLoading: insightsLoading } = useInsights();
   const { data: projects = [] } = useProjects();
 
   const loading = statsLoading || sessionsLoading || insightsLoading;
+  const hasError = statsError || sessionsError;
 
   const todayLabel = new Date().toLocaleDateString(undefined, {
     month: 'long',
@@ -86,26 +89,17 @@ export default function DashboardPage() {
         <span className="text-sm text-muted-foreground">{todayLabel}</span>
       </div>
 
+      {/* Error state */}
+      {hasError && !loading && (
+        <ErrorCard
+          message="Failed to load dashboard data"
+          onRetry={() => { refetchStats(); refetchSessions(); }}
+        />
+      )}
+
       {/* All-time stats hero */}
       {loading ? (
-        <Card>
-          <CardContent className="p-0">
-            <div className="flex flex-wrap">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 min-w-[100px] px-4 py-3 border-r border-border last:border-r-0"
-                >
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Skeleton className="h-3 w-3 rounded" />
-                    <Skeleton className="h-2.5 w-14" />
-                  </div>
-                  <Skeleton className="h-6 w-12" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <StatsHeroSkeleton />
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 delay-75">
           <StatsHero

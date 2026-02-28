@@ -6,6 +6,7 @@ import { ActivityChart } from '@/components/charts/ActivityChart';
 import { InsightTypeChart } from '@/components/charts/InsightTypeChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorCard } from '@/components/ErrorCard';
 import { formatTokenCount, formatModelName } from '@/lib/utils';
 import { CHART_COLORS } from '@/lib/constants/colors';
 import {
@@ -21,9 +22,9 @@ import type { DailyStats } from '@/lib/types';
 import { useThemeColors } from '@/lib/hooks/useThemeColors';
 
 export default function AnalyticsPage() {
-  const { data: sessions = [], isLoading: sessionsLoading } = useSessions({ limit: 500 });
-  const { data: insights = [], isLoading: insightsLoading } = useInsights();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions } = useSessions({ limit: 500 });
+  const { data: insights = [], isLoading: insightsLoading, isError: insightsError, refetch: refetchInsights } = useInsights();
+  const { data: projects = [], isLoading: projectsLoading, isError: projectsError, refetch: refetchProjects } = useProjects();
   const { tooltipBg, tooltipBorder } = useThemeColors();
 
   const loading = sessionsLoading || insightsLoading || projectsLoading;
@@ -135,6 +136,25 @@ export default function AnalyticsPage() {
       name: p.projectName.length > 15 ? p.projectName.slice(0, 15) + '...' : p.projectName,
       sessions: p.sessionCount,
     }));
+
+  const hasError = sessionsError || insightsError || projectsError;
+
+  if (hasError && !loading) {
+    const retryAll = () => {
+      if (sessionsError) refetchSessions();
+      if (insightsError) refetchInsights();
+      if (projectsError) refetchProjects();
+    };
+    return (
+      <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Analytics</h1>
+          <p className="text-muted-foreground">Visualize your AI coding usage patterns</p>
+        </div>
+        <ErrorCard message="Failed to load analytics data" onRetry={retryAll} />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
