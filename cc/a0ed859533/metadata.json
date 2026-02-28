@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "cca0ed859533",
+  "strategy": "manual-commit",
+  "branch": "feature/test-suite",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "cli/vitest.config.ts",
+    "server/vitest.config.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/cc/a0ed859533/0/metadata.json",
+      "transcript": "/cc/a0ed859533/0/full.jsonl",
+      "context": "/cc/a0ed859533/0/context.md",
+      "content_hash": "/cc/a0ed859533/0/content_hash.txt",
+      "prompt": "/cc/a0ed859533/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 9538,
+    "cache_creation_tokens": 375208,
+    "cache_read_tokens": 11869891,
+    "output_tokens": 71969,
+    "api_call_count": 120
+  }
+}

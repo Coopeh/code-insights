@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "cca0ed859533",
+  "session_id": "2280f522-fe35-436c-83d6-b719961e5071",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-28T18:01:41.205419Z",
+  "branch": "feature/test-suite",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "cli/vitest.config.ts",
+    "server/vitest.config.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "0eaee533db7d",
+  "token_usage": {
+    "input_tokens": 9538,
+    "cache_creation_tokens": 375208,
+    "cache_read_tokens": 11869891,
+    "output_tokens": 71969,
+    "api_call_count": 120
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-28T18:01:40.552504Z",
+    "agent_lines": 0,
+    "human_added": 2932,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 2932,
+    "agent_percentage": 0
+  }
+}
