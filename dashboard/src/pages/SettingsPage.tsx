@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useLlmConfig, useSaveLlmConfig } from '@/hooks/useConfig';
 import { fetchOllamaModels, testLlmConfig } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -157,6 +158,7 @@ export default function SettingsPage() {
         });
         setLlmConfigured(true);
         setLlmTestError(null);
+        toast.success('AI provider configured successfully');
       } else {
         setLlmTestError(testResult.error || 'Failed to connect');
       }
@@ -173,8 +175,11 @@ export default function SettingsPage() {
       setLlmConfigured(false);
       setLlmApiKey('');
       setLlmTestError(null);
+      toast.success('AI provider configuration cleared');
     } catch (err) {
-      setLlmTestError(err instanceof Error ? err.message : 'Failed to clear configuration');
+      const msg = err instanceof Error ? err.message : 'Failed to clear configuration';
+      setLlmTestError(msg);
+      toast.error(msg);
     }
   };
 
