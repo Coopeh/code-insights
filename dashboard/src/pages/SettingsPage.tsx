@@ -36,9 +36,9 @@ const PROVIDERS: ProviderInfo[] = [
     requiresApiKey: true,
     apiKeyLink: 'https://platform.openai.com/api-keys',
     models: [
-      { id: 'gpt-4o', name: 'GPT-4o', description: 'Best' },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast & cheap' },
-      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+      { id: 'gpt-4.1', name: 'GPT-4.1', description: 'Best' },
+      { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', description: 'Fast & cheap' },
+      { id: 'gpt-4o', name: 'GPT-4o', description: 'Fallback' },
     ],
   },
   {
@@ -47,8 +47,8 @@ const PROVIDERS: ProviderInfo[] = [
     requiresApiKey: true,
     apiKeyLink: 'https://console.anthropic.com/settings/keys',
     models: [
-      { id: 'claude-opus-4-5', name: 'Claude Opus 4.5', description: 'Most capable' },
-      { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', description: 'Best balance' },
+      { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', description: 'Most capable' },
+      { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', description: 'Best balance' },
       { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', description: 'Fast & cheap' },
     ],
   },
@@ -58,8 +58,8 @@ const PROVIDERS: ProviderInfo[] = [
     requiresApiKey: true,
     apiKeyLink: 'https://aistudio.google.com/app/apikey',
     models: [
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Fast' },
-      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Capable' },
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast' },
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Capable' },
     ],
   },
   {
@@ -68,7 +68,7 @@ const PROVIDERS: ProviderInfo[] = [
     requiresApiKey: false,
     models: [
       { id: 'llama3.3', name: 'Llama 3.3' },
-      { id: 'qwen2.5:14b', name: 'Qwen 2.5 14B' },
+      { id: 'qwen3:14b', name: 'Qwen3 14B' },
       { id: 'mistral', name: 'Mistral' },
     ],
   },
@@ -80,6 +80,7 @@ export default function SettingsPage() {
 
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('openai');
   const [llmModel, setLlmModel] = useState('');
+  const [customModel, setCustomModel] = useState('');
   const [llmApiKey, setLlmApiKey] = useState('');
   const [llmBaseUrl, setLlmBaseUrl] = useState('');
   const [llmConfigured, setLlmConfigured] = useState(false);
@@ -121,6 +122,7 @@ export default function SettingsPage() {
     setLlmConfigured(false);
     setLlmTestError(null);
     setLlmApiKey('');
+    setCustomModel('');
     const providerInfo = PROVIDERS.find((p) => p.id === provider);
     setLlmModel(providerInfo?.models[0]?.id ?? '');
   };
@@ -129,11 +131,14 @@ export default function SettingsPage() {
     const providerInfo = PROVIDERS.find((p) => p.id === llmProvider);
     if (!providerInfo) return;
 
+    // Custom model input overrides the dropdown selection for cloud providers
+    const effectiveModel = customModel.trim() || llmModel;
+
     if (providerInfo.requiresApiKey && !llmApiKey) {
       setLlmTestError('API key is required');
       return;
     }
-    if (!llmModel) {
+    if (!effectiveModel) {
       setLlmTestError('Please select a model');
       return;
     }
@@ -144,7 +149,7 @@ export default function SettingsPage() {
     try {
       const testResult = await testLlmConfig({
         provider: llmProvider,
-        model: llmModel,
+        model: effectiveModel,
         apiKey: llmApiKey || undefined,
         baseUrl: llmBaseUrl || undefined,
       });
@@ -152,7 +157,7 @@ export default function SettingsPage() {
       if (testResult.success) {
         await saveMutation.mutateAsync({
           provider: llmProvider,
-          model: llmModel,
+          model: effectiveModel,
           apiKey: llmApiKey || undefined,
           baseUrl: llmBaseUrl || undefined,
         });
@@ -310,25 +315,41 @@ export default function SettingsPage() {
                 })()}
               </div>
             ) : (
-              <Select value={llmModel} onValueChange={setLlmModel}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDERS.find((p) => p.id === llmProvider)?.models.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      <div className="flex items-center justify-between gap-2">
-                        <span>{model.name}</span>
-                        {model.description && (
-                          <span className="text-xs text-muted-foreground">
-                            {model.description}
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="mt-1 space-y-2">
+                <Select value={llmModel} onValueChange={setLlmModel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROVIDERS.find((p) => p.id === llmProvider)?.models.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{model.name}</span>
+                          {model.description && (
+                            <span className="text-xs text-muted-foreground">
+                              {model.description}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div>
+                  <label className="text-xs text-muted-foreground">Or enter a custom model ID</label>
+                  <Input
+                    value={customModel}
+                    onChange={(e) => setCustomModel(e.target.value)}
+                    placeholder="e.g. gpt-4.1-nano, claude-opus-4-6"
+                    className="mt-1"
+                  />
+                  {customModel.trim() && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Custom model <span className="font-mono">{customModel.trim()}</span> will be used instead of the dropdown selection.
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
