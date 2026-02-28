@@ -308,7 +308,7 @@ Note: This does NOT work with the macOS Ollama desktop app — only when running
 
 ## Documentation
 
-Full documentation is available at [docs.code-insights.app](https://docs.code-insights.app). Source files are in the [`docs-site/`](docs-site/) directory.
+Full documentation is available at [code-insights.app/docs](https://code-insights.app/docs).
 
 ## Contributing
 

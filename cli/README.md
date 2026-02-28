@@ -1,14 +1,12 @@
 # Code Insights CLI
 
-Command-line tool that parses AI coding session history and provides terminal analytics. Optionally syncs to your own Firebase Firestore for the web dashboard.
+Command-line tool that parses AI coding session history, stores data locally in SQLite, and provides both terminal analytics and an embedded browser dashboard.
 
-Full documentation: [docs.code-insights.app](https://docs.code-insights.app)
+Full documentation: [code-insights.app/docs](https://code-insights.app/docs)
 
 ## Prerequisites
 
 - **Node.js** 18 or later
-- **For local-only stats:** No additional setup required
-- **For Firebase sync + web dashboard:** A Firebase project with Firestore enabled (see [Quick Start](https://docs.code-insights.app/getting-started/quick-start/))
 
 ## Installation
 
