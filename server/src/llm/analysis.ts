@@ -22,6 +22,9 @@ import {
   type PromptQualityResponse,
 } from './prompts.js';
 
+// Re-export SQLiteMessageRow so routes can import it from analysis.ts directly
+export type { SQLiteMessageRow };
+
 // Maximum tokens to send to LLM (leaving room for response)
 const MAX_INPUT_TOKENS = 80000;
 const ANALYSIS_VERSION = '2.0.0';
