@@ -96,7 +96,18 @@ export default function SettingsPage() {
       setLlmProvider(llmConfig.provider);
       setLlmConfigured(true);
     }
-    if (llmConfig.model) setLlmModel(llmConfig.model);
+    if (llmConfig.model) {
+      // If saved model doesn't match any preset, populate the custom input instead
+      const providerInfo = PROVIDERS.find((p) => p.id === (llmConfig.provider ?? llmProvider));
+      const isPreset = providerInfo?.models.some((m) => m.id === llmConfig.model);
+      if (isPreset) {
+        setLlmModel(llmConfig.model);
+        setCustomModel('');
+      } else {
+        setCustomModel(llmConfig.model);
+        setLlmModel(providerInfo?.models[0]?.id ?? '');
+      }
+    }
     // apiKey is masked by server — leave blank for re-entry
     if (llmConfig.baseUrl) setLlmBaseUrl(llmConfig.baseUrl);
   }, [llmConfig]);
@@ -179,6 +190,7 @@ export default function SettingsPage() {
       await saveMutation.mutateAsync({ provider: undefined, model: undefined, apiKey: undefined });
       setLlmConfigured(false);
       setLlmApiKey('');
+      setCustomModel('');
       setLlmTestError(null);
       toast.success('AI provider configuration cleared');
     } catch (err) {
