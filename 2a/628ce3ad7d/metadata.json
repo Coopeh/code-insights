@@ -3,9 +3,15 @@
   "checkpoint_id": "2a628ce3ad7d",
   "strategy": "manual-commit",
   "branch": "fix/dashboard-stats-and-posthog",
-  "checkpoints_count": 0,
+  "checkpoints_count": 2,
   "files_touched": [
-    "dashboard/src/pages/DashboardPage.tsx"
+    "cli/src/utils/telemetry.ts",
+    "dashboard/src/lib/types.ts",
+    "dashboard/src/pages/DashboardPage.tsx",
+    "server/src/llm/analysis.ts",
+    "server/src/llm/prompts.ts",
+    "server/src/routes/analysis.ts",
+    "server/src/routes/analytics.ts"
   ],
   "sessions": [
     {
@@ -14,13 +20,20 @@
       "context": "/2a/628ce3ad7d/0/context.md",
       "content_hash": "/2a/628ce3ad7d/0/content_hash.txt",
       "prompt": "/2a/628ce3ad7d/0/prompt.txt"
+    },
+    {
+      "metadata": "/2a/628ce3ad7d/1/metadata.json",
+      "transcript": "/2a/628ce3ad7d/1/full.jsonl",
+      "context": "/2a/628ce3ad7d/1/context.md",
+      "content_hash": "/2a/628ce3ad7d/1/content_hash.txt",
+      "prompt": "/2a/628ce3ad7d/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 43,
-    "cache_creation_tokens": 78238,
-    "cache_read_tokens": 2334418,
-    "output_tokens": 11203,
-    "api_call_count": 33
+    "input_tokens": 99,
+    "cache_creation_tokens": 168535,
+    "cache_read_tokens": 6021954,
+    "output_tokens": 29351,
+    "api_call_count": 77
   }
 }

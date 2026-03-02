@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "2a628ce3ad7d",
+  "session_id": "695ea4b4-f904-4d7f-bfac-1fab3774471a",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-02T10:40:35.942525Z",
+  "branch": "fix/dashboard-stats-and-posthog",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "cli/src/utils/telemetry.ts",
+    "dashboard/src/lib/types.ts",
+    "dashboard/src/pages/DashboardPage.tsx",
+    "server/src/llm/analysis.ts",
+    "server/src/llm/prompts.ts",
+    "server/src/routes/analysis.ts",
+    "server/src/routes/analytics.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "18b634f48dbc",
+  "token_usage": {
+    "input_tokens": 56,
+    "cache_creation_tokens": 90297,
+    "cache_read_tokens": 3687536,
+    "output_tokens": 18148,
+    "api_call_count": 44
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-02T10:40:35.704309Z",
+    "agent_lines": 43,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 43,
+    "agent_percentage": 100
+  }
+}
