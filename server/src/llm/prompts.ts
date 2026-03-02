@@ -2,6 +2,7 @@
 // Ported from web repo (src/lib/llm/prompts.ts) with SQLite-aware message formatting.
 
 import { jsonrepair } from 'jsonrepair';
+import type { SessionCharacter } from '@code-insights/cli/types';
 
 // SQLite row format for messages — snake_case with JSON-encoded arrays.
 // This matches the shape returned by server/src/routes/messages.ts.
@@ -68,9 +69,9 @@ export function formatMessagesForAnalysis(messages: SQLiteMessageRow[]): string 
         ? `\n[Thinking: ${m.thinking.slice(0, 1000)}]`
         : '';
 
-      // Include tool results for context — 200 chars per result
+      // Include tool results for context — 500 chars per result (error messages need ~300-400 chars)
       const resultInfo = toolResults.length > 0
-        ? `\n[Tool results: ${toolResults.map(r => (r.output || '').slice(0, 200)).join(' | ')}]`
+        ? `\n[Tool results: ${toolResults.map(r => (r.output || '').slice(0, 500)).join(' | ')}]`
         : '';
 
       return `### ${roleLabel}:\n${m.content}${thinkingInfo}${toolInfo}${resultInfo}`;
@@ -81,12 +82,22 @@ export function formatMessagesForAnalysis(messages: SQLiteMessageRow[]): string 
 /**
  * System prompt for session analysis.
  */
-export const SESSION_ANALYSIS_SYSTEM_PROMPT = `You are an expert at analyzing software development conversations and extracting valuable insights. Your task is to analyze an AI coding session (a conversation between a user and an AI coding assistant) and extract structured insights.
+export const SESSION_ANALYSIS_SYSTEM_PROMPT = `You are a senior staff engineer writing entries for a team's engineering knowledge base. You've just observed an AI-assisted coding session and your job is to extract the insights that would save another engineer time if they encountered a similar situation 6 months from now.
 
-You will identify:
-1. **Summary**: A high-level narrative of what was accomplished
-2. **Decisions**: Technical choices made, including reasoning and alternatives considered (max 3)
-3. **Learnings**: Technical discoveries, gotchas, problem-solving approaches, debugging strategies, or transferable knowledge (max 5)
+Your audience is a developer who has never seen this session but works on the same codebase. They need enough context to understand WHY a decision was made, WHAT specific gotcha was discovered, and WHEN this knowledge applies.
+
+You will extract:
+1. **Summary**: A narrative of what was accomplished and the outcome
+2. **Decisions**: Technical choices made — with full situation context, reasoning, rejected alternatives, trade-offs, and conditions for revisiting (max 3)
+3. **Learnings**: Technical discoveries, gotchas, debugging breakthroughs — with the observable symptom, root cause, and a transferable takeaway (max 5)
+4. **Session Character**: Classify the session into exactly one of these types based on its overall nature:
+   - deep_focus: Long, concentrated work on a specific problem or area (50+ messages, deep into one topic)
+   - bug_hunt: Debugging-driven — investigating errors, tracing issues, fixing bugs
+   - feature_build: Building new functionality — creating files, adding endpoints, wiring components
+   - exploration: Research-oriented — reading code, searching, understanding before acting
+   - refactor: Restructuring existing code — renaming, moving, reorganizing without new features
+   - learning: Knowledge-seeking — asking questions, understanding concepts, getting explanations
+   - quick_task: Short and focused — small fix, config change, or one-off task (<10 messages)
 
 Quality Standards:
 - Only include insights you would write in a team knowledge base for future reference
@@ -95,15 +106,12 @@ Quality Standards:
 - Rate your confidence in each insight's value (0-100). Only include insights you rate 70+.
 - It is better to return 0 insights in a category than to include generic or trivial ones
 - If a session is straightforward with no notable decisions or learnings, say so in the summary and leave other categories empty
-- The summary must mention the most important concrete artifact changed (file, endpoint, or test) if any
 
-Conciseness (CRITICAL — your response MUST fit within token limits):
-- Summary content: max 3 sentences
-- Decision/learning content: max 2 sentences each
-- Evidence: max 2 short quotes per insight
-- Alternatives: max 2 per decision
-- Keep all string values under 200 characters
-- Prefer brevity — omit filler words
+Length Guidance:
+- Fill every field in the schema. An empty "trade_offs" or "revisit_when" is worse than a longer response.
+- Total response: stay under 2000 tokens. If you must cut, drop lower-confidence insights rather than compressing high-confidence ones.
+- Evidence: 1-3 short quotes per insight, referencing turn labels.
+- Prefer precision over brevity — a specific 3-sentence insight beats a vague 1-sentence insight.
 
 DO NOT include insights like these (too generic/trivial):
 - "Used debugging techniques to fix an issue"
@@ -112,6 +120,35 @@ DO NOT include insights like these (too generic/trivial):
 - "Used React hooks for state management" (too generic without specifics)
 - "Fixed a bug in the code" (what bug? what was the root cause?)
 - Anything that restates the task without adding transferable knowledge
+
+Here are examples of EXCELLENT insights — this is the quality bar:
+
+EXCELLENT decision:
+{
+  "title": "Use better-sqlite3 instead of sql.js for local database",
+  "situation": "Needed a SQLite driver for a Node.js CLI that stores session data locally. Single-user, read-heavy from dashboard, occasional writes during sync.",
+  "choice": "better-sqlite3 — synchronous C++ binding with native SQLite access, no async overhead.",
+  "reasoning": "CLI runs locally with no concurrent users. Synchronous API eliminates callback complexity. WAL mode provides concurrent read access for the dashboard while CLI writes.",
+  "alternatives": [
+    {"option": "sql.js (WASM build)", "rejected_because": "3x slower for bulk inserts, entire DB in memory, no WAL support"},
+    {"option": "PostgreSQL via Docker", "rejected_because": "Violates local-first constraint — requires running a server process"}
+  ],
+  "trade_offs": "Requires native compilation (node-gyp) which can fail on some systems. No browser compatibility.",
+  "revisit_when": "If multi-device sync is added or users report node-gyp build failures.",
+  "confidence": 92,
+  "evidence": ["User#3: 'We need something that works without a server'", "Assistant#4: 'better-sqlite3 with WAL mode gives concurrent reads...'"]
+}
+
+EXCELLENT learning:
+{
+  "title": "Tailwind v4 requires @theme inline{} for CSS variable utilities",
+  "symptom": "After Tailwind v3→v4 upgrade, custom utilities like bg-primary stopped working. Classes present in HTML but no styles applied.",
+  "root_cause": "Tailwind v4 removed tailwind.config.js theme extension. CSS variables in :root are not automatically available as utilities — must be registered via @theme inline {} in the CSS file.",
+  "takeaway": "When migrating Tailwind v3→v4 with shadcn/ui: add @theme inline {} mapping CSS variables, add @custom-variant dark for class-based dark mode, replace tailwindcss-animate with tw-animate-css.",
+  "applies_when": "Any Tailwind v3→v4 migration using CSS variables for theming, especially with shadcn/ui.",
+  "confidence": 95,
+  "evidence": ["User#12: 'The colors are all gone after the upgrade'", "Assistant#13: 'Tailwind v4 requires explicit @theme inline registration...'"]
+}
 
 Respond with valid JSON only, wrapped in <json>...</json> tags. Do not include any other text.`;
 
@@ -133,28 +170,37 @@ ${formattedMessages}
 
 Extract insights in this JSON format:
 {
+  "session_character": "deep_focus | bug_hunt | feature_build | exploration | refactor | learning | quick_task",
   "summary": {
-    "title": "Brief title describing main accomplishment (max 60 chars)",
-    "content": "2-3 sentence narrative of what was accomplished",
-    "bullets": ["Key point 1", "Key point 2", "Key point 3"]
+    "title": "Brief title describing main accomplishment (max 80 chars)",
+    "content": "2-4 sentence narrative: what was the goal, what was done, what was the outcome. Mention the primary file or component changed.",
+    "outcome": "success | partial | abandoned | blocked",
+    "bullets": ["Each bullet names a specific artifact (file, function, endpoint) and what changed"]
   },
   "decisions": [
     {
-      "title": "The specific decision made (max 60 chars)",
-      "content": "Detailed explanation with concrete details",
-      "reasoning": "Why this choice was made over alternatives",
-      "alternatives": ["Alternative 1 considered", "Alternative 2 considered"],
+      "title": "The specific technical choice made (max 80 chars)",
+      "situation": "What problem or requirement led to this decision point",
+      "choice": "What was chosen and how it was implemented",
+      "reasoning": "Why this choice was made — the key factors that tipped the decision",
+      "alternatives": [
+        {"option": "Name of alternative", "rejected_because": "Why it was not chosen"}
+      ],
+      "trade_offs": "What downsides were accepted, what was given up",
+      "revisit_when": "Under what conditions this decision should be reconsidered (or 'N/A' if permanent)",
       "confidence": 85,
-      "evidence": ["User#4: ...", "Assistant#5: ..."]
+      "evidence": ["User#4: quoted text...", "Assistant#5: quoted text..."]
     }
   ],
   "learnings": [
     {
-      "title": "Specific thing learned (max 60 chars)",
-      "content": "Detailed explanation with concrete details",
-      "context": "When/where this applies and why it matters",
+      "title": "Specific technical discovery or gotcha (max 80 chars)",
+      "symptom": "What went wrong or was confusing — the observable behavior that triggered investigation",
+      "root_cause": "The underlying technical reason — why it happened",
+      "takeaway": "The transferable lesson — what to do or avoid in similar situations, useful outside this project",
+      "applies_when": "Conditions under which this knowledge is relevant (framework version, configuration, etc.)",
       "confidence": 80,
-      "evidence": ["User#7: ...", "Assistant#8: ..."]
+      "evidence": ["User#7: quoted text...", "Assistant#8: quoted text..."]
     }
   ]
 }
@@ -165,24 +211,35 @@ Evidence should reference the labeled turns in the conversation (e.g., "User#2",
 Respond with valid JSON only, wrapped in <json>...</json> tags. Do not include any other text.`;
 }
 
+const VALID_SESSION_CHARACTERS = new Set<string>([
+  'deep_focus', 'bug_hunt', 'feature_build', 'exploration', 'refactor', 'learning', 'quick_task',
+]);
+
 export interface AnalysisResponse {
+  session_character?: SessionCharacter;
   summary: {
     title: string;
     content: string;
+    outcome?: 'success' | 'partial' | 'abandoned' | 'blocked';
     bullets: string[];
   };
   decisions: Array<{
     title: string;
-    content: string;
+    situation?: string;
+    choice?: string;
     reasoning: string;
-    alternatives?: string[];
+    alternatives?: Array<{ option: string; rejected_because: string }>;
+    trade_offs?: string;
+    revisit_when?: string;
     confidence?: number;
     evidence?: string[];
   }>;
   learnings: Array<{
     title: string;
-    content: string;
-    context: string;
+    symptom?: string;
+    root_cause?: string;
+    takeaway?: string;
+    applies_when?: string;
     confidence?: number;
     evidence?: string[];
   }>;
@@ -256,35 +313,48 @@ export function parseAnalysisResponse(response: string): ParseResult<AnalysisRes
   parsed.decisions = parsed.decisions || [];
   parsed.learnings = parsed.learnings || [];
 
+  // Validate session_character — drop if not a recognized value
+  if (parsed.session_character && !VALID_SESSION_CHARACTERS.has(parsed.session_character)) {
+    parsed.session_character = undefined;
+  }
+
   return { success: true, data: parsed };
 }
 
 // --- Prompt Quality Analysis ---
 
-export const PROMPT_QUALITY_SYSTEM_PROMPT = `You are an expert at analyzing how effectively humans communicate with AI coding assistants. Your task is to review a conversation between a user and Claude Code, and evaluate the user's prompting efficiency.
+export const PROMPT_QUALITY_SYSTEM_PROMPT = `You are a prompt engineering coach helping developers communicate more effectively with AI coding assistants. You review conversations and identify specific moments where better prompting would have saved time.
 
 You will identify:
 1. **Wasted turns**: User messages that led to clarifications, corrections, or repeated instructions because the original prompt was unclear, missing context, or too vague.
-2. **Anti-patterns**: Recurring bad habits in the user's prompting style.
-3. **Efficiency score**: A 0-100 rating of how optimally the user communicated.
-4. **Actionable tips**: Specific improvements the user can make.
+2. **Anti-patterns**: Recurring bad habits in the user's prompting style, with specific fixes.
+3. **Session traits**: Higher-level behavioral patterns about how the session was structured and managed.
+4. **Efficiency score**: A 0-100 rating of how optimally the user communicated.
+5. **Actionable tips**: Specific improvements the user can make.
+
+Before evaluating, mentally walk through the conversation and identify:
+1. Each time the assistant asked for clarification that could have been avoided
+2. Each time the user corrected the assistant's interpretation
+3. Each time the user repeated an instruction they gave earlier
+4. Whether the session covers too many unrelated objectives (context drift / session bloat)
+5. Whether the user provided critical context or requirements late that should have been mentioned upfront
+6. Whether the user discussed the plan/approach before jumping into implementation, or dove straight into code
+These are your candidate findings. Only include them if they are genuinely actionable.
 
 Guidelines:
 - Focus on USER messages only — don't critique the assistant's responses
 - A "wasted turn" is when the user had to send a follow-up message to clarify, correct, or repeat something that could have been included in the original prompt
 - Only mark a wasted turn if the assistant explicitly asked for clarification or corrected a misunderstanding
-- Common anti-patterns: vague instructions, missing file paths, not providing error messages, incomplete requirements, repeated instructions, not specifying what "it" refers to
 - Be constructive, not judgmental — the goal is to help users improve
 - Consider the context: some clarification exchanges are normal and expected
 - A score of 100 means every user message was perfectly clear and complete
 - A score of 50 means about half the messages could have been more efficient
 
-Conciseness (CRITICAL — your response MUST fit within token limits):
-- Max 5 wasted turns, max 3 anti-patterns, max 5 tips
-- Keep all string values under 200 characters
-- suggestedRewrite: max 1 sentence
-- overallAssessment: max 3 sentences
-- Prefer brevity — omit filler words
+Length Guidance:
+- Max 5 wasted turns, max 3 anti-patterns, max 3 session traits, max 5 tips
+- suggestedRewrite must be a complete, usable prompt — not vague meta-advice
+- overallAssessment: 2-3 sentences
+- Total response: stay under 2000 tokens
 
 Respond with valid JSON only, wrapped in <json>...</json> tags. Do not include any other text.`;
 
@@ -310,15 +380,28 @@ Evaluate the user's prompting quality and respond with this JSON format:
   "wastedTurns": [
     {
       "messageIndex": 5,
-      "reason": "Missing context — didn't specify which file to modify",
-      "suggestedRewrite": "A better version of the user's original message that would have avoided the follow-up"
+      "originalMessage": "The user's original message (abbreviated if long)",
+      "whatWentWrong": "What information was missing or ambiguous that caused a follow-up",
+      "suggestedRewrite": "A concrete rewrite that includes the missing context — must be a complete, usable prompt",
+      "turnsWasted": 2
     }
   ],
   "antiPatterns": [
     {
       "name": "Vague Instructions",
+      "description": "Requests that lack specificity about what file, function, or behavior to change",
       "count": 3,
-      "examples": ["fix it", "make it work", "do the thing"]
+      "examples": ["User#2: 'fix it'", "User#5: 'make it work'"],
+      "fix": "Include the file path, function name, and expected vs actual behavior in the initial request"
+    }
+  ],
+  "sessionTraits": [
+    {
+      "trait": "context_drift | objective_bloat | late_context | no_planning | good_structure",
+      "severity": "high | medium | low",
+      "description": "What was observed and why it matters",
+      "evidence": "User#3 switched from auth to styling, then back to auth at User#12",
+      "suggestion": "Break into separate sessions: one for auth, one for styling"
     }
   ],
   "tips": [
@@ -326,6 +409,13 @@ Evaluate the user's prompting quality and respond with this JSON format:
     "Provide error messages verbatim when reporting bugs"
   ]
 }
+
+Session trait definitions:
+- **context_drift**: Session covers too many unrelated objectives, causing the AI to lose context and produce lower quality output
+- **objective_bloat**: Too many different tasks crammed into one session instead of focused, single-purpose sessions
+- **late_context**: Critical requirements, constraints, or context provided late in the conversation that should have been mentioned upfront — causing rework or wasted turns
+- **no_planning**: User jumped straight into implementation without discussing approach, requirements, or plan — leading to course corrections mid-session
+- **good_structure**: Session was well-structured with clear objectives, upfront context, and logical flow (only include this if truly exemplary)
 
 Rules:
 - messageIndex refers to the 0-based index of the USER message, as labeled in the conversation (e.g., User#0)
@@ -339,14 +429,26 @@ Respond with valid JSON only, wrapped in <json>...</json> tags. Do not include a
 
 export interface WastedTurn {
   messageIndex: number;
-  reason: string;
+  originalMessage?: string;
+  whatWentWrong?: string;
   suggestedRewrite: string;
+  turnsWasted?: number;
 }
 
 export interface AntiPattern {
   name: string;
+  description?: string;
   count: number;
   examples: string[];
+  fix?: string;
+}
+
+export interface SessionTrait {
+  trait: 'context_drift' | 'objective_bloat' | 'late_context' | 'no_planning' | 'good_structure';
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+  evidence?: string;
+  suggestion?: string;
 }
 
 export interface PromptQualityResponse {
@@ -355,6 +457,7 @@ export interface PromptQualityResponse {
   overallAssessment: string;
   wastedTurns: WastedTurn[];
   antiPatterns: AntiPattern[];
+  sessionTraits: SessionTrait[];
   tips: string[];
 }
 
@@ -401,6 +504,7 @@ export function parsePromptQualityResponse(response: string): ParseResult<Prompt
   parsed.overallAssessment = parsed.overallAssessment || '';
   parsed.wastedTurns = parsed.wastedTurns || [];
   parsed.antiPatterns = parsed.antiPatterns || [];
+  parsed.sessionTraits = parsed.sessionTraits || [];
   parsed.tips = parsed.tips || [];
 
   return { success: true, data: parsed };
