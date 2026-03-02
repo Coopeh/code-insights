@@ -89,6 +89,14 @@ You will extract:
 1. **Summary**: A narrative of what was accomplished and the outcome
 2. **Decisions**: Technical choices made — with full situation context, reasoning, rejected alternatives, trade-offs, and conditions for revisiting (max 3)
 3. **Learnings**: Technical discoveries, gotchas, debugging breakthroughs — with the observable symptom, root cause, and a transferable takeaway (max 5)
+4. **Session Character**: Classify the session into exactly one of these types based on its overall nature:
+   - deep_focus: Long, concentrated work on a specific problem or area (50+ messages, deep into one topic)
+   - bug_hunt: Debugging-driven — investigating errors, tracing issues, fixing bugs
+   - feature_build: Building new functionality — creating files, adding endpoints, wiring components
+   - exploration: Research-oriented — reading code, searching, understanding before acting
+   - refactor: Restructuring existing code — renaming, moving, reorganizing without new features
+   - learning: Knowledge-seeking — asking questions, understanding concepts, getting explanations
+   - quick_task: Short and focused — small fix, config change, or one-off task (<10 messages)
 
 Quality Standards:
 - Only include insights you would write in a team knowledge base for future reference
@@ -161,6 +169,7 @@ ${formattedMessages}
 
 Extract insights in this JSON format:
 {
+  "session_character": "deep_focus | bug_hunt | feature_build | exploration | refactor | learning | quick_task",
   "summary": {
     "title": "Brief title describing main accomplishment (max 80 chars)",
     "content": "2-4 sentence narrative: what was the goal, what was done, what was the outcome. Mention the primary file or component changed.",
@@ -201,7 +210,14 @@ Evidence should reference the labeled turns in the conversation (e.g., "User#2",
 Respond with valid JSON only, wrapped in <json>...</json> tags. Do not include any other text.`;
 }
 
+export type SessionCharacterType = 'deep_focus' | 'bug_hunt' | 'feature_build' | 'exploration' | 'refactor' | 'learning' | 'quick_task';
+
+const VALID_SESSION_CHARACTERS = new Set<string>([
+  'deep_focus', 'bug_hunt', 'feature_build', 'exploration', 'refactor', 'learning', 'quick_task',
+]);
+
 export interface AnalysisResponse {
+  session_character?: SessionCharacterType;
   summary: {
     title: string;
     content: string;
@@ -297,6 +313,11 @@ export function parseAnalysisResponse(response: string): ParseResult<AnalysisRes
 
   parsed.decisions = parsed.decisions || [];
   parsed.learnings = parsed.learnings || [];
+
+  // Validate session_character — drop if not a recognized value
+  if (parsed.session_character && !VALID_SESSION_CHARACTERS.has(parsed.session_character)) {
+    parsed.session_character = undefined;
+  }
 
   return { success: true, data: parsed };
 }

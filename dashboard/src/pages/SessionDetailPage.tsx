@@ -43,6 +43,7 @@ import {
   FileText,
   BookOpen,
   GitCommit,
+  GitPullRequest,
   BarChart2,
   ChevronRight,
   Cpu,
@@ -78,6 +79,19 @@ export default function SessionDetailPage() {
   const hasMore = messagesQuery.hasNextPage ?? false;
 
   const allInsightIds = useMemo(() => new Set(insights.map((i) => i.id)), [insights]);
+
+  // Extract PR links from message content
+  const prLinks = useMemo(() => {
+    const linkSet = new Set<string>();
+    const prUrlPattern = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    for (const msg of messages) {
+      const matches = msg.content.match(prUrlPattern);
+      if (matches) {
+        for (const match of matches) linkSet.add(match);
+      }
+    }
+    return [...linkSet];
+  }, [messages]);
 
   if (loading) {
     return (
@@ -394,6 +408,30 @@ export default function SessionDetailPage() {
                 ) : (
                   <p className="text-sm text-muted-foreground">{summaryText}</p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* PR Links */}
+          {prLinks.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <GitPullRequest className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-medium">Pull Requests</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {prLinks.map((url) => {
+                  const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)\/pull\/(\d+)/);
+                  const label = match ? `${match[2]}#${match[3]}` : url;
+                  return (
+                    <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+                      <Badge variant="outline" className="text-xs hover:bg-accent cursor-pointer gap-1">
+                        <GitPullRequest className="h-3 w-3" />
+                        {label}
+                      </Badge>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}

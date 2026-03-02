@@ -206,6 +206,13 @@ export async function analyzeSession(
       excludeIds: insights.map(i => i.id),
     });
 
+    // Update session character if LLM classified it
+    if (analysisResponse.session_character) {
+      const db = getDb();
+      db.prepare('UPDATE sessions SET session_character = ? WHERE id = ?')
+        .run(analysisResponse.session_character, session.id);
+    }
+
     return {
       success: true,
       insights,
@@ -532,6 +539,7 @@ function mergeAnalysisResponses(responses: AnalysisResponse[]): AnalysisResponse
   if (responses.length === 1) return responses[0];
 
   const merged: AnalysisResponse = {
+    session_character: responses.find(r => r.session_character)?.session_character,
     summary: responses[0].summary,
     decisions: [],
     learnings: [],
