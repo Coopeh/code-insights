@@ -80,45 +80,53 @@ app.get('/session/stream', async (c) => {
   `).all(sessionId) as SQLiteMessageRow[];
 
   return streamSSE(c, async (stream) => {
-    const abortSignal = c.req.raw.signal;
+    try {
+      const abortSignal = c.req.raw.signal;
 
-    await stream.writeSSE({
-      event: 'progress',
-      data: JSON.stringify({ phase: 'loading_messages', message: 'Loading messages...' }),
-    });
-
-    const result = await analyzeSession(session, messages, {
-      signal: abortSignal,
-      onProgress: (progress) => {
-        const message = progress.phase === 'saving'
-          ? 'Saving insights...'
-          : progress.currentChunk && progress.totalChunks
-            ? `Analyzing... (${progress.currentChunk} of ${progress.totalChunks})`
-            : 'Analyzing...';
-        void stream.writeSSE({
-          event: 'progress',
-          data: JSON.stringify({ ...progress, message }),
-        });
-      },
-    });
-
-    if (result.success) {
-      trackEvent('analysis', true, 'session');
-      const summaryInsight = result.insights.find(i => i.type === 'summary');
       await stream.writeSSE({
-        event: 'complete',
-        data: JSON.stringify({
-          success: true,
-          insightCount: result.insights.length,
-          tokenUsage: result.usage,
-          suggestedTitle: summaryInsight?.title ?? null,
-        }),
+        event: 'progress',
+        data: JSON.stringify({ phase: 'loading_messages', message: 'Loading messages...' }),
       });
-    } else {
+
+      const result = await analyzeSession(session, messages, {
+        signal: abortSignal,
+        onProgress: (progress) => {
+          const message = progress.phase === 'saving'
+            ? 'Saving insights...'
+            : progress.currentChunk && progress.totalChunks
+              ? `Analyzing... (${progress.currentChunk} of ${progress.totalChunks})`
+              : 'Analyzing...';
+          void stream.writeSSE({
+            event: 'progress',
+            data: JSON.stringify({ ...progress, message }),
+          }).catch(() => {});
+        },
+      });
+
+      if (result.success) {
+        trackEvent('analysis', true, 'session');
+        const summaryInsight = result.insights.find(i => i.type === 'summary');
+        await stream.writeSSE({
+          event: 'complete',
+          data: JSON.stringify({
+            success: true,
+            insightCount: result.insights.length,
+            tokenUsage: result.usage,
+            suggestedTitle: summaryInsight?.title ?? null,
+          }),
+        });
+      } else {
+        await stream.writeSSE({
+          event: 'error',
+          data: JSON.stringify({ error: result.error ?? 'Analysis failed' }),
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       await stream.writeSSE({
         event: 'error',
-        data: JSON.stringify({ error: result.error ?? 'Analysis failed' }),
-      });
+        data: JSON.stringify({ error: message }),
+      }).catch(() => {});
     }
   });
 });
@@ -194,42 +202,50 @@ app.get('/prompt-quality/stream', async (c) => {
   `).all(sessionId) as SQLiteMessageRow[];
 
   return streamSSE(c, async (stream) => {
-    const abortSignal = c.req.raw.signal;
+    try {
+      const abortSignal = c.req.raw.signal;
 
-    await stream.writeSSE({
-      event: 'progress',
-      data: JSON.stringify({ phase: 'loading_messages', message: 'Loading messages...' }),
-    });
-
-    const result = await analyzePromptQuality(session, messages, {
-      signal: abortSignal,
-      onProgress: (progress) => {
-        const message = progress.phase === 'saving'
-          ? 'Saving insights...'
-          : 'Analyzing prompt quality...';
-        void stream.writeSSE({
-          event: 'progress',
-          data: JSON.stringify({ ...progress, message }),
-        });
-      },
-    });
-
-    if (result.success) {
-      trackEvent('analysis', true, 'prompt-quality');
       await stream.writeSSE({
-        event: 'complete',
-        data: JSON.stringify({
-          success: true,
-          insightCount: result.insights.length,
-          tokenUsage: result.usage,
-          suggestedTitle: null,
-        }),
+        event: 'progress',
+        data: JSON.stringify({ phase: 'loading_messages', message: 'Loading messages...' }),
       });
-    } else {
+
+      const result = await analyzePromptQuality(session, messages, {
+        signal: abortSignal,
+        onProgress: (progress) => {
+          const message = progress.phase === 'saving'
+            ? 'Saving insights...'
+            : 'Analyzing prompt quality...';
+          void stream.writeSSE({
+            event: 'progress',
+            data: JSON.stringify({ ...progress, message }),
+          }).catch(() => {});
+        },
+      });
+
+      if (result.success) {
+        trackEvent('analysis', true, 'prompt-quality');
+        await stream.writeSSE({
+          event: 'complete',
+          data: JSON.stringify({
+            success: true,
+            insightCount: result.insights.length,
+            tokenUsage: result.usage,
+            suggestedTitle: null,
+          }),
+        });
+      } else {
+        await stream.writeSSE({
+          event: 'error',
+          data: JSON.stringify({ error: result.error ?? 'Prompt quality analysis failed' }),
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       await stream.writeSSE({
         event: 'error',
-        data: JSON.stringify({ error: result.error ?? 'Prompt quality analysis failed' }),
-      });
+        data: JSON.stringify({ error: message }),
+      }).catch(() => {});
     }
   });
 });

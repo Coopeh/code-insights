@@ -141,7 +141,9 @@ export function AnalyzeButton({ session, hasExistingInsights, insightCount }: An
 
       {isCompleteForThisSession && analysisState.result?.success && (
         <div className="text-sm text-green-600">
-          Analysis complete! {analysisState.result.insightCount ?? ''} insight{(analysisState.result.insightCount ?? 0) !== 1 ? 's' : ''} saved.
+          {analysisState.result.insightCount != null
+            ? `Analysis complete! ${analysisState.result.insightCount} insight${analysisState.result.insightCount !== 1 ? 's' : ''} saved.`
+            : 'Analysis complete! Insights saved.'}
         </div>
       )}
 

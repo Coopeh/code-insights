@@ -193,63 +193,81 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         for await (const sseEvent of parseSSEStream(response.body)) {
           if (controller.signal.aborted) return;
 
-          if (sseEvent.event === 'progress') {
-            const progress = JSON.parse(sseEvent.data) as {
-              phase: 'loading_messages' | 'analyzing' | 'saving';
-              currentChunk?: number;
-              totalChunks?: number;
-              message: string;
-            };
-            const toastMsg = buildToastMessage(
-              sessionTitle,
-              progress.phase,
-              progress.currentChunk,
-              progress.totalChunks
-            );
-            setState((prev) => ({
-              ...prev,
-              progress: { ...progress, message: progress.message },
-            }));
-            toast.loading(toastMsg, { id: ANALYSIS_TOAST_ID });
-          } else if (sseEvent.event === 'complete') {
-            const result = JSON.parse(sseEvent.data) as {
-              success: boolean;
-              insightCount: number;
-              tokenUsage?: { inputTokens: number; outputTokens: number };
-              suggestedTitle?: string | null;
-            };
+          try {
+            if (sseEvent.event === 'progress') {
+              const progress = JSON.parse(sseEvent.data) as {
+                phase: 'loading_messages' | 'analyzing' | 'saving';
+                currentChunk?: number;
+                totalChunks?: number;
+                message: string;
+              };
+              const toastMsg = buildToastMessage(
+                sessionTitle,
+                progress.phase,
+                progress.currentChunk,
+                progress.totalChunks
+              );
+              setState((prev) => ({ ...prev, progress }));
+              toast.loading(toastMsg, { id: ANALYSIS_TOAST_ID });
+            } else if (sseEvent.event === 'complete') {
+              const result = JSON.parse(sseEvent.data) as {
+                success: boolean;
+                insightCount: number;
+                tokenUsage?: { inputTokens: number; outputTokens: number };
+                suggestedTitle?: string | null;
+              };
 
-            queryClient.invalidateQueries({ queryKey: ['insights'] });
-            queryClient.invalidateQueries({ queryKey: ['session', session.id] });
+              queryClient.invalidateQueries({ queryKey: ['insights'] });
+              queryClient.invalidateQueries({ queryKey: ['session', session.id] });
 
-            const successMsg = `${result.insightCount} insight${result.insightCount !== 1 ? 's' : ''} saved for "${sessionTitle}"`;
+              const successMsg = `${result.insightCount} insight${result.insightCount !== 1 ? 's' : ''} saved for "${sessionTitle}"`;
 
-            setState({
-              status: 'complete',
-              sessionId: session.id,
-              sessionTitle,
-              type,
-              progress: null,
-              result: {
-                success: true,
-                insightCount: result.insightCount,
-                tokenUsage: result.tokenUsage,
-                suggestedTitle: result.suggestedTitle,
-              },
-            });
-            toast.success(successMsg, { id: ANALYSIS_TOAST_ID });
-          } else if (sseEvent.event === 'error') {
-            const errorData = JSON.parse(sseEvent.data) as { error: string };
-            setState({
-              status: 'error',
-              sessionId: session.id,
-              sessionTitle,
-              type,
-              progress: null,
-              result: { success: false, error: errorData.error },
-            });
-            toast.error(`Analysis failed: ${errorData.error}`, { id: ANALYSIS_TOAST_ID });
+              setState({
+                status: 'complete',
+                sessionId: session.id,
+                sessionTitle,
+                type,
+                progress: null,
+                result: {
+                  success: true,
+                  insightCount: result.insightCount,
+                  tokenUsage: result.tokenUsage,
+                  suggestedTitle: result.suggestedTitle,
+                },
+              });
+              toast.success(successMsg, { id: ANALYSIS_TOAST_ID });
+            } else if (sseEvent.event === 'error') {
+              const errorData = JSON.parse(sseEvent.data) as { error: string };
+              setState({
+                status: 'error',
+                sessionId: session.id,
+                sessionTitle,
+                type,
+                progress: null,
+                result: { success: false, error: errorData.error },
+              });
+              toast.error(`Analysis failed: ${errorData.error}`, { id: ANALYSIS_TOAST_ID });
+            }
+          } catch {
+            // Malformed SSE event data — skip and continue
+            continue;
           }
+        }
+
+        // Stream ended — if no terminal event was received, treat as unexpected close
+        if (!controller.signal.aborted) {
+          setState((prev) => {
+            if (prev.status === 'analyzing') {
+              toast.error('Analysis connection closed unexpectedly', { id: ANALYSIS_TOAST_ID });
+              return {
+                ...prev,
+                status: 'error',
+                progress: null,
+                result: { success: false, error: 'Connection closed unexpectedly' },
+              };
+            }
+            return prev;
+          });
         }
       } catch (error) {
         if (controller.signal.aborted) {
