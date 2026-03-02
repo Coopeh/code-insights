@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "646dd94334c9",
+  "session_id": "dee35c9d-424d-46ac-9dca-e8f56ad2cac3",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-02T02:38:09.127977Z",
+  "branch": "fix/codex-cli-input-text-parsing",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "cli/src/providers/codex.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b9b4178b6fa3",
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 33307,
+    "cache_read_tokens": 238286,
+    "output_tokens": 1709,
+    "api_call_count": 6
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-02T02:38:09.080293Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
