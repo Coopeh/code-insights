@@ -141,6 +141,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-1">
             <Skeleton className="h-4 w-16" />
             <div className="flex gap-1">
+              <Skeleton className="h-7 w-8 rounded" />
               <Skeleton className="h-7 w-10 rounded" />
               <Skeleton className="h-7 w-10 rounded" />
               <Skeleton className="h-7 w-8 rounded" />
