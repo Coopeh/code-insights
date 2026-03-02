@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "dc2d3772f669",
+  "session_id": "437a9219-1f36-4ca1-971f-9c587f30b0ac",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-02T07:56:35.280754Z",
+  "branch": "master",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/plans/2026-03-02-posthog-telemetry-migration-design.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ab493384f4e8",
+  "token_usage": {
+    "input_tokens": 59,
+    "cache_creation_tokens": 189199,
+    "cache_read_tokens": 2819568,
+    "output_tokens": 14421,
+    "api_call_count": 38
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-02T07:56:35.176951Z",
+    "agent_lines": 263,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 263,
+    "agent_percentage": 100
+  }
+}
