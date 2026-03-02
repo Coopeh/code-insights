@@ -6,6 +6,10 @@ package-lock.json
 # Build outputs
 dist/
 
+# npm publish artifacts (copied by prepublishOnly, cleaned by postpublish)
+cli/dashboard-dist/
+cli/server-dist/
+
 # Environment and config files
 .env
 .env.*
