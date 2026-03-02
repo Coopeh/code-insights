@@ -65,3 +65,18 @@ yes, run it for a review with @"technical-architect (agent)" as well before fina
 
 i am good. go ahead, follow full ceremony for development
 
+### Prompt 12
+
+# /start-feature — Auto-Setup Feature Development Team
+
+**Feature**: Migrate telemetry from Supabase Edge Function to PostHog. Design doc at docs/plans/2026-03-02-posthog-telemetry-migration-design.md
+
+You are setting up a hybrid agent team for feature development. The PM agent leads the team and owns the ceremony. Your job is minimal setup, then hand control to PM.
+
+---
+
+## Step 1: Create Git Worktree
+
+Slugify the feature description into a branch name:
+- Take `Migrate telemetry from Supabas...
+
