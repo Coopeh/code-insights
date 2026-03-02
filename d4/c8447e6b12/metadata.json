@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "d4c8447e6b12",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "docs/source-tool-format-analysis.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d4/c8447e6b12/0/metadata.json",
+      "transcript": "/d4/c8447e6b12/0/full.jsonl",
+      "context": "/d4/c8447e6b12/0/context.md",
+      "content_hash": "/d4/c8447e6b12/0/content_hash.txt",
+      "prompt": "/d4/c8447e6b12/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 20977,
+    "cache_creation_tokens": 434295,
+    "cache_read_tokens": 10497318,
+    "output_tokens": 61421,
+    "api_call_count": 94
+  }
+}
