@@ -20,6 +20,7 @@ import {
   type SQLiteMessageRow,
   type AnalysisResponse,
   type PromptQualityResponse,
+  type ParseError,
 } from './prompts.js';
 
 // Re-export SQLiteMessageRow so routes can import it from analysis.ts directly
@@ -44,11 +45,16 @@ export interface AnalysisResult {
   success: boolean;
   insights: InsightRow[];
   error?: string;
+  error_type?: string;
+  response_length?: number;
   usage?: {
     inputTokens: number;
     outputTokens: number;
   };
 }
+
+// Re-export ParseError so routes can import it from analysis.ts
+export type { ParseError };
 
 // Shape of a saved insight row (matches the SQLite schema)
 export interface InsightRow {
@@ -141,7 +147,7 @@ export async function analyzeSession(
         }
 
         const parsed = parseAnalysisResponse(response.content);
-        if (parsed) chunkResponses.push(parsed);
+        if (parsed.success) chunkResponses.push(parsed.data);
       }
 
       analysisResponse = mergeAnalysisResponses(chunkResponses);
@@ -164,15 +170,17 @@ export async function analyzeSession(
       }
 
       const parsed = parseAnalysisResponse(response.content);
-      if (!parsed) {
+      if (!parsed.success) {
         return {
           success: false,
           insights: [],
           error: 'Failed to parse LLM response. Please try again.',
+          error_type: parsed.error.error_type,
+          response_length: parsed.error.response_length,
         };
       }
 
-      analysisResponse = parsed;
+      analysisResponse = parsed.data;
     }
 
     options?.onProgress?.({ phase: 'saving' });
@@ -193,12 +201,13 @@ export async function analyzeSession(
     };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return { success: false, insights: [], error: 'Analysis cancelled' };
+      return { success: false, insights: [], error: 'Analysis cancelled', error_type: 'abort' };
     }
     return {
       success: false,
       insights: [],
       error: error instanceof Error ? error.message : 'Analysis failed',
+      error_type: 'api_error',
     };
   }
 }
@@ -260,16 +269,18 @@ export async function analyzePromptQuality(
     ], { signal: options?.signal });
 
     const parsed = parsePromptQualityResponse(response.content);
-    if (!parsed) {
+    if (!parsed.success) {
       return {
         success: false,
         insights: [],
         error: 'Failed to parse prompt quality analysis. Please try again.',
+        error_type: parsed.error.error_type,
+        response_length: parsed.error.response_length,
       };
     }
 
     options?.onProgress?.({ phase: 'saving' });
-    const insight = convertPromptQualityToInsightRow(parsed, session);
+    const insight = convertPromptQualityToInsightRow(parsed.data, session);
 
     // Save new insight, then delete old prompt_quality insights
     saveInsightsToDb([insight]);
@@ -288,12 +299,13 @@ export async function analyzePromptQuality(
     };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return { success: false, insights: [], error: 'Analysis cancelled' };
+      return { success: false, insights: [], error: 'Analysis cancelled', error_type: 'abort' };
     }
     return {
       success: false,
       insights: [],
       error: error instanceof Error ? error.message : 'Prompt quality analysis failed',
+      error_type: 'api_error',
     };
   }
 }
