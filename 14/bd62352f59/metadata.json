@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "14bd62352f59",
+  "strategy": "manual-commit",
+  "branch": "feature/richer-analysis-prompts",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "dashboard/src/components/insights/InsightListItem.tsx",
+    "dashboard/src/components/insights/PromptQualityCard.tsx",
+    "dashboard/src/pages/SessionDetailPage.tsx",
+    "server/src/llm/analysis.ts",
+    "server/src/llm/prompts.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/14/bd62352f59/0/metadata.json",
+      "transcript": "/14/bd62352f59/0/full.jsonl",
+      "context": "/14/bd62352f59/0/context.md",
+      "content_hash": "/14/bd62352f59/0/content_hash.txt",
+      "prompt": "/14/bd62352f59/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 484,
+    "cache_creation_tokens": 377760,
+    "cache_read_tokens": 28983428,
+    "output_tokens": 93056,
+    "api_call_count": 249
+  }
+}
