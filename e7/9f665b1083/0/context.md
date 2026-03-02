@@ -78,3 +78,14 @@ Determine the PR sco...
 
 this is what posthog shows.. the stacktrace is missing as well
 
+### Prompt 12
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me trace through the conversation chronologically:
+
+1. **Initial request**: User reports PostHog is not capturing errors/exceptions properly. They show a log with a JSON parse error from the analysis pipeline that didn't generate anything on PostHog.
+
+2. **Investigation**: I explored the PostHog integration across the codebase -...
+
