@@ -11,6 +11,11 @@ import type {
 // ---------------------------------------------------------------------------
 // Tool name sets — provider-agnostic classification
 // Each provider uses different tool names for the same semantic operation.
+//
+// NOTE: Bash/shell execution tools (Bash, run_in_terminal, copilot_runInTerminal,
+// exec_command, etc.) are intentionally excluded from both sets. Shell commands
+// can be either reads or writes and cannot be reliably classified without
+// parsing the command string, so we leave them unclassified.
 // ---------------------------------------------------------------------------
 
 // Tools that modify or create file content
@@ -18,7 +23,8 @@ const EDIT_TOOLS = new Set([
   'Edit', 'Write',                                    // Claude Code
   'replace_string_in_file', 'copilot_replaceString',  // Copilot VS Code
   'create_file', 'copilot_createFile',                // Copilot VS Code
-  'edit', 'write_file', 'patch',                      // Codex CLI / generic
+  'apply_patch',                                      // Codex CLI (primary edit tool)
+  'edit', 'write_file', 'patch',                      // generic fallbacks
 ]);
 
 // Tools that read, search, or browse file content

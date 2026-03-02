@@ -227,7 +227,8 @@ function parseCopilotSession(filePath: string): ParsedSession | null {
       const eventType = event.type;
       const data = (event.data || event) as Record<string, unknown>;
 
-      // Also check data-level timestamp as fallback (some events nest it inside data)
+      // Also check data-level timestamp — takes precedence over root-level if present,
+      // since data fields are more specific to the event than the envelope.
       const dataTs = parseTimestamp(data);
       if (dataTs) {
         lastTimestamp = dataTs;
