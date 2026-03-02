@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "220b731465ad",
+  "strategy": "manual-commit",
+  "branch": "feature/richer-analysis-prompts",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "server/src/llm/analysis.ts",
+    "server/src/llm/prompts.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/22/0b731465ad/0/metadata.json",
+      "transcript": "/22/0b731465ad/0/full.jsonl",
+      "context": "/22/0b731465ad/0/context.md",
+      "content_hash": "/22/0b731465ad/0/content_hash.txt",
+      "prompt": "/22/0b731465ad/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 369,
+    "cache_creation_tokens": 240132,
+    "cache_read_tokens": 15989981,
+    "output_tokens": 60427,
+    "api_call_count": 148
+  }
+}
