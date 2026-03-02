@@ -460,7 +460,7 @@ function extractUserContent(payload: Record<string, unknown>): string | null {
   if (typeof payload.content === 'string') return payload.content;
   if (Array.isArray(payload.content)) {
     return (payload.content as Array<Record<string, string>>)
-      .filter(c => c.type === 'text')
+      .filter(c => c.type === 'text' || c.type === 'input_text')
       .map(c => c.text)
       .join('\n');
   }
