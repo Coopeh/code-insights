@@ -119,9 +119,10 @@ function parseDateGroupLabel(label: string, now: Date): Date {
   const commaIdx = label.indexOf(', ');
   if (commaIdx === -1) return new Date(0);
   const datePart = label.slice(commaIdx + 2);
-  // Try "MMM d, yyyy" first (explicit year), then "MMM d" (current year)
+  // Try "MMM d, yyyy" first (cross-year labels)
   const withYear = parse(datePart, 'MMM d, yyyy', now);
   if (!isNaN(withYear.getTime())) return withYear;
+  // Fall back to "MMM d" (current year)
   const currentYear = parse(datePart, 'MMM d', now);
   if (!isNaN(currentYear.getTime())) return currentYear;
   return new Date(0);
