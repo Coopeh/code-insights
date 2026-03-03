@@ -10,7 +10,8 @@ import {
 } from '@/lib/utils';
 import { SESSION_CHARACTER_COLORS, SESSION_CHARACTER_LABELS, SOURCE_TOOL_COLORS, OUTCOME_DOT } from '@/lib/constants/colors';
 import { parseJsonField } from '@/lib/types';
-import type { InsightMetadata } from '@/lib/types';
+import type { Insight, InsightMetadata } from '@/lib/types';
+import { LearningContent, DecisionContent } from '@/components/insights/insight-metadata';
 import { Badge } from '@/components/ui/badge';
 import { ErrorCard } from '@/components/ErrorCard';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { InsightCard } from '@/components/insights/InsightCard';
 import { PromptQualityCard } from '@/components/insights/PromptQualityCard';
 import { AnalyzeDropdown } from '@/components/analysis/AnalyzeDropdown';
 import { AnalyzeButton } from '@/components/analysis/AnalyzeButton';
@@ -48,6 +48,64 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+/** Per-item collapsible for learnings and decisions. Shows a 1-2 line preview
+ *  with an expand toggle to reveal full structured metadata. */
+function CollapsibleInsightItem({ insight }: { insight: Insight }) {
+  const [expanded, setExpanded] = useState(false);
+  const metadata = parseJsonField<InsightMetadata>(insight.metadata, {});
+
+  // Build the preview text: use title if available, otherwise first ~120 chars of content
+  const previewText = insight.title || insight.content.slice(0, 120);
+
+  // Hint labels for the expandable sections
+  const hintLabel =
+    insight.type === 'decision'
+      ? 'Situation, Choice, Rationale...'
+      : 'What, Why, Takeaway...';
+
+  // Check if there is structured metadata worth expanding
+  const hasStructured =
+    insight.type === 'decision'
+      ? !!(metadata.situation || metadata.choice || metadata.reasoning)
+      : !!(metadata.symptom || metadata.root_cause || metadata.takeaway);
+
+  return (
+    <div className="rounded-md border px-3 py-2.5">
+      <button
+        className="flex items-start gap-2 w-full text-left group"
+        onClick={() => hasStructured && setExpanded(!expanded)}
+        aria-expanded={expanded}
+        disabled={!hasStructured}
+      >
+        {hasStructured ? (
+          expanded ? (
+            <ChevronDown className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+          )
+        ) : (
+          <span className="w-4 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium line-clamp-2">{previewText}</p>
+          {!expanded && hasStructured && (
+            <p className="text-xs text-muted-foreground/60 mt-0.5">{hintLabel}</p>
+          )}
+        </div>
+      </button>
+      {expanded && (
+        <div className="ml-6 mt-2 pt-2 border-t">
+          {insight.type === 'decision' ? (
+            <DecisionContent metadata={metadata} />
+          ) : (
+            <LearningContent metadata={metadata} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface SessionDetailPanelProps {
   sessionId: string;
 }
@@ -62,8 +120,6 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
   const [searchHighlightId, setSearchHighlightId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingAllMessages, setLoadingAllMessages] = useState(false);
-  const [learningsOpen, setLearningsOpen] = useState(false);
-  const [decisionsOpen, setDecisionsOpen] = useState(false);
   const { state: analysisState } = useAnalysis();
 
   useEffect(() => {
@@ -92,8 +148,6 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
     }
     setLoadingAllMessages(false);
   }, [messagesQuery, loadingAllMessages]);
-
-  const allInsightIds = useMemo(() => new Set(insights.map((i) => i.id)), [insights]);
 
   const prLinks = useMemo(() => {
     const linkSet = new Set<string>();
@@ -494,32 +548,18 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
                 if (learningInsights.length === 0) return null;
                 return (
                   <div>
-                    <button
-                      className="flex items-center gap-2 w-full text-left hover:bg-muted/30 rounded -mx-1 px-1 py-0.5 transition-colors"
-                      onClick={() => setLearningsOpen(!learningsOpen)}
-                      aria-expanded={learningsOpen}
-                    >
-                      {learningsOpen
-                        ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                        : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+                    <div className="flex items-center gap-2 mb-3">
                       <BookOpen className="h-4 w-4 text-muted-foreground" />
                       <h3 className="text-sm font-medium">Learnings</h3>
                       <Badge variant="secondary" className="text-xs">
                         {learningInsights.length}
                       </Badge>
-                    </button>
-                    {learningsOpen && (
-                      <div className="space-y-3 mt-3">
-                        {learningInsights.map((insight) => (
-                          <InsightCard
-                            key={insight.id}
-                            insight={insight}
-                            showProject={false}
-                            allInsightIds={allInsightIds}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    </div>
+                    <div className="space-y-2">
+                      {learningInsights.map((insight) => (
+                        <CollapsibleInsightItem key={insight.id} insight={insight} />
+                      ))}
+                    </div>
                   </div>
                 );
               })()}
@@ -529,32 +569,18 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
                 if (decisionInsights.length === 0) return null;
                 return (
                   <div>
-                    <button
-                      className="flex items-center gap-2 w-full text-left hover:bg-muted/30 rounded -mx-1 px-1 py-0.5 transition-colors"
-                      onClick={() => setDecisionsOpen(!decisionsOpen)}
-                      aria-expanded={decisionsOpen}
-                    >
-                      {decisionsOpen
-                        ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                        : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+                    <div className="flex items-center gap-2 mb-3">
                       <GitCommit className="h-4 w-4 text-muted-foreground" />
                       <h3 className="text-sm font-medium">Decisions</h3>
                       <Badge variant="secondary" className="text-xs">
                         {decisionInsights.length}
                       </Badge>
-                    </button>
-                    {decisionsOpen && (
-                      <div className="space-y-3 mt-3">
-                        {decisionInsights.map((insight) => (
-                          <InsightCard
-                            key={insight.id}
-                            insight={insight}
-                            showProject={false}
-                            allInsightIds={allInsightIds}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    </div>
+                    <div className="space-y-2">
+                      {decisionInsights.map((insight) => (
+                        <CollapsibleInsightItem key={insight.id} insight={insight} />
+                      ))}
+                    </div>
                   </div>
                 );
               })()}
