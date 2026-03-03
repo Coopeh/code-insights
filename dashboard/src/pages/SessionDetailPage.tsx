@@ -36,8 +36,6 @@ import { SessionSidebar } from '@/components/sessions/SessionSidebar';
 import { ChatConversation } from '@/components/chat/conversation/ChatConversation';
 import { ConversationSearch } from '@/components/chat/conversation/ConversationSearch';
 import {
-  MessageSquare,
-  Wrench,
   Clock,
   Pencil,
   Sparkles,
@@ -305,17 +303,9 @@ export default function SessionDetailPage() {
           </div>
         </div>
 
-        {/* Row 2: Metadata */}
+        {/* Row 2: Metadata — counts live in sidebar, header keeps identification context */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-          <MessageSquare className="h-3.5 w-3.5" />
-          <span>{session.message_count} messages</span>
-          <span>·</span>
-          <Wrench className="h-3.5 w-3.5" />
-          <span>{session.tool_call_count} tools</span>
-          <span>·</span>
           <Clock className="h-3.5 w-3.5" />
-          <span>{formatDuration(startedAt, endedAt)}</span>
-          <span>·</span>
           <span>{formatDateRange(startedAt, endedAt)}</span>
           <span>·</span>
           {session.git_remote_url ? (

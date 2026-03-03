@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { OutcomeBadge } from '@/components/insights/InsightCard';
 import { SESSION_CHARACTER_LABELS, SOURCE_TOOL_COLORS } from '@/lib/constants/colors';
 import { INSIGHT_TYPE_LABELS } from '@/lib/constants/colors';
-import { formatDuration, formatModelName } from '@/lib/utils';
+import { formatDuration, formatModelName, formatTokenCount } from '@/lib/utils';
 import { parseJsonField } from '@/lib/types';
 import type { Session, Insight, InsightMetadata, InsightType } from '@/lib/types';
 
@@ -61,7 +61,28 @@ export function SessionSidebar({ session, insights }: SessionSidebarProps) {
 
         {session.total_input_tokens != null && (
           <SidebarField label="Tokens">
-            {session.total_input_tokens.toLocaleString()} in / {session.total_output_tokens?.toLocaleString()} out
+            <div className="space-y-0.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Input</span>
+                <span>{formatTokenCount(session.total_input_tokens)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Output</span>
+                <span>{formatTokenCount(session.total_output_tokens ?? 0)}</span>
+              </div>
+              {(session.cache_read_tokens ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cache read</span>
+                  <span>{formatTokenCount(session.cache_read_tokens!)}</span>
+                </div>
+              )}
+              {(session.cache_creation_tokens ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cache creation</span>
+                  <span>{formatTokenCount(session.cache_creation_tokens!)}</span>
+                </div>
+              )}
+            </div>
           </SidebarField>
         )}
 
