@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router';
 import { useSession, useSessionMutation } from '@/hooks/useSessions';
 import { useInsights } from '@/hooks/useInsights';
@@ -34,6 +34,7 @@ import { useAnalysis } from '@/components/analysis/AnalysisContext';
 import { RenameSessionDialog } from '@/components/sessions/RenameSessionDialog';
 import { SessionSidebar } from '@/components/sessions/SessionSidebar';
 import { ChatConversation } from '@/components/chat/conversation/ChatConversation';
+import { ConversationSearch } from '@/components/chat/conversation/ConversationSearch';
 import {
   MessageSquare,
   Wrench,
@@ -57,6 +58,8 @@ export default function SessionDetailPage() {
   const sessionMutation = useSessionMutation();
   const [renameOpen, setRenameOpen] = useState(false);
   const [suggestedTitle, setSuggestedTitle] = useState<string | null>(null);
+  const [searchHighlightId, setSearchHighlightId] = useState<string | null>(null);
+  const [loadingAllMessages, setLoadingAllMessages] = useState(false);
   const { state: analysisState } = useAnalysis();
 
   // Populate suggestedTitle from analysis context when complete
@@ -76,6 +79,17 @@ export default function SessionDetailPage() {
   const loadingMessages = messagesQuery.isLoading;
   const loadingMore = messagesQuery.isFetchingNextPage;
   const hasMore = messagesQuery.hasNextPage ?? false;
+
+  const fetchAllMessages = useCallback(async () => {
+    if (loadingAllMessages || !messagesQuery.hasNextPage) return;
+    setLoadingAllMessages(true);
+    let query = messagesQuery;
+    while (query.hasNextPage) {
+      await query.fetchNextPage();
+      query = messagesQuery;
+    }
+    setLoadingAllMessages(false);
+  }, [messagesQuery, loadingAllMessages]);
 
   const allInsightIds = useMemo(() => new Set(insights.map((i) => i.id)), [insights]);
 
@@ -526,16 +540,25 @@ export default function SessionDetailPage() {
 
           <TabsContent
             value="conversation"
-            className="flex-1 overflow-y-auto mt-0 bg-muted/40 dark:bg-muted/20"
+            className="flex flex-col flex-1 overflow-hidden mt-0 bg-muted/40 dark:bg-muted/20"
           >
-            <ChatConversation
+            <ConversationSearch
               messages={messages}
-              loading={loadingMessages}
-              loadingMore={loadingMore}
-              hasMore={hasMore}
-              onLoadMore={() => messagesQuery.fetchNextPage()}
-              sourceTool={session.source_tool}
+              onHighlightMessage={setSearchHighlightId}
+              fetchAllMessages={fetchAllMessages}
+              isLoadingAll={loadingAllMessages}
             />
+            <div className="flex-1 overflow-y-auto">
+              <ChatConversation
+                messages={messages}
+                loading={loadingMessages}
+                loadingMore={loadingMore}
+                hasMore={hasMore}
+                onLoadMore={() => messagesQuery.fetchNextPage()}
+                sourceTool={session.source_tool}
+                highlightMessageId={searchHighlightId}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
