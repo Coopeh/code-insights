@@ -26,7 +26,8 @@ export function VitalsStrip({ session }: VitalsStripProps) {
   const endedAt = new Date(session.ended_at);
   const modelsUsed = parseJsonField<string[]>(session.models_used, []);
 
-  // Token calculations
+  // Token calculations — fields are independent additive values per Anthropic API convention:
+  // input_tokens = non-cached input; cache tokens are separate counts, not subsets of input
   const inputTokens = session.total_input_tokens ?? 0;
   const cacheCreation = session.cache_creation_tokens ?? 0;
   const cacheRead = session.cache_read_tokens ?? 0;

@@ -4,6 +4,7 @@ import { SESSION_CHARACTER_COLORS, OUTCOME_DOT } from '@/lib/constants/colors';
 import { formatDuration, getSessionTitle, cn } from '@/lib/utils';
 import { Sparkles, Target } from 'lucide-react';
 import type { Session } from '@/lib/types';
+import { getScoreTier } from '@/lib/score-utils';
 
 const SOURCE_LABELS: Record<string, string> = {
   'claude-code': 'Claude Code',
@@ -13,12 +14,12 @@ const SOURCE_LABELS: Record<string, string> = {
   copilot: 'Copilot',
 };
 
-function getPqScoreColor(score: number): string {
-  if (score >= 80) return 'text-green-600';
-  if (score >= 60) return 'text-yellow-600';
-  if (score >= 40) return 'text-orange-600';
-  return 'text-red-600';
-}
+const SCORE_TEXT_COLORS: Record<string, string> = {
+  excellent: 'text-green-600',
+  good: 'text-yellow-600',
+  fair: 'text-orange-600',
+  poor: 'text-red-600',
+};
 
 interface CompactSessionRowProps {
   session: Session;
@@ -116,7 +117,7 @@ export function CompactSessionRow({
         {promptQualityScore != null && (
           <>
             <span className="text-muted-foreground/30">&middot;</span>
-            <span className={cn('flex items-center gap-0.5', getPqScoreColor(promptQualityScore))}>
+            <span className={cn('flex items-center gap-0.5', SCORE_TEXT_COLORS[getScoreTier(promptQualityScore)])}>
               <Target className="h-2.5 w-2.5" />
               {promptQualityScore}
             </span>

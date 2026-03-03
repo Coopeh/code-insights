@@ -10,6 +10,7 @@ import {
 } from '@/lib/utils';
 import { SESSION_CHARACTER_COLORS, SESSION_CHARACTER_LABELS, SOURCE_TOOL_COLORS, OUTCOME_DOT } from '@/lib/constants/colors';
 import { parseJsonField } from '@/lib/types';
+import { getScoreTier } from '@/lib/score-utils';
 import type { Insight, InsightMetadata, Session } from '@/lib/types';
 import { LearningContent, DecisionContent } from '@/components/insights/insight-metadata';
 import { Badge } from '@/components/ui/badge';
@@ -247,11 +248,11 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
   );
   const hasPromptQuality = insights.some((i) => i.type === 'prompt_quality');
   const promptQualityInsight = insights.find((i) => i.type === 'prompt_quality') ?? null;
-  const promptQualityScore = useMemo(() => {
+  const promptQualityScore = (() => {
     if (!promptQualityInsight) return undefined;
     const meta = parseJsonField<Record<string, unknown>>(promptQualityInsight.metadata, {});
     return typeof meta.efficiencyScore === 'number' ? meta.efficiencyScore : undefined;
-  }, [promptQualityInsight]);
+  })();
 
   const summaryInsight = insights.find((i) => i.type === 'summary');
   const summaryMetadata = summaryInsight
@@ -495,10 +496,10 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
       )}
 
       {/* Tabs: Insights | Prompt Quality | Conversation */}
-      <Tabs defaultValue="overview" className="flex flex-col flex-1 overflow-hidden">
+      <Tabs defaultValue="insights" className="flex flex-col flex-1 overflow-hidden">
         <TabsList className="shrink-0 bg-transparent border-b rounded-none h-auto w-full justify-start gap-4 px-6">
           <TabsTrigger
-            value="overview"
+            value="insights"
             className="relative h-10 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-medium text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             Insights
@@ -507,15 +508,12 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
             value="prompt-quality"
             className="relative h-10 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-medium text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5" aria-label={promptQualityScore != null ? `Prompt Quality, score ${promptQualityScore} out of 100` : 'Prompt Quality'}>
               Prompt Quality
               {promptQualityScore != null && (
                 <span className={cn(
                   'inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none',
-                  promptQualityScore >= 80 ? 'bg-green-500/15 text-green-600' :
-                  promptQualityScore >= 60 ? 'bg-yellow-500/15 text-yellow-600' :
-                  promptQualityScore >= 40 ? 'bg-orange-500/15 text-orange-600' :
-                  'bg-red-500/15 text-red-600'
+                  { excellent: 'bg-green-500/15 text-green-600', good: 'bg-yellow-500/15 text-yellow-600', fair: 'bg-orange-500/15 text-orange-600', poor: 'bg-red-500/15 text-red-600' }[getScoreTier(promptQualityScore)]
                 )}>
                   {promptQualityScore}
                 </span>
@@ -531,7 +529,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
         </TabsList>
 
         {/* Tab 1: Insights */}
-        <TabsContent value="overview" className="flex-1 overflow-y-auto mt-0 p-5 space-y-4">
+        <TabsContent value="insights" className="flex-1 overflow-y-auto mt-0 p-5 space-y-4">
           <VitalsStrip session={session} />
 
           {/* Summary */}
