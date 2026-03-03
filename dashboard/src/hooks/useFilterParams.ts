@@ -50,8 +50,17 @@ export function useFilterParams<T extends FilterConfig>(defaults: T) {
   );
 
   const clearFilters = useCallback(() => {
-    setSearchParams({}, { replace: true });
-  }, [setSearchParams]);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const key in defaults) {
+          next.delete(key);
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams, defaults]);
 
   return [filters, setFilter, setFilters, clearFilters] as const;
 }

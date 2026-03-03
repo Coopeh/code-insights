@@ -50,6 +50,7 @@ export function CompactSessionRow({
   return (
     <button
       onClick={onClick}
+      aria-current={isActive ? 'true' : undefined}
       className={cn(
         'w-full text-left px-3 py-2.5 transition-colors border-l-2',
         isActive

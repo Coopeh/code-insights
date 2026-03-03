@@ -43,7 +43,7 @@ import {
   GitCommit,
   GitPullRequest,
   BarChart2,
-  ArrowLeft,
+
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -81,10 +81,10 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
   const fetchAllMessages = useCallback(async () => {
     if (loadingAllMessages || !messagesQuery.hasNextPage) return;
     setLoadingAllMessages(true);
-    let query = messagesQuery;
-    while (query.hasNextPage) {
-      await query.fetchNextPage();
-      query = messagesQuery;
+    const MAX_PAGES = 50;
+    for (let i = 0; i < MAX_PAGES; i++) {
+      const result = await messagesQuery.fetchNextPage();
+      if (!result.hasNextPage) break;
     }
     setLoadingAllMessages(false);
   }, [messagesQuery, loadingAllMessages]);

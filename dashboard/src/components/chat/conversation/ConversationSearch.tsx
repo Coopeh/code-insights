@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ChevronUp, ChevronDown, X, Loader2 } from 'lucide-react';
@@ -22,11 +22,15 @@ export function ConversationSearch({
   const [matchIndex, setMatchIndex] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const matches = debouncedQuery
-    ? messages
-        .filter((m) => m.content.toLowerCase().includes(debouncedQuery.toLowerCase()))
-        .map((m) => m.id)
-    : [];
+  const matches = useMemo(
+    () =>
+      debouncedQuery
+        ? messages
+            .filter((m) => m.content.toLowerCase().includes(debouncedQuery.toLowerCase()))
+            .map((m) => m.id)
+        : [],
+    [messages, debouncedQuery]
+  );
 
   useEffect(() => {
     debounceRef.current = setTimeout(() => {
@@ -38,7 +42,7 @@ export function ConversationSearch({
 
   useEffect(() => {
     onHighlightMessage(matches[matchIndex] ?? null);
-  }, [matches.join(','), matchIndex]);
+  }, [matches, matchIndex, onHighlightMessage]);
 
   const handleInputChange = useCallback(
     (value: string) => {

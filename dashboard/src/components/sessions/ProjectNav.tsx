@@ -58,6 +58,7 @@ export function ProjectNav({
         {/* All Projects */}
         <button
           onClick={() => onSelectProject('all')}
+          aria-current={selectedProject === 'all' ? 'true' : undefined}
           className={cn(
             'w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-sm transition-colors',
             selectedProject === 'all'
@@ -79,6 +80,7 @@ export function ProjectNav({
             <button
               key={project.id}
               onClick={() => onSelectProject(project.id)}
+              aria-current={isActive ? 'true' : undefined}
               className={cn(
                 'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-colors',
                 isActive

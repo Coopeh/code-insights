@@ -40,6 +40,8 @@ export function ProgressRing({
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={`Score: ${value} out of ${max}`}
       className={cn('shrink-0', className)}
     >
       <circle

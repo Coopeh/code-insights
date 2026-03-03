@@ -4,8 +4,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Repeat2 } from 'lucide-react';
 import { INSIGHT_TYPE_LABELS } from '@/lib/constants/colors';
+import { buildPatternGroups } from '@/lib/pattern-grouping';
 import type { Insight, InsightType } from '@/lib/types';
-import { parseJsonField } from '@/lib/types';
 
 interface RecurringPatternsSectionProps {
   insights: Insight[];
@@ -23,52 +23,12 @@ interface PatternGroup {
 
 export function RecurringPatternsSection({ insights }: RecurringPatternsSectionProps) {
   const patterns = useMemo((): PatternGroup[] => {
-    // Build a reverse map: linkedId -> set of insights that reference it
-    const linkedToInsights = new Map<string, Set<string>>();
     const insightMap = new Map<string, Insight>();
-
     for (const insight of insights) {
       insightMap.set(insight.id, insight);
-      const linkedIds = insight.linked_insight_ids
-        ? parseJsonField<string[]>(insight.linked_insight_ids, [])
-        : [];
-      for (const linkedId of linkedIds) {
-        const set = linkedToInsights.get(linkedId) || new Set();
-        set.add(insight.id);
-        linkedToInsights.set(linkedId, set);
-      }
     }
 
-    // Group insights that share any linked ID using union-find approach
-    const parent = new Map<string, string>();
-    function find(id: string): string {
-      if (!parent.has(id)) parent.set(id, id);
-      if (parent.get(id) !== id) parent.set(id, find(parent.get(id)!));
-      return parent.get(id)!;
-    }
-    function union(a: string, b: string) {
-      const ra = find(a);
-      const rb = find(b);
-      if (ra !== rb) parent.set(ra, rb);
-    }
-
-    for (const [, insightIds] of linkedToInsights) {
-      const arr = [...insightIds];
-      for (let i = 1; i < arr.length; i++) {
-        union(arr[0], arr[i]);
-      }
-    }
-
-    // Collect groups
-    const groups = new Map<string, Set<string>>();
-    for (const [, insightIds] of linkedToInsights) {
-      for (const id of insightIds) {
-        const root = find(id);
-        const set = groups.get(root) || new Set();
-        set.add(id);
-        groups.set(root, set);
-      }
-    }
+    const groups = buildPatternGroups(insights);
 
     // Filter to groups with 2+ insights and build PatternGroup objects
     const result: PatternGroup[] = [];
