@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { MessageBubble } from '../message/MessageBubble';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import type { Message, ToolResult } from '@/lib/types';
 import { parseJsonField } from '@/lib/types';
 import { DateSeparator } from './DateSeparator';
@@ -14,6 +16,7 @@ interface ChatConversationProps {
   onLoadMore?: () => void;
   error?: string | null;
   sourceTool?: string;
+  highlightMessageId?: string | null;
 }
 
 /**
@@ -32,8 +35,15 @@ function shouldShowDateSeparator(messages: Message[], index: number): boolean {
 }
 
 export function ChatConversation({
-  messages, loading, loadingMore, hasMore, onLoadMore, error, sourceTool,
+  messages, loading, loadingMore, hasMore, onLoadMore, error, sourceTool, highlightMessageId,
 }: ChatConversationProps) {
+  const highlightRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlightMessageId && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightMessageId]);
   if (loading) {
     return (
       <div className="space-y-4 p-4">
@@ -84,23 +94,34 @@ export function ChatConversation({
 
   return (
     <div className="w-full px-2">
-      {messages.map((message, index) => (
-        <div key={message.id} id={`msg-${message.id}`} className="py-1">
-          {shouldShowDateSeparator(messages, index) && (
-            <DateSeparator timestamp={message.timestamp} />
-          )}
-          <MessageBubble
-            message={message}
-            showHeader={shouldShowHeader(index)}
-            sourceTool={sourceTool}
-            nextToolResults={
-              messages[index + 1]?.type === 'user'
-                ? parseJsonField<ToolResult[]>(messages[index + 1].tool_results, [])
-                : []
-            }
-          />
-        </div>
-      ))}
+      {messages.map((message, index) => {
+        const isHighlighted = highlightMessageId === message.id;
+        return (
+          <div
+            key={message.id}
+            id={`msg-${message.id}`}
+            ref={isHighlighted ? highlightRef : undefined}
+            className={cn(
+              'py-1 transition-colors duration-300',
+              isHighlighted && 'ring-2 ring-primary rounded-lg bg-primary/5'
+            )}
+          >
+            {shouldShowDateSeparator(messages, index) && (
+              <DateSeparator timestamp={message.timestamp} />
+            )}
+            <MessageBubble
+              message={message}
+              showHeader={shouldShowHeader(index)}
+              sourceTool={sourceTool}
+              nextToolResults={
+                messages[index + 1]?.type === 'user'
+                  ? parseJsonField<ToolResult[]>(messages[index + 1].tool_results, [])
+                  : []
+              }
+            />
+          </div>
+        );
+      })}
 
       {loadingMore && (
         <div className="space-y-4 p-4">
