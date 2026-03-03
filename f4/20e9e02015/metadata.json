@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "f420e9e02015",
+  "strategy": "manual-commit",
+  "branch": "feature/sessions-panel-ux-polish",
+  "checkpoints_count": 17,
+  "files_touched": [
+    "docs/ux/sessions-insights-redesign.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/f4/20e9e02015/0/metadata.json",
+      "transcript": "/f4/20e9e02015/0/full.jsonl",
+      "context": "/f4/20e9e02015/0/context.md",
+      "content_hash": "/f4/20e9e02015/0/content_hash.txt",
+      "prompt": "/f4/20e9e02015/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 127,
+    "cache_creation_tokens": 238204,
+    "cache_read_tokens": 5839784,
+    "output_tokens": 23076,
+    "api_call_count": 66
+  }
+}

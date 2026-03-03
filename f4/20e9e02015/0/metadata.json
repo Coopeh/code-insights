@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "f420e9e02015",
+  "session_id": "383d4f6b-d8ea-44e9-a12b-5e53a9b7c4fe",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-03T07:44:27.515579Z",
+  "branch": "feature/sessions-panel-ux-polish",
+  "checkpoints_count": 17,
+  "files_touched": [
+    "docs/ux/sessions-insights-redesign.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ebe0511d5739",
+  "token_usage": {
+    "input_tokens": 127,
+    "cache_creation_tokens": 238204,
+    "cache_read_tokens": 5839784,
+    "output_tokens": 23076,
+    "api_call_count": 66
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-03T07:44:27.047329Z",
+    "agent_lines": 0,
+    "human_added": 1748,
+    "human_modified": 1048,
+    "human_removed": 0,
+    "total_committed": 2796,
+    "agent_percentage": 0
+  }
+}
