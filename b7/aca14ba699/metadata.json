@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "b7aca14ba699",
+  "strategy": "manual-commit",
+  "branch": "release/v3.5.0",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "cli/README.md",
+    "cli/package.json",
+    "docs/assets/screenshots/analytics-light.png",
+    "docs/assets/screenshots/dashboard-light.png",
+    "docs/assets/screenshots/insights-light.png",
+    "docs/assets/screenshots/session-insight-light.png",
+    "docs/assets/screenshots/stats.png"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b7/aca14ba699/0/metadata.json",
+      "transcript": "/b7/aca14ba699/0/full.jsonl",
+      "context": "/b7/aca14ba699/0/context.md",
+      "content_hash": "/b7/aca14ba699/0/content_hash.txt",
+      "prompt": "/b7/aca14ba699/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 50,
+    "cache_creation_tokens": 42334,
+    "cache_read_tokens": 6522755,
+    "output_tokens": 9682,
+    "api_call_count": 46
+  }
+}
