@@ -1,16 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { SESSION_CHARACTER_COLORS } from '@/lib/constants/colors';
+import { SESSION_CHARACTER_COLORS, OUTCOME_DOT } from '@/lib/constants/colors';
 import { formatDuration, getSessionTitle, cn } from '@/lib/utils';
 import { Sparkles } from 'lucide-react';
 import type { Session } from '@/lib/types';
-
-const OUTCOME_DOT: Record<string, { color: string; label: string }> = {
-  success: { color: 'bg-emerald-500', label: 'Completed successfully' },
-  partial: { color: 'bg-amber-500', label: 'Partially completed' },
-  abandoned: { color: 'bg-red-500', label: 'Abandoned' },
-  blocked: { color: 'bg-red-500', label: 'Blocked' },
-};
 
 const SOURCE_LABELS: Record<string, string> = {
   'claude-code': 'Claude Code',

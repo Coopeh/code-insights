@@ -8,10 +8,9 @@ import {
   formatDateRange,
   cn,
 } from '@/lib/utils';
-import { SESSION_CHARACTER_COLORS, SESSION_CHARACTER_LABELS, SOURCE_TOOL_COLORS } from '@/lib/constants/colors';
+import { SESSION_CHARACTER_COLORS, SESSION_CHARACTER_LABELS, SOURCE_TOOL_COLORS, OUTCOME_DOT } from '@/lib/constants/colors';
 import { parseJsonField } from '@/lib/types';
 import type { InsightMetadata } from '@/lib/types';
-import { OutcomeBadge, OUTCOME_CONFIG } from '@/components/insights/InsightCard';
 import { Badge } from '@/components/ui/badge';
 import { ErrorCard } from '@/components/ErrorCard';
 import { Button } from '@/components/ui/button';
@@ -47,13 +46,6 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const OUTCOME_DOT: Record<string, { color: string; label: string }> = {
-  success: { color: 'bg-emerald-500', label: 'Completed successfully' },
-  partial: { color: 'bg-amber-500', label: 'Partially completed' },
-  abandoned: { color: 'bg-red-500', label: 'Abandoned' },
-  blocked: { color: 'bg-red-500', label: 'Blocked' },
-};
 
 interface SessionDetailPanelProps {
   sessionId: string;
