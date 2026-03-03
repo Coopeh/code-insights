@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "dd067258eace",
+  "strategy": "manual-commit",
+  "branch": "feature/sessions-panel-ux-polish",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "dashboard/src/components/sessions/VitalsStrip.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/dd/067258eace/0/metadata.json",
+      "transcript": "/dd/067258eace/0/full.jsonl",
+      "context": "/dd/067258eace/0/context.md",
+      "content_hash": "/dd/067258eace/0/content_hash.txt",
+      "prompt": "/dd/067258eace/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
