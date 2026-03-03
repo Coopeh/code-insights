@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SESSION_CHARACTER_COLORS, OUTCOME_DOT } from '@/lib/constants/colors';
 import { formatDuration, getSessionTitle, cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Target } from 'lucide-react';
 import type { Session } from '@/lib/types';
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -13,12 +13,20 @@ const SOURCE_LABELS: Record<string, string> = {
   copilot: 'Copilot',
 };
 
+function getPqScoreColor(score: number): string {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-yellow-600';
+  if (score >= 40) return 'text-orange-600';
+  return 'text-red-600';
+}
+
 interface CompactSessionRowProps {
   session: Session;
   isActive: boolean;
   showProject: boolean;
   insightCounts?: Record<string, number>;
   outcome?: string;
+  promptQualityScore?: number;
   onClick: () => void;
 }
 
@@ -28,6 +36,7 @@ export function CompactSessionRow({
   showProject,
   insightCounts,
   outcome,
+  promptQualityScore,
   onClick,
 }: CompactSessionRowProps) {
   const startedAt = new Date(session.started_at);
@@ -101,6 +110,15 @@ export function CompactSessionRow({
             <span className="flex items-center gap-0.5 text-purple-500/80">
               <Sparkles className="h-2.5 w-2.5" />
               {insightTotal}
+            </span>
+          </>
+        )}
+        {promptQualityScore != null && (
+          <>
+            <span className="text-muted-foreground/30">&middot;</span>
+            <span className={cn('flex items-center gap-0.5', getPqScoreColor(promptQualityScore))}>
+              <Target className="h-2.5 w-2.5" />
+              {promptQualityScore}
             </span>
           </>
         )}

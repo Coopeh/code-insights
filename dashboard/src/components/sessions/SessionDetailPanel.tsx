@@ -10,7 +10,7 @@ import {
 } from '@/lib/utils';
 import { SESSION_CHARACTER_COLORS, SESSION_CHARACTER_LABELS, SOURCE_TOOL_COLORS, OUTCOME_DOT } from '@/lib/constants/colors';
 import { parseJsonField } from '@/lib/types';
-import type { Insight, InsightMetadata } from '@/lib/types';
+import type { Insight, InsightMetadata, Session } from '@/lib/types';
 import { LearningContent, DecisionContent } from '@/components/insights/insight-metadata';
 import { Badge } from '@/components/ui/badge';
 import { ErrorCard } from '@/components/ErrorCard';
@@ -28,6 +28,8 @@ import { PromptQualityCard } from '@/components/insights/PromptQualityCard';
 import { AnalyzeDropdown } from '@/components/analysis/AnalyzeDropdown';
 import { AnalyzeButton } from '@/components/analysis/AnalyzeButton';
 import { useAnalysis } from '@/components/analysis/AnalysisContext';
+import { useLlmConfig } from '@/hooks/useConfig';
+import { Link } from 'react-router';
 import { RenameSessionDialog } from '@/components/sessions/RenameSessionDialog';
 import { VitalsStrip } from '@/components/sessions/VitalsStrip';
 import { ChatConversation } from '@/components/chat/conversation/ChatConversation';
@@ -38,6 +40,7 @@ import {
   Sparkles,
   X,
   FileText,
+  Download,
   BookOpen,
   GitBranch,
   GitCommit,
@@ -45,56 +48,46 @@ import {
   BarChart2,
   ChevronRight,
   ChevronDown,
+  Wrench,
+  Target,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-/** Per-item collapsible for learnings and decisions. Shows a 1-2 line preview
- *  with an expand toggle to reveal full structured metadata. */
+/** Per-item collapsible for learnings and decisions. Compact row with
+ *  expand toggle to reveal full structured metadata. */
 function CollapsibleInsightItem({ insight }: { insight: Insight }) {
   const [expanded, setExpanded] = useState(false);
   const metadata = parseJsonField<InsightMetadata>(insight.metadata, {});
 
-  // Build the preview text: use title if available, otherwise first ~120 chars of content
   const previewText = insight.title || insight.content.slice(0, 120);
 
-  // Hint labels for the expandable sections
-  const hintLabel =
-    insight.type === 'decision'
-      ? 'Situation, Choice, Rationale...'
-      : 'What, Why, Takeaway...';
-
-  // Check if there is structured metadata worth expanding
   const hasStructured =
     insight.type === 'decision'
       ? !!(metadata.situation || metadata.choice || metadata.reasoning)
       : !!(metadata.symptom || metadata.root_cause || metadata.takeaway);
 
   return (
-    <div className="rounded-md border px-3 py-2.5">
+    <div className="border-b last:border-b-0">
       <button
-        className="flex items-start gap-2 w-full text-left group"
+        className="flex items-center gap-2 w-full text-left py-2 px-3"
         onClick={() => hasStructured && setExpanded(!expanded)}
         aria-expanded={expanded}
         disabled={!hasStructured}
       >
         {hasStructured ? (
           expanded ? (
-            <ChevronDown className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (
-            <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           )
         ) : (
           <span className="w-4 shrink-0" />
         )}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium line-clamp-2">{previewText}</p>
-          {!expanded && hasStructured && (
-            <p className="text-xs text-muted-foreground/60 mt-0.5">{hintLabel}</p>
-          )}
-        </div>
+        <p className="flex-1 min-w-0 text-sm font-medium line-clamp-2">{previewText}</p>
       </button>
       {expanded && (
-        <div className="ml-6 mt-2 pt-2 border-t">
+        <div className="ml-6 mr-3 mb-2 pl-3 border-l-2 border-muted">
           {insight.type === 'decision' ? (
             <DecisionContent metadata={metadata} />
           ) : (
@@ -103,6 +96,44 @@ function CollapsibleInsightItem({ insight }: { insight: Insight }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Minimal analyze button for the Prompt Quality empty state. */
+function PromptQualityAnalyzeButton({ session }: { session: Session }) {
+  const { state: analysisState, startAnalysis } = useAnalysis();
+  const { data: llmConfig } = useLlmConfig();
+  const configured = !!(llmConfig?.provider && llmConfig?.model);
+
+  const isAnalyzing =
+    analysisState.status === 'analyzing' && analysisState.sessionId === session.id;
+
+  if (!configured) {
+    return (
+      <Link to="/settings" className="text-xs text-muted-foreground underline hover:text-foreground">
+        Configure AI in Settings
+      </Link>
+    );
+  }
+
+  return (
+    <Button
+      onClick={() => startAnalysis(session, 'prompt_quality')}
+      disabled={isAnalyzing}
+      className="gap-2"
+    >
+      {isAnalyzing ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Analyzing...
+        </>
+      ) : (
+        <>
+          <Target className="h-4 w-4" />
+          Analyze
+        </>
+      )}
+    </Button>
   );
 }
 
@@ -215,6 +246,12 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
     (i) => i.type !== 'prompt_quality' && i.type !== 'summary'
   );
   const hasPromptQuality = insights.some((i) => i.type === 'prompt_quality');
+  const promptQualityInsight = insights.find((i) => i.type === 'prompt_quality') ?? null;
+  const promptQualityScore = useMemo(() => {
+    if (!promptQualityInsight) return undefined;
+    const meta = parseJsonField<Record<string, unknown>>(promptQualityInsight.metadata, {});
+    return typeof meta.efficiencyScore === 'number' ? meta.efficiencyScore : undefined;
+  }, [promptQualityInsight]);
 
   const summaryInsight = insights.find((i) => i.type === 'summary');
   const summaryMetadata = summaryInsight
@@ -343,7 +380,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <FileText className="h-3.5 w-3.5" />
+                      <Download className="h-3.5 w-3.5" />
                       <span className="sr-only">Export session</span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -387,6 +424,15 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
               <span className="flex items-center gap-1">
                 <GitBranch className="h-3 w-3" />
                 <span className="font-mono text-[11px] truncate max-w-[160px]">{session.git_branch}</span>
+              </span>
+            </>
+          )}
+          {session.tool_call_count > 0 && (
+            <>
+              <span>&middot;</span>
+              <span className="flex items-center gap-1">
+                <Wrench className="h-3 w-3" />
+                {session.tool_call_count} tools
               </span>
             </>
           )}
@@ -448,14 +494,33 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
         </div>
       )}
 
-      {/* VitalsStrip + Tabs */}
+      {/* Tabs: Insights | Prompt Quality | Conversation */}
       <Tabs defaultValue="overview" className="flex flex-col flex-1 overflow-hidden">
         <TabsList className="shrink-0 bg-transparent border-b rounded-none h-auto w-full justify-start gap-4 px-6">
           <TabsTrigger
             value="overview"
             className="relative h-10 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-medium text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
-            Overview
+            Insights
+          </TabsTrigger>
+          <TabsTrigger
+            value="prompt-quality"
+            className="relative h-10 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-medium text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
+          >
+            <span className="flex items-center gap-1.5">
+              Prompt Quality
+              {promptQualityScore != null && (
+                <span className={cn(
+                  'inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none',
+                  promptQualityScore >= 80 ? 'bg-green-500/15 text-green-600' :
+                  promptQualityScore >= 60 ? 'bg-yellow-500/15 text-yellow-600' :
+                  promptQualityScore >= 40 ? 'bg-orange-500/15 text-orange-600' :
+                  'bg-red-500/15 text-red-600'
+                )}>
+                  {promptQualityScore}
+                </span>
+              )}
+            </span>
           </TabsTrigger>
           <TabsTrigger
             value="conversation"
@@ -465,8 +530,8 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
           </TabsTrigger>
         </TabsList>
 
+        {/* Tab 1: Insights */}
         <TabsContent value="overview" className="flex-1 overflow-y-auto mt-0 p-5 space-y-4">
-          {/* Vitals Strip */}
           <VitalsStrip session={session} />
 
           {/* Summary */}
@@ -515,8 +580,8 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
             </div>
           )}
 
-          {/* Insights */}
-          {insights.filter((i) => i.type !== 'summary').length === 0 ? (
+          {/* Learnings & Decisions */}
+          {insights.filter((i) => i.type !== 'summary' && i.type !== 'prompt_quality').length === 0 ? (
             <div className="rounded-lg border border-dashed">
               <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
                 <BarChart2 className="h-8 w-8 text-muted-foreground" />
@@ -535,12 +600,6 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
             </div>
           ) : (
             <>
-              {insights
-                .filter((i) => i.type === 'prompt_quality')
-                .map((insight) => (
-                  <PromptQualityCard key={insight.id} insight={insight} />
-                ))}
-
               {(() => {
                 const learningInsights = insights.filter(
                   (i) => i.type === 'learning' || i.type === 'technique'
@@ -555,7 +614,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
                         {learningInsights.length}
                       </Badge>
                     </div>
-                    <div className="space-y-2">
+                    <div className="rounded-md border">
                       {learningInsights.map((insight) => (
                         <CollapsibleInsightItem key={insight.id} insight={insight} />
                       ))}
@@ -576,7 +635,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
                         {decisionInsights.length}
                       </Badge>
                     </div>
-                    <div className="space-y-2">
+                    <div className="rounded-md border">
                       {decisionInsights.map((insight) => (
                         <CollapsibleInsightItem key={insight.id} insight={insight} />
                       ))}
@@ -588,6 +647,27 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
           )}
         </TabsContent>
 
+        {/* Tab 2: Prompt Quality */}
+        <TabsContent value="prompt-quality" className="flex-1 overflow-y-auto mt-0 p-5 space-y-4">
+          {promptQualityInsight ? (
+            <PromptQualityCard insight={promptQualityInsight} />
+          ) : (
+            <div className="rounded-lg border border-dashed">
+              <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                <Target className="h-8 w-8 text-muted-foreground" />
+                <p className="font-medium text-sm">No Prompt Quality Analysis</p>
+                <p className="text-xs text-muted-foreground max-w-[280px]">
+                  Analyze your prompting patterns to improve efficiency.
+                </p>
+                <div className="pt-2">
+                  <PromptQualityAnalyzeButton session={session} />
+                </div>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab 3: Conversation */}
         <TabsContent
           value="conversation"
           className="flex flex-col flex-1 overflow-hidden mt-0 bg-muted/40 dark:bg-muted/20"
