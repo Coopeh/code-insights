@@ -1,0 +1,256 @@
+We were in middle of UI overhaul and optimization.. I think the documents are stale now.. Check @docs/ux/sessions-three-panel-design.md 
+
+Look into the file and compare with code to understand how much is complete, what is pending
+
+---
+
+we need to fix all gaps.. Also, the below:
+
+1. The project name is still showing the secondary sidebar - under tool, message count, duration and insight count section.
+2. Can we move the tokens stats as well as a card along with other cards in detail view (similar to Duration, Messages, Tools, Cost) 
+3. The expand collapse isn't looking great.. we had good one 3-4 iterations back.. look for yesterday's state from git and try to imitate that.. all i needed was it to be compact with expandable option so the list of decisions and learnings fit in the available view...
+4. Export button in detail view isn't right icon.. it doesn't convey export, i think.. use better icon
+5. If Prompt quality is generated, then the page is overwhelmed with it.. i feel, we should separate that as a different tab. one for session insights, one for prompt quality analysis and one for conversation (chat) view... and then the percentage shown someway similar to the insights count shown in session titles list in secondary sidebar
+
+Run them with @"ux-engineer (agent)" once to get their opinion and understand if they have better ways to accomodate these and suggest any other improvements to make the app more intuitive and ease of use and understanding..
+
+---
+
+All good maybe in the duration tab we should add the start time to any time as well as a sub level
+
+---
+
+run the option 2
+
+---
+
+run a start-review and also, ensure you clean up all plan docs as these are transient and supposed to be gitignored
+
+---
+
+# /start-review — Triple-Layer Code Review Team
+
+**PR**: 100
+
+You are setting up a triple-layer code review for PR `100`. This can be used standalone or as part of a `/start-feature` team workflow.
+
+---
+
+## Step 1: Get PR Details
+
+Fetch the PR details:
+
+```bash
+# Get the correct owner from git remote
+git remote get-url origin | sed 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/'
+```
+
+Use `gh pr view 100` to get PR title, description, and diff stats.
+Use `gh pr diff 100` to get the diff.
+
+Determine the PR scope:
+- Count files changed and lines changed
+- Identify if it touches schema concerns (types.ts, SQLite schema, server API)
+- Decide if Wild Card reviewer is needed (see criteria below)
+
+---
+
+## Step 2: Determine Review Scope
+
+**Invoke Wild Card (3rd reviewer) if ANY of these apply:**
+- New feature with multiple files changed
+- Complex business logic
+- Schema impact (types.ts, SQLite migrations, server API changes)
+- Architectural changes
+- 200+ lines of changes
+
+**Skip Wild Card if ALL of these apply:**
+- Simple bug fix (< 50 lines)
+- Single file change
+- Straightforward UI/component change
+- Config/CI changes only
+
+---
+
+## Step 3: Run Parallel Independent Reviews
+
+**CRITICAL**: All reviews run in parallel. No reviewer sees another's comments. This prevents bias.
+
+**Launch TA Insider Review:**
+```
+Task {
+  name: "ta-reviewer",
+  subagent_type: "technical-architect",
+  prompt: "You are performing a Phase 1 INSIDER review of PR #100 in the code-insights repo.
+
+  Fetch the PR diff using: gh pr diff 100
+  Also fetch the PR details: gh pr view 100
+
+  Follow your Phase 1 review protocol:
+  1. Read the PR description and any linked GitHub Issue
+  2. Check if the change touches schema concerns (types.ts, SQLite schema)
+  3. Review code against existing patterns in the codebase
+  4. Check existing CLAUDE.md conventions compliance
+  5. Verify data contract patterns are followed (if data flow changed)
+  6. Check shadcn/ui and component conventions (if UI changes)
+
+  Output your review in the structured format:
+  ## TA Review (Phase 1 - Insider): [PR Title]
+  ### Architecture Alignment
+  ### Issues Found (with priority markers)
+  ### Phase 1 Verdict
+
+  DO NOT look at any other review comments. Your review must be independent.",
+  mode: "bypassPermissions"
+}
+```
+
+**Launch Outsider Review:**
+```
+Task {
+  name: "outsider-reviewer",
+  subagent_type: "superpowers:code-reviewer",
+  prompt: "You are performing an independent OUTSIDER review of PR #100 in the code-insights repo.
+
+  Fetch the PR diff using: gh pr diff 100
+
+  Review for:
+  - Security issues (XSS, injection, auth bypass)
+  - Best practices (React, TypeScript, Node.js)
+  - Logic bugs and edge cases
+  - Performance concerns
+  - Accessibility issues
+
+  Output a structured review with findings categorized as blocking, suggestions, and notes.",
+  mode: "bypassPermissions"
+}
+```
+
+**Launch Wild Card Review (if applicable):**
+```
+Task {
+  name: "wildcard-reviewer",
+  subagent_type: "superpowers:code-reviewer",
+  prompt: "You are performing an independent WILD CARD review of PR #100 in the code-insights repo.
+
+  Fetch the PR diff using: gh pr diff 100
+
+  Your role is to provide a fresh perspective with NO constraints:
+  - Challenge assumptions in the implementation
+  - Look for edge cases others might miss
+  - Question whether the approach is the simplest that could work
+  - Check for hidden complexity or tech debt being introduced
+  - Look at error handling from a user's perspective
+
+  Output a structured review with findings categorized as blocking, suggestions, and notes.",
+  mode: "bypassPermissions"
+}
+```
+
+Wait for ALL reviews to complete before proceeding.
+
+---
+
+## Step 4: TA Synthesis
+
+After all reviews are collected, launch the TA synthesis pass:
+
+```
+Task {
+  name: "ta-synthesizer",
+  subagent_type: "technical-architect",
+  prompt: "You are performing Phase 2 SYNTHESIS for PR #100.
+
+  The orchestrator will provide you with the independent review outputs.
+
+  Follow your Phase 2 synthesis protocol:
+  1. Read all review comments
+  2. Re-review the PR with all reviews in context
+  3. For each outsider/wild card comment, evaluate:
+     - Does this conflict with project patterns or conventions?
+     - Is this a valid point that should be applied?
+     - Did you miss this in Phase 1?
+  4. For each comment: AGREE or PUSHBACK WITH REASON
+  5. Create the consolidated final list
+
+  Output in the structured format:
+  ## TA Synthesis (Phase 2): [PR Title]
+  ### Review of Outsider Comments
+  ### Second Pass Findings
+  ### Consolidated Review (For Dev Agent)
+  - FIX NOW items
+  - NOT APPLICABLE items with technical rationale
+  - ESCALATE TO FOUNDER items with reason
+  ### Final Verdict",
+  mode: "bypassPermissions"
+}
+```
+
+---
+
+## Step 5: Deliver Results
+
+After synthesis is complete:
+
+1. **If part of a /start-feature team**: Send the consolidated review to the dev-agent via SendMessage. Mark the review task as completed.
+
+2. **If standalone**: Present the consolidated review to the user. Ask if they want to:
+   - Have the review summary posted to the GitHub PR
+   - Have fixes implemented automatically
+
+3. **Post review summary to GitHub PR** using `gh pr comment`:
+
+```bash
+gh pr comment 100 --body "$(cat <<'EOF'
+## Triple-Layer Code Review Summary
+
+### Reviewers
+| Role | Focus |
+|------|-------|
+| TA (Insider) | Pattern compliance, schema impact, architecture |
+| Outsider | Security, best practices, logic bugs |
+| Wild Card | Edge cases, fresh perspective |
+
+### Issues Found & Resolution
+#### FIX NOW
+[List from synthesis]
+
+#### NOT APPLICABLE
+[List with technical rationale]
+
+### Verification
+[Status of fixes if any were applied]
+
+**Review complete. [Ready for merge / Changes required].**
+EOF
+)"
+```
+
+---
+
+## Important Rules
+
+- **NEVER merge the PR** — founder-only
+- **Reviews MUST be independent** — no reviewer sees another's output during Phase 1
+- **TA synthesis is authoritative** — TA can mark outsider comments as "NOT APPLICABLE" with technical justification
+- **Always post summary to GitHub PR** — this creates the audit trail
+
+---
+
+i think the model name should go inside the cost card in detail view..
+
+---
+
+Look at the tab headers in dark mode and light mode... the light one doesn't look great.. also, we may need some padding on top.. Also, prompt shows score, conversation shows chat count but only insights tab doesn't show anything. we should add insights count to it as well.
+
+---
+
+the colour scheme for tool view in light mode is still very bad.. compare it with dark mode screenshot.
+
+---
+
+Look how prompt quality details are shown, mainly the color palette and styling. And compare with the insight details.. Insights are very bland and no colors or styles.. try to keep it similar to prompt one. seek recommendations from @"ux-engineer (agent)"
+
+---
+
+yes, all 7
