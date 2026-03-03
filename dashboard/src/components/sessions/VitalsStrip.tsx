@@ -21,8 +21,8 @@ export function VitalsStrip({ session }: VitalsStripProps) {
         <StatCell label="Duration" value={formatDuration(startedAt, endedAt)} />
         <StatCell
           label="Messages"
-          value={`${session.user_message_count} / ${session.assistant_message_count}`}
-          sublabel="usr / asst"
+          value={String(session.message_count)}
+          sublabel={`${session.user_message_count} user · ${session.assistant_message_count} asst`}
         />
         <StatCell label="Tools" value={String(session.tool_call_count)} sublabel="calls" />
         <StatCell
@@ -38,9 +38,16 @@ export function VitalsStrip({ session }: VitalsStripProps) {
       {/* Secondary metadata row */}
       <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
         {session.total_input_tokens != null && (
-          <span>
-            Tokens: {formatTokenCount(session.total_input_tokens)} in /{' '}
-            {formatTokenCount(session.total_output_tokens ?? 0)} out
+          <span className="flex items-center gap-1.5">
+            <span>{formatTokenCount(session.total_input_tokens)} input</span>
+            {(session.cache_read_tokens ?? 0) > 0 && (
+              <>
+                <span className="text-muted-foreground/40">&middot;</span>
+                <span>{formatTokenCount(session.cache_read_tokens!)} cache</span>
+              </>
+            )}
+            <span className="text-muted-foreground/40">&middot;</span>
+            <span>{formatTokenCount(session.total_output_tokens ?? 0)} output</span>
           </span>
         )}
         {modelsUsed.length > 0 && (

@@ -5,12 +5,12 @@ import { OutcomeBadge } from '@/components/insights/InsightCard';
 import { Sparkles } from 'lucide-react';
 import type { Session } from '@/lib/types';
 
-const SOURCE_ABBREV: Record<string, string> = {
-  'claude-code': 'CC',
-  cursor: 'Cur',
-  'codex-cli': 'Cdx',
-  'copilot-cli': 'Cop',
-  copilot: 'Cop',
+const SOURCE_LABELS: Record<string, string> = {
+  'claude-code': 'Claude Code',
+  cursor: 'Cursor',
+  'codex-cli': 'Codex CLI',
+  'copilot-cli': 'Copilot CLI',
+  copilot: 'Copilot',
 };
 
 interface CompactSessionRowProps {
@@ -37,8 +37,8 @@ export function CompactSessionRow({
     ? (SESSION_CHARACTER_COLORS[session.session_character] ?? 'bg-muted text-muted-foreground')
     : null;
 
-  const sourceAbbrev = session.source_tool
-    ? (SOURCE_ABBREV[session.source_tool] ?? session.source_tool)
+  const sourceLabel = session.source_tool
+    ? (SOURCE_LABELS[session.source_tool] ?? session.source_tool)
     : null;
 
   const insightTotal = insightCounts
@@ -72,8 +72,8 @@ export function CompactSessionRow({
 
       {/* Stats line 1: source . messages . duration */}
       <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
-        {sourceAbbrev && <span>{sourceAbbrev}</span>}
-        {sourceAbbrev && <span className="text-muted-foreground/40">&middot;</span>}
+        {sourceLabel && <span>{sourceLabel}</span>}
+        {sourceLabel && <span className="text-muted-foreground/40">&middot;</span>}
         <span>{session.message_count} msgs</span>
         <span className="text-muted-foreground/40">&middot;</span>
         <span>{formatDuration(startedAt, endedAt)}</span>
