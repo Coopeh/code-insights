@@ -17,6 +17,7 @@ interface ChatConversationProps {
   error?: string | null;
   sourceTool?: string;
   highlightMessageId?: string | null;
+  searchQuery?: string;
 }
 
 /**
@@ -35,7 +36,7 @@ function shouldShowDateSeparator(messages: Message[], index: number): boolean {
 }
 
 export function ChatConversation({
-  messages, loading, loadingMore, hasMore, onLoadMore, error, sourceTool, highlightMessageId,
+  messages, loading, loadingMore, hasMore, onLoadMore, error, sourceTool, highlightMessageId, searchQuery,
 }: ChatConversationProps) {
   const highlightRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +114,7 @@ export function ChatConversation({
               message={message}
               showHeader={shouldShowHeader(index)}
               sourceTool={sourceTool}
+              searchQuery={searchQuery}
               nextToolResults={
                 messages[index + 1]?.type === 'user'
                   ? parseJsonField<ToolResult[]>(messages[index + 1].tool_results, [])

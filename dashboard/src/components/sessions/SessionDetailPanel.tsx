@@ -59,6 +59,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [suggestedTitle, setSuggestedTitle] = useState<string | null>(null);
   const [searchHighlightId, setSearchHighlightId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loadingAllMessages, setLoadingAllMessages] = useState(false);
   const { state: analysisState } = useAnalysis();
 
@@ -531,6 +532,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
           <ConversationSearch
             messages={messages}
             onHighlightMessage={setSearchHighlightId}
+            onSearchQueryChange={setSearchQuery}
             fetchAllMessages={fetchAllMessages}
             isLoadingAll={loadingAllMessages}
           />
@@ -543,6 +545,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
               onLoadMore={() => messagesQuery.fetchNextPage()}
               sourceTool={session.source_tool}
               highlightMessageId={searchHighlightId}
+              searchQuery={searchQuery}
             />
           </div>
         </TabsContent>

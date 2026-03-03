@@ -5,18 +5,29 @@ import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { CopyButton } from '../CopyButton';
 import { cn } from '@/lib/utils';
 import { preprocessInsightBlocks } from '../preprocess';
+import { highlightText } from './HighlightText';
 
 interface AssistantMarkdownProps {
   content: string;
   codeStyle: SyntaxHighlighterProps['style'];
+  searchQuery?: string;
 }
 
-export function AssistantMarkdown({ content, codeStyle }: AssistantMarkdownProps) {
+export function AssistantMarkdown({ content, codeStyle, searchQuery }: AssistantMarkdownProps) {
+  const hl = (children: React.ReactNode) =>
+    searchQuery ? highlightText(children, searchQuery) : children;
+
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          p({ children }) {
+            return <p>{hl(children)}</p>;
+          },
+          li({ children }) {
+            return <li>{hl(children)}</li>;
+          },
           blockquote({ children }) {
             return (
               <div className="my-3 rounded-lg border border-purple-500/20 bg-purple-500/5 px-4 py-3 not-prose">
@@ -36,14 +47,14 @@ export function AssistantMarkdown({ content, codeStyle }: AssistantMarkdownProps
           th({ children }) {
             return (
               <th className="border border-border bg-muted/50 px-3 py-1.5 text-left text-xs font-medium">
-                {children}
+                {hl(children)}
               </th>
             );
           },
           td({ children }) {
             return (
               <td className="border border-border px-3 py-1.5 text-sm">
-                {children}
+                {hl(children)}
               </td>
             );
           },
