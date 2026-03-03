@@ -5,7 +5,7 @@ import { useSessions } from '@/hooks/useSessions';
 import { useProjects } from '@/hooks/useProjects';
 import { useInsights } from '@/hooks/useInsights';
 import { SESSION_CHARACTER_COLORS, SOURCE_TOOL_COLORS } from '@/lib/constants/colors';
-import { formatDuration, formatModelName, getSessionTitle } from '@/lib/utils';
+import { formatDuration, formatModelName, getSessionTitle, getDateGroup, DATE_GROUP_ORDER } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,24 +43,6 @@ const SESSION_CHARACTERS = [
   'quick_task',
 ] as const;
 
-function getDateGroup(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const thisWeekStart = new Date(today);
-  thisWeekStart.setDate(thisWeekStart.getDate() - 7);
-
-  const sessionDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (sessionDay.getTime() === today.getTime()) return 'Today';
-  if (sessionDay.getTime() === yesterday.getTime()) return 'Yesterday';
-  if (sessionDay >= thisWeekStart) return 'This Week';
-  return 'Earlier';
-}
-
-const GROUP_ORDER = ['Today', 'Yesterday', 'This Week', 'Earlier'];
 
 /** Short type abbreviations for compact insight count display */
 const INSIGHT_TYPE_ABBREV: Record<string, string> = {
@@ -150,7 +132,7 @@ export default function SessionsPage() {
       if (!groups[group]) groups[group] = [];
       groups[group].push(s);
     }
-    return GROUP_ORDER.filter((g) => groups[g]).map((g) => ({ group: g, sessions: groups[g] }));
+    return DATE_GROUP_ORDER.filter((g) => groups[g]).map((g) => ({ group: g, sessions: groups[g] }));
   }, [filteredSessions]);
 
   const loading = sessionsLoading || projectsLoading || insightsLoading;

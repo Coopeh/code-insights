@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { format } from 'date-fns';
 import { useInsights } from '@/hooks/useInsights';
 import { useFilterParams } from '@/hooks/useFilterParams';
 import { useProjects } from '@/hooks/useProjects';
@@ -9,6 +10,7 @@ import { InsightCardSkeleton } from '@/components/skeletons/InsightCardSkeleton'
 import { ErrorCard } from '@/components/ErrorCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -16,24 +18,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Sparkles, SearchX, LayoutGrid, List } from 'lucide-react';
-import type { InsightType } from '@/lib/types';
+import { Sparkles, SearchX } from 'lucide-react';
+import { getDateGroup, DATE_GROUP_ORDER } from '@/lib/utils';
+import { INSIGHT_TYPE_LABELS } from '@/lib/constants/colors';
+import type { Insight, InsightType } from '@/lib/types';
 
 const INSIGHT_TYPES: InsightType[] = ['summary', 'decision', 'learning', 'technique', 'prompt_quality'];
-const INSIGHT_TYPE_LABELS: Record<InsightType, string> = {
-  summary: 'Summary',
-  decision: 'Decision',
-  learning: 'Learning',
-  technique: 'Technique',
-  prompt_quality: 'Prompt Quality',
-};
+
+const VIEW_MODES = [
+  { value: 'timeline', label: 'Timeline' },
+  { value: 'type', label: 'By Type' },
+  { value: 'project', label: 'By Project' },
+  { value: 'session', label: 'By Session' },
+] as const;
+
+interface InsightGroup {
+  key: string;
+  label: string;
+  count: number;
+  insights: Insight[];
+}
 
 export default function InsightsPage() {
   const [filters, setFilter, clearFilters] = useFilterParams({
     q: '',
     project: 'all',
     type: 'all',
-    view: 'list',
+    view: 'timeline',
   });
 
   const { data: projects = [] } = useProjects();
@@ -58,52 +69,111 @@ export default function InsightsPage() {
 
   const hasFilters = !!filters.q || filters.type !== 'all' || filters.project !== 'all';
 
-  const promptQuality = filtered.filter((i) => i.type === 'prompt_quality');
-  const other = filtered.filter((i) => i.type !== 'prompt_quality');
+  const grouped = useMemo((): InsightGroup[] => {
+    const view = filters.view;
+    const groups = new Map<string, Insight[]>();
+
+    for (const insight of filtered) {
+      let key: string;
+      if (view === 'type') {
+        key = insight.type;
+      } else if (view === 'project') {
+        key = insight.project_name;
+      } else if (view === 'session') {
+        key = insight.session_id;
+      } else {
+        key = getDateGroup(insight.created_at);
+      }
+      const arr = groups.get(key) || [];
+      arr.push(insight);
+      groups.set(key, arr);
+    }
+
+    const entries = [...groups.entries()];
+
+    if (view === 'timeline') {
+      const order = DATE_GROUP_ORDER as readonly string[];
+      entries.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+      return entries.map(([key, items]) => ({
+        key,
+        label: key,
+        count: items.length,
+        insights: items,
+      }));
+    }
+
+    if (view === 'type') {
+      return entries.map(([key, items]) => ({
+        key,
+        label: INSIGHT_TYPE_LABELS[key as InsightType] || key,
+        count: items.length,
+        insights: items,
+      }));
+    }
+
+    if (view === 'project') {
+      entries.sort((a, b) => b[1].length - a[1].length);
+      return entries.map(([key, items]) => ({
+        key,
+        label: key,
+        count: items.length,
+        insights: items,
+      }));
+    }
+
+    // session view
+    entries.sort((a, b) => {
+      const aTime = Math.max(...a[1].map((i) => new Date(i.created_at).getTime()));
+      const bTime = Math.max(...b[1].map((i) => new Date(i.created_at).getTime()));
+      return bTime - aTime;
+    });
+    return entries.map(([key, items]) => {
+      const first = items[0];
+      const sessionDate = format(new Date(first.created_at), 'MMM d, h:mm a');
+      return {
+        key,
+        label: `${first.project_name} -- ${sessionDate}`,
+        count: items.length,
+        insights: items,
+      };
+    });
+  }, [filtered, filters.view]);
 
   return (
     <div className="p-6 space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Insights</h1>
-          {!isLoading && (
-            <p className="text-muted-foreground text-sm">
-              {filtered.length} insight{filtered.length !== 1 ? 's' : ''}
-              {hasFilters ? ' matching filters' : ''}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant={filters.view === 'list' ? 'default' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setFilter('view', 'list')}
-          >
-            <List className="h-4 w-4" />
-            <span className="sr-only">List view</span>
-          </Button>
-          <Button
-            variant={filters.view === 'grid' ? 'default' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setFilter('view', 'grid')}
-          >
-            <LayoutGrid className="h-4 w-4" />
-            <span className="sr-only">Grid view</span>
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Insights</h1>
+        {!isLoading && (
+          <p className="text-muted-foreground text-sm">
+            {filtered.length} insight{filtered.length !== 1 ? 's' : ''}
+            {hasFilters ? ' matching filters' : ''}
+          </p>
+        )}
       </div>
 
-      {/* Filters */}
+      {/* Filters + View Mode */}
       <div className="space-y-2">
-        <Input
-          placeholder="Search insights..."
-          value={filters.q}
-          onChange={(e) => setFilter('q', e.target.value)}
-          className="max-w-sm"
-        />
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Search insights..."
+            value={filters.q}
+            onChange={(e) => setFilter('q', e.target.value)}
+            className="max-w-sm"
+          />
+          <Tabs
+            value={filters.view}
+            onValueChange={(v) => setFilter('view', v)}
+          >
+            <TabsList variant="default" className="h-9">
+              {VIEW_MODES.map((mode) => (
+                <TabsTrigger key={mode.value} value={mode.value} className="text-xs px-3">
+                  {mode.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Select value={filters.project} onValueChange={(v) => setFilter('project', v)}>
             <SelectTrigger className="w-[160px]">
@@ -168,34 +238,28 @@ export default function InsightsPage() {
             </p>
           </div>
         )
-      ) : filters.view === 'grid' ? (
-        <div className="space-y-6">
-          {promptQuality.map((insight) => (
-            <PromptQualityCard key={insight.id} insight={insight} />
-          ))}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {other.map((insight) => (
-              <InsightCard
-                key={insight.id}
-                insight={insight}
-                showProject
-                allInsightIds={allInsightIds}
-              />
-            ))}
-          </div>
-        </div>
       ) : (
-        <div className="space-y-3">
-          {promptQuality.map((insight) => (
-            <PromptQualityCard key={insight.id} insight={insight} />
-          ))}
-          {other.map((insight) => (
-            <InsightListItem
-              key={insight.id}
-              insight={insight}
-              showProject
-              allInsightIds={allInsightIds}
-            />
+        <div className="space-y-6">
+          {grouped.map((group) => (
+            <div key={group.key}>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                {group.label} ({group.count})
+              </h2>
+              <div className="space-y-3">
+                {group.insights.map((insight) =>
+                  insight.type === 'prompt_quality' ? (
+                    <PromptQualityCard key={insight.id} insight={insight} />
+                  ) : (
+                    <InsightListItem
+                      key={insight.id}
+                      insight={insight}
+                      showProject={filters.view !== 'project'}
+                      allInsightIds={allInsightIds}
+                    />
+                  )
+                )}
+              </div>
+            </div>
           ))}
         </div>
       )}

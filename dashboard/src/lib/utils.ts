@@ -72,3 +72,22 @@ export function formatTokenCount(tokens: number): string {
 export function getSessionTitle(session: Pick<Session, 'custom_title' | 'generated_title' | 'summary'>): string {
   return session.custom_title || session.generated_title || session.summary || 'Untitled Session';
 }
+
+export const DATE_GROUP_ORDER = ['Today', 'Yesterday', 'This Week', 'Earlier'] as const;
+
+export function getDateGroup(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const thisWeekStart = new Date(today);
+  thisWeekStart.setDate(thisWeekStart.getDate() - 7);
+
+  const sessionDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (sessionDay.getTime() === today.getTime()) return 'Today';
+  if (sessionDay.getTime() === yesterday.getTime()) return 'Yesterday';
+  if (sessionDay >= thisWeekStart) return 'This Week';
+  return 'Earlier';
+}
