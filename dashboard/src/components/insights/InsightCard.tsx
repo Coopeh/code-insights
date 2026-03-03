@@ -3,8 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, GitCommit, BookOpen, Target } from 'lucide-react';
 import { INSIGHT_TYPE_COLORS, INSIGHT_TYPE_LABELS } from '@/lib/constants/colors';
-import type { Insight, InsightType } from '@/lib/types';
+import type { Insight, InsightType, InsightMetadata } from '@/lib/types';
 import { parseJsonField } from '@/lib/types';
+import { renderTypeContent } from './insight-metadata';
+
+// Re-export from shared module for backward compat (SessionDetailPage, SessionsPage import these)
+export { OutcomeBadge, OUTCOME_CONFIG } from './insight-metadata';
 
 interface InsightCardProps {
   insight: Insight;
@@ -23,7 +27,7 @@ const typeIcons: Record<InsightType, typeof FileText> = {
 export function InsightCard({ insight, showProject = false, allInsightIds }: InsightCardProps) {
   const Icon = typeIcons[insight.type];
   const bullets = parseJsonField<string[]>(insight.bullets, []);
-  const metadata = parseJsonField<Record<string, unknown>>(insight.metadata, {});
+  const metadata = parseJsonField<InsightMetadata>(insight.metadata, {});
   const linkedIds = insight.linked_insight_ids
     ? parseJsonField<string[]>(insight.linked_insight_ids, [])
     : [];
@@ -34,7 +38,10 @@ export function InsightCard({ insight, showProject = false, allInsightIds }: Ins
         : linkedIds.length)
     : 0;
 
-  const evidence = Array.isArray(metadata.evidence) ? metadata.evidence as string[] : [];
+  const evidence = Array.isArray(metadata.evidence) ? metadata.evidence : [];
+
+  // Try type-specific rendering; fall back to generic bullets
+  const typeContent = renderTypeContent(insight.type, metadata, bullets);
 
   return (
     <Card>
@@ -66,21 +73,23 @@ export function InsightCard({ insight, showProject = false, allInsightIds }: Ins
         </div>
       </CardHeader>
       <CardContent>
-        {bullets.length > 0 ? (
-          <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-            {bullets.slice(0, 3).map((bullet, i) => (
-              <li key={i} className="line-clamp-1">{bullet}</li>
-            ))}
-            {bullets.length > 3 && (
-              <li className="text-muted-foreground/70">
-                +{bullets.length - 3} more...
-              </li>
-            )}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground line-clamp-3">
-            {insight.summary || insight.content}
-          </p>
+        {typeContent || (
+          bullets.length > 0 ? (
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              {bullets.slice(0, 3).map((bullet, i) => (
+                <li key={i} className="line-clamp-1">{bullet}</li>
+              ))}
+              {bullets.length > 3 && (
+                <li className="text-muted-foreground/70">
+                  +{bullets.length - 3} more...
+                </li>
+              )}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground line-clamp-3">
+              {insight.summary || insight.content}
+            </p>
+          )
         )}
         {evidence.length > 0 && (
           <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
