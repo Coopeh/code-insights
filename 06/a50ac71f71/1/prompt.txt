@@ -1,0 +1,179 @@
+Implement the following plan:
+
+# Tier 2: Sessions & Insights Page Redesign
+
+## Context
+
+Tier 1 (PR #95, merged) surfaced rich metadata in type-specific insight cards and enhanced session rows. Tier 2 adds structural/functional improvements: sidebar layout, view modes, URL-persisted filters, conversation search, recurring patterns, and a progress ring.
+
+**All items are frontend-only** — no API or schema changes needed. Estimated: 5 new files, ~5 modified files, ~595 new lines.
+
+---
+
+## Dependency Graph
+
+```
+Phase A (parallel):  1. URL Filters + 2. Progress Ring
+Phase B (parallel):  3. Sidebar + 4. View Modes + 5. Conversation Search
+Phase C (after 4):   6. Recurring Patterns
+```
+
+---
+
+## Item 1: URL-Persisted Filters (FOUNDATION)
+
+**Why first:** Items 3, 4, 6 depend on URL state for navigation links and view mode persistence.
+
+**Approach:** Create `useFilterParams<T>` hook wrapping React Router's `useSearchParams`. Only non-default values written to URL (clean URLs). Search input uses `replace: true` to avoid history pollution; dropdowns use `push`.
+
+**Files:**
+| File | Action |
+|------|--------|
+| `dashboard/src/hooks/useFilterParams.ts` | **NEW** (~50 lines) — generic hook |
+| `dashboard/src/pages/SessionsPage.tsx` | Replace 5 `useState` calls with `useFilterParams` |
+| `dashboard/src/pages/InsightsPage.tsx` | Replace 4 `useState` calls with `useFilterParams` |
+
+**Persisted filters:**
+- SessionsPage: `q`, `project`, `source`, `character`, `status`
+- InsightsPage: `q`, `project`, `type`, `view` (new view mode param)
+
+---
+
+## Item 2: Prompt Quality Progress Ring
+
+**Approach:** Custom SVG component (~45 lines, zero new deps). Uses `strokeDasharray`/`strokeDashoffset` for the arc. Color mapped from score matching existing `getScoreColor`. Replaces the large text number in PromptQualityCard.
+
+**Files:**
+| File | Action |
+|------|--------|
+| `dashboard/src/components/shared/ProgressRing.tsx` | **NEW** (~45 lines) |
+| `dashboard/src/components/insights/PromptQualityCard.tsx` | Swap text score for `<ProgressRing>` |
+
+---
+
+## Item 3: Session Detail Sidebar
+
+**Approach:** Fixed-width CSS sidebar (`w-72 shrink-0`, flexbox) — no new dependencies (no ResizablePanel). Hidden below `lg` breakpoint via `hidden lg:flex`. Move vitals + usage stats from Overview tab into sidebar so they're always visible.
+
+**Sidebar content:** Duration, messages (user/assistant), tool calls, cost, model(s), branch, source, outcome badge, insight summary counts, "Same project" link (uses URL filters from Item 1).
+
+**Overview tab after move:** Summary + PR links + Insight cards only (shorter scroll).
+
+**Files:**
+| File | Action |
+|------|--------|
+| `dashboard/src/components/sessions/SessionSidebar.tsx` | **NEW** (~150 lines) |
+| `dashboard/src/pages/SessionDetailPage.tsx` | Wrap in flex layout, move vitals/usage to sidebar |
+
+---
+
+## Item 4: Insights Page View Modes
+
+**Approach:** Segmented control using existing shadcn `Tabs` component. Four modes with client-side grouping:
+
+| Mode | Grouping | Section Headers |
+|------|----------|-----------------|
+| Timeline (default) | By date (Today/Yesterday/This Week/Earlier) | Date labels with count |
+| By Type | By `insight.type` | "Decisions (8)", "Learnings (12)", etc. |
+| By Project | By `project_name` | Project name + insight count |
+| By Session | By `session_id` | Project name + timestamp |
+
+Extract `getDateGroup` from SessionsPage to shared utility (reuse in both pages).
+
+**Files:**
+| File | Action |
+|------|--------|
+| `dashboard/src/pages/InsightsPage.tsx` | Add Tabs-based mode switcher + grouping logic (~150 lines added) |
+| `dashboard/src/lib/utils.ts` | Extract `getDateGroup` helper from SessionsPage |
+| `dashboard/src/pages/SessionsPage.tsx` | Import shared `getDateGroup` instead of inline |
+
+---
+
+## Item 5: Conversation Search
+
+**Approach:** Client-side search. When user types in search bar, load all remaining messages (loop `fetchNextPage` until done), then filter by `message.content.includes(term)`.
+
+**UX:** Search bar sticky at top of Conversation tab. Shows "N matches" with prev/next navigation buttons. Matching messages get a highlighted border/background (NOT inline text highlighting — that's Tier 3). Scrolls to current match via `scrollIntoView`.
+
+**Files:**
+| File | Action |
+|------|--------|
+| `dashboard/src/components/chat/conversation/ConversationSearch.tsx` | **NEW** (~80 lines) |
+| `dashboard/src/components/chat/conversation/ChatConversation.tsx` | Accept `highlightMessageId` prop |
+| `dashboard/src/pages/SessionDetailPage.tsx` | Add search state, wire to ConversationSearch |
+
+---
+
+## Item 6: Recurring Patterns Section
+
+**Approach:** Client-side grouping from existing `linked_insight_ids` field. Group insights that share linked IDs. Show a "Recurring Patterns" section at top of InsightsPage (above view mode content) when groups exist.
+
+Each pattern card shows: theme (title), occurrence count, project names, last seen date, "View all" button that filters the list via URL param (`?pattern=<groupKey>`).
+
+**Files:**
+| File | Action |
+|------|--------|
+| `dashboard/src/components/insights/RecurringPatternsSection.tsx` | **NEW** (~120 lines) |
+| `dashboard/src/pages/InsightsPage.tsx` | Add section above view content + pattern filter logic |
+
+---
+
+## Execution Strategy
+
+**Team:** `/start-feature` with PM coordinating. Single `ux-engineer` agent implements all items (primarily dashboard UI work with some hook logic).
+
+**Phases:**
+- **Phase A:** Items 1 + 2 in parallel (independent)
+- **Phase B:** Items 3 + 4 + 5 (all unblocked after Item 1, touch different files)
+- **Phase C:** Item 6 (depends on Item 4 for InsightsPage layout)
+- **Phase D:** CI gate + PR creation
+- **Phase E:** Triple-layer code review
+
+**Branch:** `feature/sessions-insights-tier2`
+
+---
+
+## Verification
+
+1. `pnpm build` passes across all packages
+2. Navigate to `/sessions` — filter by project, refresh page — filters persist in URL
+3. Navigate to `/sessions/:id` — sidebar shows vitals, main content has tabs
+4. On session detail Conversation tab — search for a keyword, matches highlighted
+5. Navigate to `/insights` — switch between Timeline/By Type/By Project/By Session views
+6. On Insights page — recurring patterns section shows at top (if data exists)
+7. Prompt quality cards show circular progress ring instead of text number
+8. All pages work in dark mode
+9. Mobile/tablet: sidebar hidden, pages still functional
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/melagiri/.claude/projects/-Users-melagiri-Workspace-codeInsights-code-insights/383d4f6b-d8ea-44e9-a12b-5e53a9b7c4fe.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+---
+
+yes
+
+---
+
+before the review.. i see couple of issues.. we have duplicate content under the title of session and in the newly added sidebar. is that expected and will be cleaned up in future tier of the plan? Also, i think the user/assistant tool count and token  counts aren't accurate - this session '627d0444-7318-41e5-8509-9a5ac897707f' is definetely not 96 user tokens only...
+
+---
+
+good now. but still the count mismatch in insights.. i see the previous example session has 3 Learnings and 2 decisions which makes it 5 insights, but the session shows as 6 insights.. How is that? 
+
+I am also not happy with the way sessions page shows the session list.. In the redesign i was expecting it to be improved as well...
+
+---
+
+1. In both secondary sidebar and the session detail view, i want full forms for tools.. Not just CC, set Claude Code explicitly... 
+2. The token breakup is again made confusing. give proper breakup with input/cache/output details
+3. The Nav bar - while the session view (body content) is starting from the width edge, the nav bar is centered.. i like logo/title to be at left corner and github, theme toggle buttons to be in right corner.. Menu items can be placed like standard way
+
+---
+
+looks good for now.. Because of this new deviation.. how much of earlier UX overhaul plan has to be updated?
+
+---
+
+yes, update it.. ignore the keyboard shortcuts for now. we won't need it until user feedback.. fix the deep linking issue and update the plan.. then come to me with next steps

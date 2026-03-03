@@ -3,7 +3,7 @@
   "checkpoint_id": "06a50ac71f71",
   "strategy": "manual-commit",
   "branch": "feature/sessions-insights-tier2",
-  "checkpoints_count": 0,
+  "checkpoints_count": 2,
   "files_touched": [
     "docs/ux/sessions-insights-redesign.md"
   ],
@@ -14,13 +14,20 @@
       "context": "/06/a50ac71f71/0/context.md",
       "content_hash": "/06/a50ac71f71/0/content_hash.txt",
       "prompt": "/06/a50ac71f71/0/prompt.txt"
+    },
+    {
+      "metadata": "/06/a50ac71f71/1/metadata.json",
+      "transcript": "/06/a50ac71f71/1/full.jsonl",
+      "context": "/06/a50ac71f71/1/context.md",
+      "content_hash": "/06/a50ac71f71/1/content_hash.txt",
+      "prompt": "/06/a50ac71f71/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 0,
-    "cache_creation_tokens": 0,
-    "cache_read_tokens": 0,
-    "output_tokens": 0,
-    "api_call_count": 0
+    "input_tokens": 99,
+    "cache_creation_tokens": 155063,
+    "cache_read_tokens": 8330026,
+    "output_tokens": 36865,
+    "api_call_count": 81
   }
 }
