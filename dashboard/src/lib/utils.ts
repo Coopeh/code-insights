@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import type { Session } from '@/lib/types';
 
 export function cn(...inputs: ClassValue[]) {
@@ -95,6 +95,7 @@ export function getDateGroup(dateStr: string): string {
  * sorted newest-first by parsing the date label.
  */
 export function sortDateGroups<T>(entries: [string, T][]): [string, T][] {
+  const now = new Date();
   return [...entries].sort((a, b) => {
     const labelA = a[0];
     const labelB = b[0];
@@ -107,7 +108,6 @@ export function sortDateGroups<T>(entries: [string, T][]): [string, T][] {
     if (labelB === 'Yesterday') return 1;
 
     // Parse dates from labels for remaining groups (newest first)
-    const now = new Date();
     const dateA = parseDateGroupLabel(labelA, now);
     const dateB = parseDateGroupLabel(labelB, now);
     return dateB.getTime() - dateA.getTime();
@@ -115,15 +115,14 @@ export function sortDateGroups<T>(entries: [string, T][]): [string, T][] {
 }
 
 function parseDateGroupLabel(label: string, now: Date): Date {
-  // Try parsing "EEEE, MMM d, yyyy" or "EEEE, MMM d" format
   // Remove the day-of-week prefix (e.g., "Monday, ")
   const commaIdx = label.indexOf(', ');
   if (commaIdx === -1) return new Date(0);
   const datePart = label.slice(commaIdx + 2);
-  // Try with explicit year first, then fall back to current year
-  const parsed = new Date(datePart);
-  if (!isNaN(parsed.getTime())) return parsed;
-  const withYear = new Date(`${datePart}, ${now.getFullYear()}`);
+  // Try "MMM d, yyyy" first (explicit year), then "MMM d" (current year)
+  const withYear = parse(datePart, 'MMM d, yyyy', now);
   if (!isNaN(withYear.getTime())) return withYear;
+  const currentYear = parse(datePart, 'MMM d', now);
+  if (!isNaN(currentYear.getTime())) return currentYear;
   return new Date(0);
 }

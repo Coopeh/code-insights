@@ -2,7 +2,6 @@ import { Search, FolderSearch } from 'lucide-react';
 import type { ToolCall, ToolResult } from '@/lib/types';
 import { parseToolInput } from '../utils';
 import { usePreviewLines } from '../usePreview';
-import { ToolPanelHeader } from './ToolPanelHeader';
 import { CollapsibleToolPanel } from '../CollapsibleToolPanel';
 import { Badge } from '@/components/ui/badge';
 
@@ -41,22 +40,6 @@ export function SearchToolPanel({ toolCall, result }: SearchToolPanelProps) {
       label={isGrep ? 'Search' : 'Find Files'}
       summary={summary}
     >
-      <ToolPanelHeader
-        className="bg-muted/60 border-border"
-        icon={<Icon className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-        title={isGrep ? 'Search' : 'Find Files'}
-        meta={(
-          <code className="text-xs font-mono bg-amber-500/10 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded truncate">
-            {pattern}
-          </code>
-        )}
-        rightContent={searchPath ? (
-          <span className="text-[10px] text-muted-foreground/60 truncate" title={searchPath}>
-            in {searchPath}
-          </span>
-        ) : null}
-      />
-
       {resultText ? (
         <div className="px-3 py-2">
           <div className="space-y-0.5">

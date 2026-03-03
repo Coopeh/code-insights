@@ -29,10 +29,16 @@ export function InsightListItem({ insight, showProject = false, allInsightIds, h
   const [showRing, setShowRing] = useState(highlighted);
   const itemRef = useRef<HTMLDivElement>(null);
 
+  // Sync showRing when highlighted prop changes
+  useEffect(() => {
+    setShowRing(!!highlighted);
+  }, [highlighted]);
+
   useEffect(() => {
     if (highlighted && itemRef.current) {
-      itemRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Fade ring out after 2s
+      requestAnimationFrame(() => {
+        itemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       const timer = setTimeout(() => setShowRing(false), 2000);
       return () => clearTimeout(timer);
     }

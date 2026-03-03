@@ -2,7 +2,6 @@ import { HelpCircle, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { ToolCall, ToolResult } from '@/lib/types';
 import { parseToolInput } from '../utils';
-import { ToolPanelHeader } from './ToolPanelHeader';
 import { CollapsibleToolPanel } from '../CollapsibleToolPanel';
 
 interface AskUserQuestionPanelProps {
@@ -78,19 +77,6 @@ export function AskUserQuestionPanel({ toolCall, result }: AskUserQuestionPanelP
       summary={summary}
       className="border-blue-500/20"
     >
-      <ToolPanelHeader
-        className="bg-blue-500/5 border-b border-blue-500/20"
-        icon={<HelpCircle className="h-3.5 w-3.5 text-blue-500 shrink-0" />}
-        title={`Asked ${questions.length === 1 ? 'Question' : `${questions.length} Questions`}`}
-        titleClassName="text-blue-600 dark:text-blue-400"
-        rightContent={hasAnswers ? (
-          <span className="flex items-center gap-1 text-[10px] text-green-600 dark:text-green-400">
-            <Check className="h-3 w-3" />
-            Answered
-          </span>
-        ) : null}
-      />
-
       <div className="divide-y divide-border">
         {questions.map((q, i) => {
           const answer = answers.get(q.question);

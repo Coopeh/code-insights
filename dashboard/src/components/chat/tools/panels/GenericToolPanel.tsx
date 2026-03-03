@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Terminal } from 'lucide-react';
 import type { ToolCall, ToolResult } from '@/lib/types';
-import { ToolPanelHeader } from './ToolPanelHeader';
 import { CollapsibleToolPanel } from '../CollapsibleToolPanel';
 
 interface GenericToolPanelProps {
@@ -35,11 +34,6 @@ export function GenericToolPanel({ toolCall, result }: GenericToolPanelProps) {
       label="Tool"
       summary={summary}
     >
-      <ToolPanelHeader
-        className="bg-muted/60 border-border"
-        icon={<Terminal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
-        title={toolCall.name}
-      />
       <pre className="px-3 py-2 text-xs font-mono text-muted-foreground overflow-x-auto max-h-48 whitespace-pre-wrap">
         {formattedInput}
       </pre>

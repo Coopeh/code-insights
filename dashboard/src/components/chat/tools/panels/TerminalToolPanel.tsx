@@ -35,15 +35,11 @@ export function TerminalToolPanel({ toolCall, result }: TerminalToolPanelProps) 
       headerClassName="bg-zinc-800 dark:bg-zinc-900 hover:bg-zinc-700/80 dark:hover:bg-zinc-800/80"
     >
       <div className="bg-zinc-900 dark:bg-zinc-950 px-3 py-2 font-mono text-xs">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-          <span className="text-xs font-medium text-zinc-400">Terminal</span>
-          {description && (
-            <span className="ml-auto text-[10px] text-zinc-500 truncate max-w-[50%]">{description}</span>
-          )}
-        </div>
+        {description && (
+          <div className="text-[10px] text-zinc-500 truncate mb-1.5">{description}</div>
+        )}
 
-        <div className="mt-1.5 text-green-400">
+        <div className="text-green-400">
           <span className="text-zinc-500 select-none">$ </span>
           {command}
         </div>

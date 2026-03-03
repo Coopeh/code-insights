@@ -11,7 +11,7 @@ import {
 import { SESSION_CHARACTER_COLORS, SESSION_CHARACTER_LABELS, SOURCE_TOOL_COLORS } from '@/lib/constants/colors';
 import { parseJsonField } from '@/lib/types';
 import type { InsightMetadata } from '@/lib/types';
-import { OutcomeBadge } from '@/components/insights/InsightCard';
+import { OutcomeBadge, OUTCOME_CONFIG } from '@/components/insights/InsightCard';
 import { Badge } from '@/components/ui/badge';
 import { ErrorCard } from '@/components/ErrorCard';
 import { Button } from '@/components/ui/button';
@@ -43,9 +43,17 @@ import {
   GitCommit,
   GitPullRequest,
   BarChart2,
-
+  ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const OUTCOME_DOT: Record<string, { color: string; label: string }> = {
+  success: { color: 'bg-emerald-500', label: 'Completed successfully' },
+  partial: { color: 'bg-amber-500', label: 'Partially completed' },
+  abandoned: { color: 'bg-red-500', label: 'Abandoned' },
+  blocked: { color: 'bg-red-500', label: 'Blocked' },
+};
 
 interface SessionDetailPanelProps {
   sessionId: string;
@@ -61,6 +69,8 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
   const [searchHighlightId, setSearchHighlightId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingAllMessages, setLoadingAllMessages] = useState(false);
+  const [learningsOpen, setLearningsOpen] = useState(false);
+  const [decisionsOpen, setDecisionsOpen] = useState(false);
   const { state: analysisState } = useAnalysis();
 
   useEffect(() => {
@@ -247,12 +257,19 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
       <div className="shrink-0 border-b px-6 py-3 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-lg font-semibold leading-tight">{getSessionTitle(session)}</h1>
+          {sessionOutcome && OUTCOME_DOT[sessionOutcome] && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn('w-2 h-2 rounded-full shrink-0', OUTCOME_DOT[sessionOutcome].color)} />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">{OUTCOME_DOT[sessionOutcome].label}</TooltipContent>
+            </Tooltip>
+          )}
           {characterLabel && characterColor && (
             <Badge variant="outline" className={cn('text-xs shrink-0', characterColor)}>
               {characterLabel}
             </Badge>
           )}
-          {sessionOutcome && <OutcomeBadge outcome={sessionOutcome} />}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -392,7 +409,7 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="flex-1 overflow-y-auto mt-0 p-6 space-y-6">
+        <TabsContent value="overview" className="flex-1 overflow-y-auto mt-0 p-5 space-y-4">
           {/* Vitals Strip */}
           <VitalsStrip session={session} />
 
@@ -475,23 +492,32 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
                 if (learningInsights.length === 0) return null;
                 return (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
+                    <button
+                      className="flex items-center gap-2 w-full text-left hover:bg-muted/30 rounded -mx-1 px-1 py-0.5 transition-colors"
+                      onClick={() => setLearningsOpen(!learningsOpen)}
+                      aria-expanded={learningsOpen}
+                    >
+                      {learningsOpen
+                        ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                       <BookOpen className="h-4 w-4 text-muted-foreground" />
                       <h3 className="text-sm font-medium">Learnings</h3>
                       <Badge variant="secondary" className="text-xs">
                         {learningInsights.length}
                       </Badge>
-                    </div>
-                    <div className="space-y-3">
-                      {learningInsights.map((insight) => (
-                        <InsightCard
-                          key={insight.id}
-                          insight={insight}
-                          showProject={false}
-                          allInsightIds={allInsightIds}
-                        />
-                      ))}
-                    </div>
+                    </button>
+                    {learningsOpen && (
+                      <div className="space-y-3 mt-3">
+                        {learningInsights.map((insight) => (
+                          <InsightCard
+                            key={insight.id}
+                            insight={insight}
+                            showProject={false}
+                            allInsightIds={allInsightIds}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -501,23 +527,32 @@ export function SessionDetailPanel({ sessionId }: SessionDetailPanelProps) {
                 if (decisionInsights.length === 0) return null;
                 return (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
+                    <button
+                      className="flex items-center gap-2 w-full text-left hover:bg-muted/30 rounded -mx-1 px-1 py-0.5 transition-colors"
+                      onClick={() => setDecisionsOpen(!decisionsOpen)}
+                      aria-expanded={decisionsOpen}
+                    >
+                      {decisionsOpen
+                        ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                       <GitCommit className="h-4 w-4 text-muted-foreground" />
                       <h3 className="text-sm font-medium">Decisions</h3>
                       <Badge variant="secondary" className="text-xs">
                         {decisionInsights.length}
                       </Badge>
-                    </div>
-                    <div className="space-y-3">
-                      {decisionInsights.map((insight) => (
-                        <InsightCard
-                          key={insight.id}
-                          insight={insight}
-                          showProject={false}
-                          allInsightIds={allInsightIds}
-                        />
-                      ))}
-                    </div>
+                    </button>
+                    {decisionsOpen && (
+                      <div className="space-y-3 mt-3">
+                        {decisionInsights.map((insight) => (
+                          <InsightCard
+                            key={insight.id}
+                            insight={insight}
+                            showProject={false}
+                            allInsightIds={allInsightIds}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}

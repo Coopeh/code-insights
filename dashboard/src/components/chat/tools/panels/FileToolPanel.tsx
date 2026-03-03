@@ -2,7 +2,6 @@ import { FileText, FilePen, FilePlus2 } from 'lucide-react';
 import type { ToolCall, ToolResult } from '@/lib/types';
 import { parseToolInput } from '../utils';
 import { usePreviewText } from '../usePreview';
-import { ToolPanelHeader } from './ToolPanelHeader';
 import { CollapsibleToolPanel } from '../CollapsibleToolPanel';
 import { Badge } from '@/components/ui/badge';
 
@@ -62,18 +61,6 @@ export function FileToolPanel({ toolCall, result }: FileToolPanelProps) {
       label="File"
       summary={summary}
     >
-      <ToolPanelHeader
-        className="bg-muted/60 border-border"
-        icon={<Icon className="h-3.5 w-3.5 text-blue-500 shrink-0" />}
-        title={label}
-        meta={(
-          <code className="text-xs text-muted-foreground font-mono truncate" title={filePath}>
-            {fileName || 'file'}
-          </code>
-        )}
-        rightContent={lang ? <span className="text-[10px] text-muted-foreground/60">{lang}</span> : null}
-      />
-
       {isEdit && (oldString || newString) && (
         <div className="text-xs font-mono overflow-x-auto">
           {oldString && (

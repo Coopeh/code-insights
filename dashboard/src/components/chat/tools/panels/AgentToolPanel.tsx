@@ -65,11 +65,6 @@ export function AgentToolPanel({ toolCall, result }: AgentToolPanelProps) {
         summary={summary}
         className="border-purple-500/20"
       >
-        <div className="flex items-center gap-2 px-3 py-2 bg-purple-500/8 border-b border-purple-500/20">
-          <Users className="h-3.5 w-3.5 text-purple-500 shrink-0" />
-          <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Agent Dispatched</span>
-        </div>
-
         <div className="px-3 py-2 space-y-2">
           {description && (
             <p className="text-sm font-medium text-foreground">&quot;{description}&quot;</p>

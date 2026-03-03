@@ -24,15 +24,16 @@ const ROUTE_TITLES: Record<string, string> = {
 function RouteEffects() {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
+  const insightParam = searchParams.get('insight');
   const navStartRef = useRef<number>(Date.now());
 
   // Scroll to top on route change, unless deep-linking to a specific insight
   useEffect(() => {
-    const isInsightDeepLink = pathname === '/insights' && searchParams.has('insight');
+    const isInsightDeepLink = pathname === '/insights' && insightParam;
     if (!isInsightDeepLink) {
       window.scrollTo(0, 0);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, insightParam]);
 
   // Update document.title per route, track page views, and capture dashboard_loaded
   useEffect(() => {
