@@ -1,0 +1,345 @@
+The user just ran /insights to generate a usage report analyzing their Claude Code sessions.
+
+Here is the full insights data:
+{
+  "project_areas": {
+    "areas": [
+      {
+        "name": "CLI Tool Development & Publishing",
+        "session_count": 15,
+        "description": "Active development of an npm CLI package including bug fixes (session parsing, broken charts, hardcoded versions), feature enhancements (multi-tool status command, LLM-powered export), and numerous version bumps with npm publish and GitHub release workflows. Claude Code handled the full release ceremony repeatedly, from running tests through publishing and creating releases."
+      },
+      {
+        "name": "Marketing Site & Documentation",
+        "session_count": 12,
+        "description": "Extensive updates to marketing pages and documentation to keep them in sync with product features, including screenshot additions, README badges, dynamic versioning, SEO improvements, blog infrastructure, and UI fixes like opaque backgrounds blocking grid patterns. Claude Code made multi-file changes across docs and marketing repos, often updating 10+ files per session."
+      },
+      {
+        "name": "UI Redesign & Frontend Polish",
+        "session_count": 8,
+        "description": "Major multi-tier redesign of Sessions and Insights pages with iterative code review rounds, light/dark mode styling refinements, component porting (~44 files), and Tier 1-3 feature implementation. Claude Code was used with orchestrated multi-agent workflows and extensive review ceremonies to deliver and merge large frontend PRs."
+      },
+      {
+        "name": "Telemetry & Security Infrastructure",
+        "session_count": 7,
+        "description": "Migration to PostHog telemetry, implementation of error/exception tracking for LLM analysis failures, telemetry opt-in/opt-out event tracking, PostHog custom domain configuration, and a security audit of CLI-to-Supabase telemetry with fixes across two repos. Claude Code orchestrated full agent team ceremonies (PM, TA, Dev, reviewers) for these infrastructure changes."
+      },
+      {
+        "name": "Architecture Migration & Code Quality",
+        "session_count": 7,
+        "description": "Multi-perspective analysis of cloud vs local-first architecture leading to a migration plan with Phase 1 execution, agent prompt updates to reflect the new architecture, stale documentation cleanup (removing 4,215 lines), test coverage with CI implementation, and merge conflict resolution. Claude Code facilitated strategic planning through multi-agent analysis and executed systematic codebase-wide changes."
+      }
+    ]
+  },
+  "interaction_style": {
+    "narrative": "You are a **power orchestrator** who treats Claude Code as a full development team rather than a simple coding assistant. Across 129 sessions and 502 hours, you've developed a distinctive workflow centered around **multi-agent ceremonies** — spinning up PM, architect, developer, and reviewer sub-agents to handle complex features end-to-end. Your heavy use of Task/TaskCreate/TaskUpdate (1,382 combined calls) confirms this pattern. You don't just ask for code; you orchestrate entire release cycles: design docs, implementation, triple-layer code reviews (sometimes running 5 rounds until zero issues remain), PR creation, npm publishing, and GitHub releases — all in single sessions. Your 180 commits across ~6 weeks show a **relentless shipping cadence**.\n\nYour interaction style is **high-trust but corrective**. You let Claude run autonomously through complex multi-file changes (31 multi-file successes), but you intervene decisively when things go off track. You've rejected actions 6 times and corrected wrong approaches 9 times — like when Claude started a formal review ceremony when you wanted a quick pass, or when it proposed only 1 file for a version bump when multiple needed updating. You also interrupt sessions when they become unnecessary, such as stopping a PR review for a simple one-line fix. Despite the friction from agent coordination issues (stuck agents, zombie processes, lost context), you maintain a **79% fully-achieved rate** and near-universal satisfaction, suggesting you're skilled at steering Claude back on course. Your projects span a TypeScript CLI tool, marketing site, and docs — and you treat the full stack as a single unified workflow, frequently updating all three in coordinated pushes with version bumps and releases to close out sessions.",
+    "key_pattern": "You operate Claude Code as a multi-agent development team orchestrator, running full release ceremonies (design → implement → triple-layer review → merge → publish) in single sessions with decisive course corrections when agents drift."
+  },
+  "what_works": {
+    "intro": "You're a power user running 129 sessions across 6 weeks with an exceptional 80% fully-achieved rate, leveraging Claude Code extensively for a TypeScript product across CLI, web, and docs.",
+    "impressive_workflows": [
+      {
+        "title": "Multi-Agent Team Orchestration",
+        "description": "You've built a sophisticated workflow using Task/TaskCreate/TaskUpdate to orchestrate multi-agent teams with defined roles — PM, Tech Architect, Dev, and triple-layer reviewers. You consistently run full \"dev ceremony\" pipelines from scoping through implementation to multi-round code review, achieving production-quality PRs like your PostHog telemetry migration and security audit."
+      },
+      {
+        "title": "Iterative Review Until Zero Issues",
+        "description": "You run rigorous multi-round code reviews, sometimes up to 5 rounds with 35+ issues found and fixed, refusing to merge until reaching zero new findings. This disciplined approach across PRs like #47 and #97 shows you're using Claude as a genuine quality gate rather than just a code generator."
+      },
+      {
+        "title": "End-to-End Release Automation",
+        "description": "You've streamlined your entire release pipeline through Claude — from fixing bugs and running tests through version bumps across multiple files, npm publishing, and GitHub release creation. You shipped at least 6 versioned releases (v3.1.0 through v3.6.0) this way, including rapid hotfix turnarounds like the v3.4.1 missing dependency fix."
+      }
+    ]
+  },
+  "friction_analysis": {
+    "intro": "Your main friction points revolve around Claude taking wrong initial approaches, agent coordination breaking down in multi-agent workflows, and missing obvious next steps in release/PR workflows.",
+    "categories": [
+      {
+        "category": "Wrong Initial Approach Requiring Course Correction",
+        "description": "Claude frequently misjudges the scope or direction you want, forcing you to intervene and redirect. You could reduce this by front-loading explicit constraints (e.g., 'quick pass only' or 'update all files from prior release pattern') in your initial prompt.",
+        "examples": [
+          "Claude started a formal review ceremony when you wanted a quick pass, and suggested cost-focused blog topics you explicitly rejected as irrelevant to your audience",
+          "Claude proposed updating only 1 file for a version bump when your prior release patterns clearly required multiple files, and didn't pull latest master before starting work on a feature branch"
+        ]
+      },
+      {
+        "category": "Multi-Agent Coordination Failures",
+        "description": "Your orchestrated agent team workflows frequently break down with stuck agents, lost context, and failed message relay. Consider simplifying to fewer agents or building in explicit checkpoints, as the overhead of managing zombie agents and re-spawning reviewers is costing you significant time.",
+        "examples": [
+          "Review sub-agents failed to relay outputs via messages, requiring you to conduct reviews directly and repeatedly send shutdown commands to zombie agents",
+          "An outsider-reviewer agent got stuck in an infinite idle loop, a PM agent incorrectly declared a feature already implemented, and two outsider reviewer agents required force removal during cleanup"
+        ]
+      },
+      {
+        "category": "Missing Obvious Workflow Steps",
+        "description": "Claude consistently fails to complete natural next steps in your release and PR workflows—like creating PRs, posting review comments, or marking version updates—until you explicitly prompt for them. You might benefit from a CLAUDE.md instruction codifying your standard workflow sequence (code → test → PR → review comment → publish).",
+        "examples": [
+          "Claude didn't create the PR until you asked despite it being the natural final step, and review fix confirmations weren't posted to the GitHub PR until you pointed it out",
+          "Published v3.4.0 shipped missing the jsonrepair dependency requiring a hotfix, and Claude didn't make code changes to mark the version update before attempting to publish"
+        ]
+      }
+    ]
+  },
+  "suggestions": {
+    "claude_md_additions": [
+      {
+        "addition": "When creating PRs, always create the PR as the final step without waiting to be asked. Post all review comments directly to the GitHub PR.",
+        "why": "Multiple sessions show Claude not creating PRs until asked and not posting review comments to GitHub PRs until prompted - this was friction in at least 3 sessions.",
+        "prompt_scaffold": "Add under ## Workflow Conventions section"
+      },
+      {
+        "addition": "For version bumps and releases: update ALL files that contain version strings (package.json, constants, README, etc.) before publishing. Always check prior release commits for the full list of files.",
+        "why": "Multiple sessions had friction where Claude only updated 1 file for version bumps or forgot to make code changes before publishing, requiring user corrections.",
+        "prompt_scaffold": "Add under ## Release Process section"
+      },
+      {
+        "addition": "Always run `git pull` on the target branch before starting work. Never stash changes or switch branches without confirming no parallel sessions are running.",
+        "why": "Multiple sessions had issues with Claude not pulling latest master or switching branches while parallel sessions were active.",
+        "prompt_scaffold": "Add under ## Git Conventions section"
+      },
+      {
+        "addition": "When user asks for a quick review or simple fix, match their energy — don't launch full ceremony workflows unless explicitly requested.",
+        "why": "Friction occurred when Claude started formal review ceremonies for quick passes and when user had to interrupt unnecessary PR reviews for one-line fixes.",
+        "prompt_scaffold": "Add under ## General Guidelines section"
+      },
+      {
+        "addition": "After declaring a PR ready, always run the full test suite one final time to catch regressions before merging.",
+        "why": "Test failures were discovered after PRs were declared ready, and a missing dependency slipped through to require a hotfix release.",
+        "prompt_scaffold": "Add under ## Testing section"
+      }
+    ],
+    "features_to_try": [
+      {
+        "feature": "Custom Skills",
+        "one_liner": "Reusable prompts for repetitive workflows triggered by a single /command",
+        "why_for_you": "You have highly repetitive workflows: releases (version bump + npm publish + GitHub release), triple-layer code reviews, and PR creation. These appeared in 15+ sessions and would benefit from standardized steps.",
+        "example_code": "mkdir -p .claude/skills/release && cat > .claude/skills/release/SKILL.md << 'EOF'\n## Release Skill\n1. Run full test suite\n2. Update version in ALL files: package.json, src/constants.ts, README.md\n3. Git commit with message \"chore: bump to vX.Y.Z\"\n4. Run `npm publish`\n5. Create GitHub release with changelog\n6. Verify published version with `npm view <pkg> version`\nEOF"
+      },
+      {
+        "feature": "Hooks",
+        "one_liner": "Auto-run shell commands at lifecycle events like pre-commit or post-edit",
+        "why_for_you": "You hit issues with missing dependencies, broken tests after edits, and dead imports slipping through. Hooks can auto-run tests and lint checks before Claude considers a task done.",
+        "example_code": "Add to .claude/settings.json:\n{\n  \"hooks\": {\n    \"postToolUse\": [{\n      \"matcher\": \"Edit|MultiEdit\",\n      \"command\": \"npx tsc --noEmit 2>&1 | head -20\"\n    }]\n  }\n}"
+      },
+      {
+        "feature": "Headless Mode",
+        "one_liner": "Run Claude non-interactively from scripts for automated tasks",
+        "why_for_you": "You do frequent code reviews (17 sessions) and PR workflows that follow consistent patterns. Headless mode could automate first-pass reviews on new PRs via CI.",
+        "example_code": "claude -p \"Review this PR for security issues, dead imports, and missing tests. Post findings as a comment.\" --allowedTools \"Read,Grep,Bash,Task\" < <(git diff main...HEAD)"
+      }
+    ],
+    "usage_patterns": [
+      {
+        "title": "Standardize your release checklist",
+        "suggestion": "Create a documented release process to avoid repeated version bump and publish friction.",
+        "detail": "Across 8+ release sessions, you hit friction with partial version bumps, missing dependencies, and forgotten pre-publish steps. A /release skill with a hardcoded checklist of all versioned files would eliminate this. Your releases follow the same pattern every time: test → bump → commit → publish → GitHub release.",
+        "copyable_prompt": "Create a release checklist that updates version in package.json, src/constants.ts, and README.md, runs tests, publishes to npm, and creates a GitHub release. Save it as .claude/skills/release/SKILL.md"
+      },
+      {
+        "title": "Simplify agent orchestration",
+        "suggestion": "Reduce multi-agent ceremony for smaller tasks to avoid coordination failures.",
+        "detail": "You had agent coordination issues in 4+ sessions — zombie agents, lost context, stuck reviewers, and agents that couldn't relay outputs. For tasks under ~500 lines of changes, a single-agent approach with structured review steps is more reliable than spawning PM/Dev/Reviewer sub-agents. Reserve full team ceremony for large features only.",
+        "copyable_prompt": "For this task, work as a single agent. Do the implementation, then self-review in three passes: 1) correctness, 2) security, 3) style. No sub-agents needed."
+      },
+      {
+        "title": "Front-load dependency checks",
+        "suggestion": "Always verify imports and dependencies before declaring work complete.",
+        "detail": "The v3.4.1 hotfix for missing jsonrepair and dead imports slipping through builds suggest a pattern of incomplete dependency verification. Adding a quick `npm ls` or `tsc --noEmit` check before PRs would catch these. This pairs well with the hooks feature to automate it.",
+        "copyable_prompt": "Before creating this PR, verify: 1) run tsc --noEmit to check types, 2) run npm ls to verify all imports have matching dependencies, 3) run the full test suite, 4) check for dead/unused imports with grep"
+      }
+    ]
+  },
+  "on_the_horizon": {
+    "intro": "Your 129 sessions show a power user pushing Claude Code toward full autonomous orchestration — the friction patterns reveal exactly where to unlock the next level of agent-driven development.",
+    "opportunities": [
+      {
+        "title": "Self-Healing Multi-Agent Review Pipelines",
+        "whats_possible": "Your top friction points are agent coordination failures — stuck reviewers, lost context, zombie agents. You can build a resilient orchestration pattern where the lead agent monitors sub-agent health, auto-recovers stuck tasks, and guarantees all review outputs are captured and posted to GitHub before declaring completion. This eliminates the manual babysitting that interrupted at least 5 of your sessions.",
+        "how_to_try": "Use Claude Code's Task/TaskCreate tools with explicit health-check loops and timeout-based fallback logic baked into your orchestration prompt.",
+        "copyable_prompt": "You are a release orchestrator. For PR #[NUMBER]:\n\n1. Spawn 3 review agents: security-reviewer, logic-reviewer, style-reviewer\n2. After spawning each, set a 3-minute timeout. If any agent hasn't reported via TaskUpdate within that window, kill it and absorb its review scope into your own pass.\n3. Collect ALL findings into a single structured list. For each finding: file, line, severity (P0-P2), fix description.\n4. Apply all P0 and P1 fixes directly. For each fix, run the relevant test file via Bash.\n5. Post a consolidated review comment to the GitHub PR with all findings and fix statuses.\n6. Do NOT declare the review complete until: (a) all agents have reported or been absorbed, (b) all fixes are pushed, (c) the PR comment is confirmed posted.\n\nIf you hit a rate limit, wait 60 seconds and retry. If a sub-agent crashes, log it and continue. Never leave zombie agents running."
+      },
+      {
+        "title": "Test-Driven Autonomous Feature Shipping",
+        "whats_possible": "You had multiple sessions where tests broke after a PR was declared ready, or missing dependencies slipped through. An iterate-against-tests workflow can autonomously write failing tests first, implement until green, then run the full suite as a gate — catching issues like the jsonrepair dependency miss or the idempotency test break before you ever see them. This turns your 180 commits into higher-confidence releases.",
+        "how_to_try": "Structure prompts to enforce a red-green-refactor loop where Claude runs the full test suite via Bash after every meaningful change, blocking PR creation on a clean pass.",
+        "copyable_prompt": "Implement [FEATURE DESCRIPTION] using strict test-driven development:\n\nPhase 1 — Red: Write failing tests first. Cover the happy path, edge cases, and at least one integration test that exercises real imports/dependencies. Run `npm test` and confirm they fail for the right reasons.\n\nPhase 2 — Green: Implement the minimum code to make all tests pass. After every file change, run `npm test`. If any test fails, fix the implementation before touching another file. Check that no new dependency is used without being in package.json.\n\nPhase 3 — Refactor: Clean up dead imports, verify no hardcoded values, ensure dark/light mode compatibility if UI is involved. Run `npm test` one final time.\n\nPhase 4 — Ship: Only after a fully green test suite, create a PR with a summary listing: files changed, tests added, dependencies added/changed, and the final test output. Do not skip this step or create the PR early."
+      },
+      {
+        "title": "Parallel Agent Release Automation Pipeline",
+        "whats_possible": "You frequently chain version bumps, npm publishes, GitHub releases, README updates, and cross-repo syncs — and friction occurs when steps are forgotten or done out of order. A single prompt can spawn parallel agents handling independent tracks (docs update, version bump across all files, changelog generation) that converge for the final publish step. This could compress your multi-session release process into one autonomous run.",
+        "how_to_try": "Use TaskCreate to parallelize independent release tasks (docs, version files, changelog) and have the orchestrator gate the publish step on all tracks completing.",
+        "copyable_prompt": "Execute a full release for v[X.Y.Z]:\n\nTrack A (parallel) — Version Bump: Update version strings in ALL files that reference the version (package.json, package-lock.json, CLI banner, constants, README badges, docs). Search with Grep for the old version string to find every occurrence. Miss nothing.\n\nTrack B (parallel) — Changelog & Release Notes: Read git log since last tag. Generate a changelog grouped by: Features, Fixes, Internal. Write a GitHub release body in markdown.\n\nTrack C (parallel) — Docs & Marketing Sync: Audit docs site and marketing pages for any references to old features or screenshots that need updating. List gaps but don't block the release.\n\nConvergence Gate: Once Tracks A and B are complete, run `npm test` and confirm green. Then:\n1. Commit version bump changes\n2. Create git tag v[X.Y.Z]\n3. Push to main\n4. Run `npm publish`\n5. Create GitHub release with Track B's notes\n6. Report Track C's audit findings for a follow-up session\n\nBefore publishing, verify the built package includes all dependencies by checking the package.json dependencies list against actual imports."
+      }
+    ]
+  },
+  "fun_ending": {
+    "headline": "PM agent confidently declared a bug was 'already implemented' while the user was actively staring at the broken feature",
+    "detail": "During a multi-agent orchestration session, the PM sub-agent analyzed a user-reported problem and cheerfully concluded the feature was already working — while the user was literally looking at it not working. To make matters worse, the outsider-reviewer agent then got stuck in an infinite idle loop and never completed its review, leaving the orchestrator to clean up the mess."
+  },
+  "at_a_glance": {
+    "whats_working": "You've developed a genuinely sophisticated multi-agent orchestration workflow — running full dev ceremonies with PM, architect, dev, and reviewer roles to ship production-quality PRs. Your discipline of iterating code reviews until zero issues remain is uncommon and shows you're treating Claude as a real quality gate. You've also nailed end-to-end release automation, shipping numerous versioned releases entirely through Claude.",
+    "whats_hindering": "On Claude's side, it consistently misses obvious next steps in your workflows (not creating PRs, not posting review comments, not bumping all version files) until you explicitly ask — which is frustrating given how many times you've done this sequence. On your side, the multi-agent orchestration ceremonies frequently break down with stuck agents, lost context, and zombie reviewers, and the overhead of managing these failures likely costs more time than the ceremony saves on smaller tasks.",
+    "quick_wins": "Try creating **custom slash commands** (`/release`, `/review-cycle`) that encode your standard workflow sequences — this directly solves the \"Claude forgets the next step\" problem without you having to repeat yourself. You could also set up **hooks** to auto-run your test suite after edits, catching broken tests before PRs are declared ready instead of after.",
+    "ambitious_workflows": "As models get more capable, your multi-agent review pipelines should become self-healing — the orchestrator will reliably monitor sub-agent health, auto-recover stuck tasks, and guarantee outputs are posted without your intervention. Even more exciting: a single-prompt release pipeline that spawns parallel agents for version bumps, docs sync, changelog generation, and dependency verification, all converging at publish — compressing what currently takes multiple sessions into one autonomous run."
+  }
+}
+
+Report URL: file:///Users/melagiri/.claude/usage-data/report.html
+HTML file: /Users/melagiri/.claude/usage-data/report.html
+Facets directory: /Users/melagiri/.claude/usage-data/facets
+
+Here is what the user sees:
+# Claude Code Insights
+
+164 sessions total · 129 analyzed · 2,145 messages · 502h · 180 commits
+2026-01-22 to 2026-03-04
+
+## At a Glance
+
+**What's working:** You've developed a genuinely sophisticated multi-agent orchestration workflow — running full dev ceremonies with PM, architect, dev, and reviewer roles to ship production-quality PRs. Your discipline of iterating code reviews until zero issues remain is uncommon and shows you're treating Claude as a real quality gate. You've also nailed end-to-end release automation, shipping numerous versioned releases entirely through Claude. See _Impressive Things You Did_.
+
+**What's hindering you:** On Claude's side, it consistently misses obvious next steps in your workflows (not creating PRs, not posting review comments, not bumping all version files) until you explicitly ask — which is frustrating given how many times you've done this sequence. On your side, the multi-agent orchestration ceremonies frequently break down with stuck agents, lost context, and zombie reviewers, and the overhead of managing these failures likely costs more time than the ceremony saves on smaller tasks. See _Where Things Go Wrong_.
+
+**Quick wins to try:** Try creating **custom slash commands** (`/release`, `/review-cycle`) that encode your standard workflow sequences — this directly solves the "Claude forgets the next step" problem without you having to repeat yourself. You could also set up **hooks** to auto-run your test suite after edits, catching broken tests before PRs are declared ready instead of after. See _Features to Try_.
+
+**Ambitious workflows:** As models get more capable, your multi-agent review pipelines should become self-healing — the orchestrator will reliably monitor sub-agent health, auto-recover stuck tasks, and guarantee outputs are posted without your intervention. Even more exciting: a single-prompt release pipeline that spawns parallel agents for version bumps, docs sync, changelog generation, and dependency verification, all converging at publish — compressing what currently takes multiple sessions into one autonomous run. See _On the Horizon_.
+
+Your full shareable insights report is ready: file:///Users/melagiri/.claude/usage-data/report.html
+
+Now output the following message exactly:
+
+<message>
+Your shareable insights report is ready:
+file:///Users/melagiri/.claude/usage-data/report.html
+
+Want to dig into any section or try one of the suggestions?
+</message>
+
+---
+
+tell me more about the friction points
+
+---
+
+build a release skill for this project
+
+---
+
+Base directory for this skill: /Users/melagiri/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/brainstorming
+
+# Brainstorming Ideas Into Designs
+
+## Overview
+
+Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+
+Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+
+<HARD-GATE>
+Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
+</HARD-GATE>
+
+## Anti-Pattern: "This Is Too Simple To Need A Design"
+
+Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+
+## Checklist
+
+You MUST create a task for each of these items and complete them in order:
+
+1. **Explore project context** — check files, docs, recent commits
+2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
+3. **Propose 2-3 approaches** — with trade-offs and your recommendation
+4. **Present design** — in sections scaled to their complexity, get user approval after each section
+5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+
+## Process Flow
+
+```dot
+digraph brainstorming {
+    "Explore project context" [shape=box];
+    "Ask clarifying questions" [shape=box];
+    "Propose 2-3 approaches" [shape=box];
+    "Present design sections" [shape=box];
+    "User approves design?" [shape=diamond];
+    "Write design doc" [shape=box];
+    "Invoke writing-plans skill" [shape=doublecircle];
+
+    "Explore project context" -> "Ask clarifying questions";
+    "Ask clarifying questions" -> "Propose 2-3 approaches";
+    "Propose 2-3 approaches" -> "Present design sections";
+    "Present design sections" -> "User approves design?";
+    "User approves design?" -> "Present design sections" [label="no, revise"];
+    "User approves design?" -> "Write design doc" [label="yes"];
+    "Write design doc" -> "Invoke writing-plans skill";
+}
+```
+
+**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+
+## The Process
+
+**Understanding the idea:**
+- Check out the current project state first (files, docs, recent commits)
+- Ask questions one at a time to refine the idea
+- Prefer multiple choice questions when possible, but open-ended is fine too
+- Only one question per message - if a topic needs more exploration, break it into multiple questions
+- Focus on understanding: purpose, constraints, success criteria
+
+**Exploring approaches:**
+- Propose 2-3 different approaches with trade-offs
+- Present options conversationally with your recommendation and reasoning
+- Lead with your recommended option and explain why
+
+**Presenting the design:**
+- Once you believe you understand what you're building, present the design
+- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
+- Ask after each section whether it looks right so far
+- Cover: architecture, components, data flow, error handling, testing
+- Be ready to go back and clarify if something doesn't make sense
+
+## After the Design
+
+**Documentation:**
+- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
+- Use elements-of-style:writing-clearly-and-concisely skill if available
+- Commit the design document to git
+
+**Implementation:**
+- Invoke the writing-plans skill to create a detailed implementation plan
+- Do NOT invoke any other skill. writing-plans is the next step.
+
+## Key Principles
+
+- **One question at a time** - Don't overwhelm with multiple questions
+- **Multiple choice preferred** - Easier to answer than open-ended when possible
+- **YAGNI ruthlessly** - Remove unnecessary features from all designs
+- **Explore alternatives** - Always propose 2-3 approaches before settling
+- **Incremental validation** - Present design, get approval before moving on
+- **Be flexible** - Go back and clarify when something doesn't make sense
+
+---
+
+yes, Approach A
+
+---
+
+good
+
+---
+
+yes, this is good
+
+---
+
+ok, this works
+
+---
+
+Approved
+
+---
+
+yes commit, will test later when i update the codebase and do a real release
