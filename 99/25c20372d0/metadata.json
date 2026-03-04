@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "9925c20372d0",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 7,
+  "files_touched": [
+    "README.md",
+    "cli/src/utils/telemetry.ts",
+    "dashboard/src/lib/telemetry.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/99/25c20372d0/0/metadata.json",
+      "transcript": "/99/25c20372d0/0/full.jsonl",
+      "context": "/99/25c20372d0/0/context.md",
+      "content_hash": "/99/25c20372d0/0/content_hash.txt",
+      "prompt": "/99/25c20372d0/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 45,
+    "cache_creation_tokens": 76361,
+    "cache_read_tokens": 1749452,
+    "output_tokens": 7017,
+    "api_call_count": 29
+  }
+}
