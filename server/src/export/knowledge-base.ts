@@ -77,7 +77,7 @@ function renderDecisions(insights: InsightRow[], lines: string[]) {
     if (choice) lines.push(`**Choice:** ${choice}`);
     const reasoning = meta.reasoning as string | undefined;
     if (reasoning) lines.push(`**Reasoning:** ${reasoning}`);
-    const alternatives = meta.alternatives as Array<{ option?: string; reason?: string } | string> | undefined;
+    const alternatives = meta.alternatives as Array<{ option?: string; rejected_because?: string } | string> | undefined;
     if (alternatives && alternatives.length > 0) {
       lines.push('');
       lines.push('**Alternatives Considered:**');
@@ -85,7 +85,7 @@ function renderDecisions(insights: InsightRow[], lines: string[]) {
         if (typeof alt === 'string') {
           lines.push(`- ${alt}`);
         } else if (alt.option) {
-          const reason = alt.reason ? ` — rejected because ${alt.reason}` : '';
+          const reason = alt.rejected_because ? ` — rejected because ${alt.rejected_because}` : '';
           lines.push(`- ${alt.option}${reason}`);
         }
       }

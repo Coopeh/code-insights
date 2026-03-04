@@ -58,7 +58,7 @@ export function formatAgentRules(sessions: SessionRow[], insights: InsightRow[])
       const choice = meta.choice as string | undefined;
       const situation = meta.situation as string | undefined;
       const revisit_when = meta.revisit_when as string | undefined;
-      const alternatives = meta.alternatives as Array<{ option?: string; reason?: string } | string> | undefined;
+      const alternatives = meta.alternatives as Array<{ option?: string; rejected_because?: string } | string> | undefined;
 
       if (choice && situation) {
         lines.push(`- USE ${choice} for ${situation}`);
@@ -74,7 +74,7 @@ export function formatAgentRules(sessions: SessionRow[], insights: InsightRow[])
           if (typeof alt === 'string') {
             lines.push(`- DO NOT use ${alt}`);
           } else if (alt.option) {
-            const reason = alt.reason ? ` because ${alt.reason}` : '';
+            const reason = alt.rejected_because ? ` because ${alt.rejected_because}` : '';
             lines.push(`- DO NOT use ${alt.option}${reason}`);
           }
         }

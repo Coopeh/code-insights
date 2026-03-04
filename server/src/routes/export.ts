@@ -1,13 +1,35 @@
 import { Hono } from 'hono';
 import { getDb } from '@code-insights/cli/db/client';
 import { trackEvent } from '@code-insights/cli/utils/telemetry';
+import type { ExportTemplate } from '@code-insights/cli/types';
 import { formatKnowledgeBase } from '../export/knowledge-base.js';
 import { formatAgentRules } from '../export/agent-rules.js';
 import type { SessionRow, InsightRow } from '../export/knowledge-base.js';
 
 const app = new Hono();
 
-type ExportTemplate = 'knowledge-base' | 'agent-rules';
+// SQLite SQLITE_LIMIT_VARIABLE_NUMBER is 999 by default.
+// Batch insights queries to avoid hitting this limit for large session sets.
+const INSIGHTS_BATCH_SIZE = 500;
+
+function fetchInsightsForSessions(db: ReturnType<typeof getDb>, sessionIds: string[]): InsightRow[] {
+  if (sessionIds.length === 0) return [];
+
+  const results: InsightRow[] = [];
+  for (let i = 0; i < sessionIds.length; i += INSIGHTS_BATCH_SIZE) {
+    const chunk = sessionIds.slice(i, i + INSIGHTS_BATCH_SIZE);
+    const placeholders = chunk.map(() => '?').join(', ');
+    const rows = db.prepare(
+      `SELECT id, session_id, project_id, project_name, type, title, content,
+              summary, bullets, confidence, source, metadata, timestamp,
+              created_at, scope, analysis_version, linked_insight_ids
+       FROM insights WHERE session_id IN (${placeholders})
+       ORDER BY type, timestamp`,
+    ).all(...chunk) as InsightRow[];
+    results.push(...rows);
+  }
+  return results;
+}
 
 // POST /api/export/markdown — export sessions/insights as markdown
 app.post('/markdown', async (c) => {
@@ -42,28 +64,22 @@ app.post('/markdown', async (c) => {
        FROM sessions WHERE id IN (${placeholders}) ORDER BY started_at DESC`,
     ).all(...sessionIds) as SessionRow[];
   } else if (projectId) {
+    // Cap at 100 to avoid unbounded queries and SQLite variable limit on insight fetch
     sessions = db.prepare(
       `SELECT id, project_name, generated_title, custom_title, started_at, ended_at,
               message_count, estimated_cost_usd, session_character, source_tool
-       FROM sessions WHERE project_id = ? ORDER BY started_at DESC`,
+       FROM sessions WHERE project_id = ? ORDER BY started_at DESC LIMIT 100`,
     ).all(projectId) as SessionRow[];
   } else {
-    return c.json({ error: 'sessionIds or projectId required' }, 400);
+    // "Everything" export — most recent 100 sessions
+    sessions = db.prepare(
+      `SELECT id, project_name, generated_title, custom_title, started_at, ended_at,
+              message_count, estimated_cost_usd, session_character, source_tool
+       FROM sessions ORDER BY started_at DESC LIMIT 100`,
+    ).all() as SessionRow[];
   }
 
-  // Fetch insights for the selected sessions
-  let insights: InsightRow[] = [];
-  if (sessions.length > 0) {
-    const ids = sessions.map((s) => s.id);
-    const placeholders = ids.map(() => '?').join(', ');
-    insights = db.prepare(
-      `SELECT id, session_id, project_id, project_name, type, title, content,
-              summary, bullets, confidence, source, metadata, timestamp,
-              created_at, scope, analysis_version, linked_insight_ids
-       FROM insights WHERE session_id IN (${placeholders})
-       ORDER BY type, timestamp`,
-    ).all(...ids) as InsightRow[];
-  }
+  const insights = fetchInsightsForSessions(db, sessions.map((s) => s.id));
 
   const markdown =
     template === 'agent-rules'

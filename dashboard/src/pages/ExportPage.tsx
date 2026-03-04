@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Download, FileText, Calendar, Folder, ChevronRight, Loader2, Copy, Check, BookOpen, Bot } from 'lucide-react';
+import type { ExportTemplate } from '@/lib/types';
 
 type ExportType = 'everything' | 'project' | 'daily';
-type ExportTemplate = 'knowledge-base' | 'agent-rules';
 type WizardStep = 1 | 2 | 3;
 
 export default function ExportPage() {
