@@ -541,6 +541,19 @@ The CLI and dashboard support sessions from multiple AI coding tools via the `so
 
 ---
 
+## Version Bump Procedure
+
+When bumping the version (patch, minor, or major):
+
+1. **`cli/package.json`** — Update the `"version"` field
+2. **`cli/CHANGELOG.md`** — Add a new `## [x.y.z] - YYYY-MM-DD` section at the top with changes
+3. **Commit** — `chore: bump version to vX.Y.Z` with a one-line summary of what changed
+4. **Publish** — `cd cli && npm publish` (runs `prepublishOnly` which builds all packages)
+
+Files touched: `cli/package.json` + `cli/CHANGELOG.md` (minimum). Optionally update `docs/ROADMAP.md`, `docs/VISION.md`, `docs/PRODUCT.md` for minor/major bumps.
+
+---
+
 ## Development Notes
 
 - TypeScript strict mode enabled

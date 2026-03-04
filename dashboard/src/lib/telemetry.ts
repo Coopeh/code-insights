@@ -15,7 +15,7 @@
 import posthog from 'posthog-js';
 
 const POSTHOG_API_KEY = 'phc_552ZSApq5xuagswylfdw2vx8nckm31jn6LCpTVyVn8j';
-const POSTHOG_HOST = 'https://us.i.posthog.com';
+const POSTHOG_HOST = 'https://code-insights.app';
 
 let initialized = false;
 
@@ -33,6 +33,7 @@ export async function initTelemetry(): Promise<void> {
 
     posthog.init(POSTHOG_API_KEY, {
       api_host: POSTHOG_HOST,
+      ui_host: 'https://us.i.posthog.com',
       autocapture: false,
       capture_pageview: false, // We track page views manually on route change
       capture_pageleave: false,

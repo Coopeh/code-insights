@@ -9,7 +9,7 @@ import { loadConfig, getConfigDir } from './config.js';
 // PostHog write-only API key (public — this is the standard PostHog pattern;
 // write-only keys can only ingest events, not read data).
 const POSTHOG_API_KEY = 'phc_552ZSApq5xuagswylfdw2vx8nckm31jn6LCpTVyVn8j';
-const POSTHOG_HOST = 'https://us.i.posthog.com';
+const POSTHOG_HOST = 'https://code-insights.app';
 
 // Touch file path that tracks whether the disclosure has been shown.
 // Content is the CLI version — if version doesn't match current, notice is re-shown.

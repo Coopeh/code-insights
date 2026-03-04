@@ -4,6 +4,14 @@
 
 <h1 align="center">Code Insights</h1>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/@code-insights/cli"><img src="https://img.shields.io/npm/v/@code-insights/cli" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@code-insights/cli"><img src="https://img.shields.io/npm/dm/@code-insights/cli" alt="npm downloads" /></a>
+  <a href="https://github.com/melagiri/code-insights/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/@code-insights/cli" alt="license" /></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/@code-insights/cli" alt="node version" /></a>
+  <a href="https://socket.dev/npm/package/@code-insights/cli"><img src="https://badge.socket.dev/npm/package/@code-insights/cli" alt="Socket Badge" /></a>
+</p>
+
 Turn your AI coding sessions into knowledge.
 
 Parses session history from Claude Code, Cursor, Codex CLI, and Copilot CLI. Stores structured data in a local SQLite database. Surfaces insights through terminal analytics and a built-in browser dashboard.

@@ -2,6 +2,13 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [3.6.1] - 2026-03-04
+
+### Changed
+
+- **PostHog custom domain** — Route telemetry events through `code-insights.app` instead of `us.i.posthog.com` to avoid ad-blocker interference. Updated both CLI (posthog-node) and dashboard (posthog-js).
+- **README badges** — Added npm version, monthly downloads, license, Node.js version, and Socket security score badges.
+
 ## [3.6.0] - 2026-03-04
 
 ### Added
