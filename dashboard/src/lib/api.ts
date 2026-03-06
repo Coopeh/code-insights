@@ -250,6 +250,7 @@ export interface FacetAggregation {
   characterDistribution: Record<string, number>;
   totalSessions: number;
   frictionTotal: number;
+  totalAllSessions: number;
 }
 
 export interface FacetSummary {
@@ -281,6 +282,28 @@ export function fetchFacetSummary(params?: {
   if (params?.source) q.set('source', params.source);
   const qs = q.toString() ? `?${q.toString()}` : '';
   return request<FacetSummary>(`/facets${qs}`);
+}
+
+export interface ReflectSnapshot {
+  period: string;
+  projectId: string;
+  results: Record<string, unknown>;
+  generatedAt: string;
+  windowStart: string | null;
+  windowEnd: string;
+  sessionCount: number;
+  facetCount: number;
+}
+
+export function fetchReflectSnapshot(params?: {
+  period?: string;
+  project?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.period) q.set('period', params.period);
+  if (params?.project) q.set('project', params.project);
+  const qs = q.toString() ? `?${q.toString()}` : '';
+  return request<{ snapshot: ReflectSnapshot | null }>(`/reflect/snapshot${qs}`);
 }
 
 export async function reflectGenerateStream(

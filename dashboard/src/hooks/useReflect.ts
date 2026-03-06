@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchFacetAggregation, fetchFacetSummary } from '@/lib/api';
-import type { FacetAggregation, FacetSummary } from '@/lib/api';
+import { fetchFacetAggregation, fetchFacetSummary, fetchReflectSnapshot } from '@/lib/api';
+import type { FacetAggregation, FacetSummary, ReflectSnapshot } from '@/lib/api';
 
 export function useFacetAggregation(params?: {
   project?: string;
@@ -22,6 +22,17 @@ export function useFacetSummary(params?: {
   return useQuery<FacetSummary>({
     queryKey: ['facets', 'summary', params?.project, params?.period, params?.source],
     queryFn: () => fetchFacetSummary(params),
+    staleTime: 30_000,
+  });
+}
+
+export function useReflectSnapshot(params?: {
+  period?: string;
+  project?: string;
+}) {
+  return useQuery<{ snapshot: ReflectSnapshot | null }>({
+    queryKey: ['reflect', 'snapshot', params?.period, params?.project],
+    queryFn: () => fetchReflectSnapshot(params),
     staleTime: 30_000,
   });
 }
