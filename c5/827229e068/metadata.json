@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "c5827229e068",
+  "strategy": "manual-commit",
+  "branch": "feature/reflect-persistence-guardrails",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "dashboard/src/lib/api.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c5/827229e068/0/metadata.json",
+      "transcript": "/c5/827229e068/0/full.jsonl",
+      "context": "/c5/827229e068/0/context.md",
+      "content_hash": "/c5/827229e068/0/content_hash.txt",
+      "prompt": "/c5/827229e068/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 765,
+    "cache_creation_tokens": 854852,
+    "cache_read_tokens": 23145380,
+    "output_tokens": 146688,
+    "api_call_count": 231
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "c5827229e068",
+  "session_id": "3cbc097a-5068-4ad2-b5fe-a51587bac925",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-06T01:04:52.033457Z",
+  "branch": "feature/reflect-persistence-guardrails",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "dashboard/src/lib/api.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "6a23bc5f3100",
+  "token_usage": {
+    "input_tokens": 765,
+    "cache_creation_tokens": 854852,
+    "cache_read_tokens": 23145380,
+    "output_tokens": 146688,
+    "api_call_count": 231
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-06T01:04:50.28535Z",
+    "agent_lines": 0,
+    "human_added": 36,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 36,
+    "agent_percentage": 0
+  }
+}
