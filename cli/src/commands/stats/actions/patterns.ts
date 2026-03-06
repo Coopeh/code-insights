@@ -27,6 +27,7 @@ interface AggregatedData {
   characterDistribution: Record<string, number>;
   totalSessions: number;
   frictionTotal: number;
+  totalAllSessions: number;
 }
 
 export async function patternsAction(flags: StatsFlags): Promise<void> {

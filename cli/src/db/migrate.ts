@@ -54,24 +54,6 @@ function applyV2(db: Database.Database): void {
   db.prepare('INSERT OR IGNORE INTO schema_version (version) VALUES (?)').run(2);
 }
 
-function applyV4(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS reflect_snapshots (
-      period        TEXT NOT NULL,
-      project_id    TEXT NOT NULL DEFAULT '__all__',
-      results_json  TEXT NOT NULL,
-      generated_at  TEXT NOT NULL,
-      window_start  TEXT,
-      window_end    TEXT NOT NULL,
-      session_count INTEGER NOT NULL,
-      facet_count   INTEGER NOT NULL,
-      PRIMARY KEY (period, project_id)
-    );
-  `);
-
-  db.prepare('INSERT OR IGNORE INTO schema_version (version) VALUES (?)').run(4);
-}
-
 function applyV3(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS session_facets (
@@ -92,4 +74,22 @@ function applyV3(db: Database.Database): void {
   `);
 
   db.prepare('INSERT OR IGNORE INTO schema_version (version) VALUES (?)').run(3);
+}
+
+function applyV4(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reflect_snapshots (
+      period        TEXT NOT NULL,
+      project_id    TEXT NOT NULL DEFAULT '__all__',
+      results_json  TEXT NOT NULL,
+      generated_at  TEXT NOT NULL,
+      window_start  TEXT,
+      window_end    TEXT NOT NULL,
+      session_count INTEGER NOT NULL,
+      facet_count   INTEGER NOT NULL,
+      PRIMARY KEY (period, project_id)
+    );
+  `);
+
+  db.prepare('INSERT OR IGNORE INTO schema_version (version) VALUES (?)').run(4);
 }

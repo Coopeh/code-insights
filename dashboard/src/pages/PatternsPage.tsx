@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useProjects } from '@/hooks/useProjects';
 import { useFacetAggregation, useReflectSnapshot } from '@/hooks/useReflect';
 import { reflectGenerateStream } from '@/lib/api';
@@ -23,6 +24,7 @@ const PALETTE = CHART_COLORS.models;
 function formatRelativeDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -54,6 +56,7 @@ export default function PatternsPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const { tooltipBg, tooltipBorder } = useThemeColors();
   const abortRef = useRef<AbortController | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: projects = [] } = useProjects();
 
@@ -119,6 +122,9 @@ export default function PatternsPage() {
           try {
             const data = JSON.parse(event.data) as { results?: Record<string, unknown> };
             setReflectResults(data.results ?? null);
+            // Snapshot was just persisted server-side — invalidate so the metadata
+            // line (generated date, session count) reflects the new snapshot.
+            queryClient.invalidateQueries({ queryKey: ['reflect', 'snapshot'] });
           } catch { /* skip malformed event */ }
         } else if (event.event === 'error') {
           try {

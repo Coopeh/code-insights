@@ -253,11 +253,6 @@ export interface FacetAggregation {
   totalAllSessions: number;
 }
 
-export interface FacetSummary {
-  missingCount: number;
-  totalSessions: number;
-}
-
 export function fetchFacetAggregation(params?: {
   project?: string;
   period?: string;
@@ -269,19 +264,6 @@ export function fetchFacetAggregation(params?: {
   if (params?.source) q.set('source', params.source);
   const qs = q.toString() ? `?${q.toString()}` : '';
   return request<FacetAggregation>(`/facets/aggregated${qs}`);
-}
-
-export function fetchFacetSummary(params?: {
-  project?: string;
-  period?: string;
-  source?: string;
-}) {
-  const q = new URLSearchParams();
-  if (params?.project) q.set('project', params.project);
-  if (params?.period) q.set('period', params.period);
-  if (params?.source) q.set('source', params.source);
-  const qs = q.toString() ? `?${q.toString()}` : '';
-  return request<FacetSummary>(`/facets${qs}`);
 }
 
 export interface ReflectSnapshot {

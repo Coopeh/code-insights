@@ -174,31 +174,34 @@ app.post('/generate', async (c) => {
         }
       }
 
-      // Compute concrete date window and save snapshot (upsert)
-      const windowEnd = new Date().toISOString();
-      const windowStart = buildPeriodFilter(period);
-      const projectKey = body.project || '__all__';
+      // Only save snapshot if the request was not aborted mid-generation.
+      // Saving partial results would cause stale/incomplete data to auto-load on next visit.
+      if (!c.req.raw.signal.aborted) {
+        const windowEnd = new Date().toISOString();
+        const windowStart = buildPeriodFilter(period);
+        const projectKey = body.project || '__all__';
 
-      db.prepare(`
-        INSERT INTO reflect_snapshots (period, project_id, results_json, generated_at, window_start, window_end, session_count, facet_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(period, project_id) DO UPDATE SET
-          results_json = excluded.results_json,
-          generated_at = excluded.generated_at,
-          window_start = excluded.window_start,
-          window_end = excluded.window_end,
-          session_count = excluded.session_count,
-          facet_count = excluded.facet_count
-      `).run(
-        period,
-        projectKey,
-        JSON.stringify(results),
-        windowEnd,
-        windowStart,
-        windowEnd,
-        aggregated.totalSessions,
-        aggregated.frictionTotal
-      );
+        db.prepare(`
+          INSERT INTO reflect_snapshots (period, project_id, results_json, generated_at, window_start, window_end, session_count, facet_count)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(period, project_id) DO UPDATE SET
+            results_json = excluded.results_json,
+            generated_at = excluded.generated_at,
+            window_start = excluded.window_start,
+            window_end = excluded.window_end,
+            session_count = excluded.session_count,
+            facet_count = excluded.facet_count
+        `).run(
+          period,
+          projectKey,
+          JSON.stringify(results),
+          windowEnd,
+          windowStart,
+          windowEnd,
+          aggregated.totalSessions,
+          aggregated.frictionTotal
+        );
+      }
 
       await stream.writeSSE({
         event: 'complete',
@@ -253,11 +256,19 @@ app.get('/snapshot', (c) => {
     return c.json({ snapshot: null });
   }
 
+  let results: unknown;
+  try {
+    results = JSON.parse(row.results_json);
+  } catch {
+    // Corrupted snapshot data — treat as if no snapshot exists
+    return c.json({ snapshot: null });
+  }
+
   return c.json({
     snapshot: {
       period: row.period,
       projectId: row.project_id,
-      results: JSON.parse(row.results_json),
+      results,
       generatedAt: row.generated_at,
       windowStart: row.window_start,
       windowEnd: row.window_end,
