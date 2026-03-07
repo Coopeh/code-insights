@@ -28,6 +28,7 @@ interface CompactSessionRowProps {
   insightCounts?: Record<string, number>;
   outcome?: string;
   promptQualityScore?: number;
+  missingFacets?: boolean;
   onClick: () => void;
 }
 
@@ -38,6 +39,7 @@ export function CompactSessionRow({
   insightCounts,
   outcome,
   promptQualityScore,
+  missingFacets,
   onClick,
 }: CompactSessionRowProps) {
   const startedAt = new Date(session.started_at);
@@ -108,10 +110,24 @@ export function CompactSessionRow({
         {insightTotal > 0 && (
           <>
             <span className="text-muted-foreground/30">&middot;</span>
-            <span className="flex items-center gap-0.5 text-purple-500/80">
-              <Sparkles className="h-2.5 w-2.5" />
-              {insightTotal}
-            </span>
+            {missingFacets ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-0.5 text-amber-500/80">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    {insightTotal}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs max-w-[200px]">
+                  Missing pattern data — re-analyze or run <code className="text-[10px]">reflect backfill</code>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <span className="flex items-center gap-0.5 text-purple-500/80">
+                <Sparkles className="h-2.5 w-2.5" />
+                {insightTotal}
+              </span>
+            )}
           </>
         )}
         {promptQualityScore != null && (

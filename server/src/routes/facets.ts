@@ -69,6 +69,52 @@ app.get('/aggregated', (c) => {
   return c.json(aggregated);
 });
 
+// GET /api/facets/missing
+// Returns session IDs that have insights but no session_facets row.
+// Used by CLI `reflect backfill` and dashboard facet status indicators.
+app.get('/missing', (c) => {
+  const db = getDb();
+  const period = c.req.query('period') || 'all';
+  const project = c.req.query('project');
+  const source = c.req.query('source');
+
+  // buildWhereClause can't be used here — it generates "WHERE ..." prefix,
+  // but this query already needs "WHERE sf.session_id IS NULL".
+  // Build conditions inline instead.
+  const conditions: string[] = ['sf.session_id IS NULL'];
+  const params: (string | number)[] = [];
+
+  if (period !== 'all') {
+    const now = new Date();
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 0;
+    if (days > 0) {
+      conditions.push('s.started_at >= ?');
+      params.push(new Date(now.getTime() - days * 86400000).toISOString());
+    }
+  }
+  if (project) {
+    conditions.push('s.project_id = ?');
+    params.push(project);
+  }
+  if (source) {
+    conditions.push('s.source_tool = ?');
+    params.push(source);
+  }
+
+  const where = `WHERE ${conditions.join(' AND ')}`;
+
+  const rows = db.prepare(`
+    SELECT DISTINCT i.session_id
+    FROM insights i
+    JOIN sessions s ON i.session_id = s.id
+    LEFT JOIN session_facets sf ON i.session_id = sf.session_id
+    ${where}
+  `).all(...params) as Array<{ session_id: string }>;
+
+  const sessionIds = rows.map(r => r.session_id);
+  return c.json({ sessionIds, count: sessionIds.length });
+});
+
 // POST /api/facets/backfill
 // Body: { sessionIds: string[] }
 // Streams progress as facets are extracted one-by-one for sessions that lack them.
@@ -116,6 +162,24 @@ app.post('/backfill', async (c) => {
         continue;
       }
 
+      // Skip sessions that already have facets (race condition guard)
+      const existingFacet = db.prepare(
+        'SELECT 1 FROM session_facets WHERE session_id = ?'
+      ).get(sessionId);
+      if (existingFacet) {
+        completed++;
+        await stream.writeSSE({
+          event: 'progress',
+          data: JSON.stringify({
+            completed,
+            failed,
+            total,
+            currentSessionId: sessionId,
+          }),
+        });
+        continue;
+      }
+
       // Only load first 20 and last 20 messages for facet extraction
       const firstMessages = db.prepare(
         `SELECT id, session_id, type, content, thinking, tool_calls, tool_results, usage, timestamp, parent_id
@@ -151,6 +215,7 @@ app.post('/backfill', async (c) => {
           failed,
           total,
           currentSessionId: sessionId,
+          ...(result.success ? {} : { error: result.error }),
         }),
       });
     }
