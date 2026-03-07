@@ -15,3 +15,27 @@ I tried rebuilding the whole app in my local and retried the prompt quality tab.
 fix Issue 2 first, create a PR and then run for a review. 
 After i  merge it manually, then go deep on Issue 1
 
+### Prompt 4
+
+# /start-review — Triple-Layer Code Review Team
+
+**PR**: 112
+
+You are setting up a triple-layer code review for PR `112`. This can be used standalone or as part of a `/start-feature` team workflow.
+
+---
+
+## Step 1: Get PR Details
+
+Fetch the PR details:
+
+```bash
+# Get the correct owner from git remote
+git remote get-url origin | sed 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/'
+```
+
+Use `gh pr view 112` to get PR title, description, and diff stats.
+Use `gh pr diff 112` to get the diff.
+
+Determine the PR...
+
