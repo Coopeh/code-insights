@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "6b268dca62a9",
+  "session_id": "8ce492ed-6038-485d-8bbb-9e1f28742a34",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-08T09:11:38.194324Z",
+  "branch": "chore/docs-audit-cleanup",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/hookify.ci-gate-before-pr-mcp.local.md",
+    ".claude/hookify.ci-gate-before-pr.local.md",
+    "CLAUDE.md",
+    "docs/AGENTS.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DEVELOPMENT.md",
+    "docs/PRODUCT.md",
+    "docs/ROADMAP.md",
+    "docs/VISION.md",
+    "docs/plans/2026-03-05-reflect-patterns-implementation.md",
+    "docs/plans/2026-03-08-patterns-page-refinement.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "3b66ea07ea16",
+  "token_usage": {
+    "input_tokens": 45,
+    "cache_creation_tokens": 114083,
+    "cache_read_tokens": 3848307,
+    "output_tokens": 34247,
+    "api_call_count": 39
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-08T09:11:37.959526Z",
+    "agent_lines": 666,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 666,
+    "agent_percentage": 100
+  }
+}

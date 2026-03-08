@@ -1,0 +1,16 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Run an audit on the whole code repository to look for stale docs. Start with @docs/PRODUCT.md @docs/VISION.md @docs/ROADMAP.md docs to see what is implemented vs documented to identify what should be updated in docs. Also, the other way round where doc says something but code has not done it or deviated from documenation. This activity is very much required to keep a clean repo and uptodate information helping with proper context for agents while working on the codebase. As part of the activi...
+
+### Prompt 2
+
+yes, make the changes. do it in such a way that no doc will be more than 250-300 lines.. break them into smaller docs with a primary index doc tracking sub-modules so we pick only what is required while loading into context. We followed the same process in @../../batonship/batonship/CLAUDE.md project
+
+### Prompt 3
+
+i think all the changes are in master but uncommitted. create a feature branch, commit the changes and create  PR for all the changes
+
