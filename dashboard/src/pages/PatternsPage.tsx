@@ -365,7 +365,7 @@ export default function PatternsPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">Outcome Distribution</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
+                    <ResponsiveContainer width="100%" height={260}>
                       <PieChart>
                         <Pie data={outcomeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65}>
                           {outcomeData.map((_, i) => (
@@ -386,7 +386,7 @@ export default function PatternsPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">Workflow Patterns</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
+                    <ResponsiveContainer width="100%" height={260}>
                       <PieChart>
                         <Pie data={workflowData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65}>
                           {workflowData.map((_, i) => (
@@ -407,7 +407,7 @@ export default function PatternsPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">Session Types</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
+                    <ResponsiveContainer width="100%" height={260}>
                       <PieChart>
                         <Pie data={characterData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65}>
                           {characterData.map((_, i) => (
