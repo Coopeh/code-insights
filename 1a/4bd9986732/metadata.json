@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "1a4bd9986732",
+  "strategy": "manual-commit",
+  "branch": "chore/codify-session-insights",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".claude/hookify.verify-before-checkout.local.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1a/4bd9986732/0/metadata.json",
+      "transcript": "/1a/4bd9986732/0/full.jsonl",
+      "context": "/1a/4bd9986732/0/context.md",
+      "content_hash": "/1a/4bd9986732/0/content_hash.txt",
+      "prompt": "/1a/4bd9986732/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 3517,
+    "cache_read_tokens": 483972,
+    "output_tokens": 2384,
+    "api_call_count": 6
+  }
+}
