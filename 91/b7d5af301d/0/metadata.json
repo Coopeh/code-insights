@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "91b7d5af301d",
+  "session_id": "ff8afa9b-ac8b-4633-9b59-6d8901d31b9c",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-08T08:36:24.248088Z",
+  "branch": "chore/codify-session-insights",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".claude/agents/engineer.md",
+    ".claude/agents/product-manager.md",
+    "CLAUDE.md",
+    ".claude/hookify.verify-before-checkout.local.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1b2cc4e2f0d1",
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 79309,
+    "cache_read_tokens": 1061818,
+    "output_tokens": 8281,
+    "api_call_count": 18
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-08T08:36:24.076827Z",
+    "agent_lines": 81,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 81,
+    "agent_percentage": 100
+  }
+}

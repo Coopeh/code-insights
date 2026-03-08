@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "91b7d5af301d",
+  "strategy": "manual-commit",
+  "branch": "chore/codify-session-insights",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".claude/agents/engineer.md",
+    ".claude/agents/product-manager.md",
+    ".claude/hookify.verify-before-checkout.local.md",
+    "CLAUDE.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/91/b7d5af301d/0/metadata.json",
+      "transcript": "/91/b7d5af301d/0/full.jsonl",
+      "context": "/91/b7d5af301d/0/context.md",
+      "content_hash": "/91/b7d5af301d/0/content_hash.txt",
+      "prompt": "/91/b7d5af301d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 79309,
+    "cache_read_tokens": 1061818,
+    "output_tokens": 8281,
+    "api_call_count": 18
+  }
+}
