@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "0e23e16c13a1",
+  "session_id": "390eb1d0-b91d-44e5-b82e-61612bb7f322",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-08T07:59:29.123117Z",
+  "branch": "chore/integrate-llm-expert-agent",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "CLAUDE.md",
+    ".claude/agents/technical-architect.md",
+    ".claude/agents/engineer.md",
+    ".claude/agents/product-manager.md",
+    ".claude/agents/devtools-cofounder.md",
+    ".claude/commands/start-review.md",
+    ".claude/commands/start-feature.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b661edc4a97f",
+  "token_usage": {
+    "input_tokens": 30,
+    "cache_creation_tokens": 93907,
+    "cache_read_tokens": 1908034,
+    "output_tokens": 11223,
+    "api_call_count": 26
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-08T07:59:28.91376Z",
+    "agent_lines": 123,
+    "human_added": 141,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 264,
+    "agent_percentage": 46.590909090909086
+  }
+}
