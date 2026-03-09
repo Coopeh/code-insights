@@ -42,3 +42,11 @@ re-interate the implementation high level steps for this pattern normalization a
 
 yes, commit this plan doc first and then kick off the implementation with start-feature command and full ceremony
 
+### Prompt 10
+
+# /start-feature — Auto-Setup Feature Development Team
+
+**Feature**: Reflect Feature Enhancement: Pattern Normalization + Weekly Model — Add category-based classification to effective patterns (8 canonical categories), confidence filtering (50%+), outdated format detection with re-analysis banners, and weekly reflection cadence. Design plan at docs/plans/2026-03-09-effective-pattern-normalization.md
+
+You are setting up a hybrid agent team for feature development. The PM agent leads the team a...
+
