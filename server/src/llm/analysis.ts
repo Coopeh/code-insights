@@ -831,10 +831,16 @@ function saveFacetsToDb(
   // This handles LLM variants (e.g., "task-decomposition" → "structured-planning")
   // before they hit the database, keeping aggregation queries simple.
   const normalizedPatterns = Array.isArray(facets.effective_patterns)
-    ? facets.effective_patterns.map(ep => ({
-        ...ep,
-        category: ep.category ? normalizePatternCategory(ep.category) : ep.category,
-      }))
+    ? facets.effective_patterns.map(ep => {
+        if (!ep.category) {
+          // Should not happen with updated prompts — indicates model ignored category instruction
+          console.warn('[pattern-monitor] saveFacetsToDb: effective_pattern missing category field, storing as-is');
+        }
+        return {
+          ...ep,
+          category: ep.category ? normalizePatternCategory(ep.category) : ep.category,
+        };
+      })
     : [];
 
   db.prepare(`

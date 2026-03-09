@@ -116,7 +116,7 @@ export function getAggregatedData(
   // Fetch effective patterns with confidence >= 50.
   // Category-based grouping happens in code (post-query) after normalizePatternCategory()
   // to handle any LLM variants that were stored before normalization was applied at write time.
-  // The ${where} clause always contains at least "WHERE s.deleted_at IS NULL" from buildWhereClause.
+  // extraPrefix handles the case where where is '' (tests pass empty string) vs a WHERE clause.
   const effectivePatternsRaw = db.prepare(`
     SELECT
       json_extract(je.value, '$.category') as category,
@@ -126,7 +126,7 @@ export function getAggregatedData(
     JOIN sessions s ON sf.session_id = s.id
     CROSS JOIN json_each(sf.effective_patterns) je
     ${where}
-    AND json_extract(je.value, '$.confidence') >= 50
+    ${extraPrefix} json_extract(je.value, '$.confidence') >= 50
     ORDER BY json_extract(je.value, '$.confidence') DESC
   `).all(...params) as Array<{ category: string | null; description: string | null; confidence: number | null }>;
 
