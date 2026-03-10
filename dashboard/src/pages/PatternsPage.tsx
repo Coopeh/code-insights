@@ -141,7 +141,7 @@ export default function PatternsPage() {
     if (currentWeek !== initialWeekRef.current) return; // user already navigated
     const mostRecentWithSnapshot = weeksData.weeks.find(w => w.hasSnapshot);
     if (mostRecentWithSnapshot && mostRecentWithSnapshot.week !== currentWeek) {
-      setCurrentWeek(mostRecentWithSnapshot.week);
+      handleWeekChange(mostRecentWithSnapshot.week);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weeksData]);

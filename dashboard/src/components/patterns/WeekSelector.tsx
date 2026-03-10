@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { WeekInfo } from '@/lib/api';
@@ -9,9 +10,9 @@ interface WeekSelectorProps {
 }
 
 // Parse an ISO week string into UTC Monday/Sunday boundaries.
-// Mirrors parseIsoWeek + parseIsoWeekBounds in server/src/routes/shared-aggregation.ts
-// -- kept here to avoid a server-side import in the dashboard bundle.
-// IMPORTANT: keep in sync with the canonical server implementation.
+// Adapted from parseIsoWeek in server/src/routes/shared-aggregation.ts --
+// uses inclusive end (Sunday) for display instead of exclusive end (next Monday) for SQL queries.
+// Kept here to avoid a server-side import in the dashboard bundle.
 function parseIsoWeekBounds(weekStr: string): { start: Date; end: Date } | null {
   const match = /^(\d{4})-W(\d{2})$/.exec(weekStr);
   if (!match) return null;
@@ -57,6 +58,15 @@ export function WeekSelector({ currentWeek, weeks, onWeekChange }: WeekSelectorP
   const currentIndex = navigableWeeks.findIndex(w => w.week === currentWeek);
   const canGoBack = currentIndex < navigableWeeks.length - 1;
   const canGoForward = currentIndex > 0;
+
+  // If currentWeek isn't in the navigable list (e.g., weeks loaded after a project change
+  // that left currentWeek pointing at a week with no sessions), fall back to the most recent
+  // navigable week so the user is never trapped with non-functional arrows.
+  useEffect(() => {
+    if (currentIndex === -1 && navigableWeeks.length > 0) {
+      onWeekChange(navigableWeeks[0].week);
+    }
+  }, [currentIndex, navigableWeeks, onWeekChange]);
 
   function handlePrev() {
     if (canGoBack && currentIndex !== -1) {
@@ -131,7 +141,7 @@ export function WeekSelector({ currentWeek, weeks, onWeekChange }: WeekSelectorP
                 key={w.week}
                 title={label}
                 tabIndex={-1}
-                onClick={() => w.sessionCount > 0 && onWeekChange(w.week)}
+                onClick={w.sessionCount > 0 ? () => onWeekChange(w.week) : undefined}
                 className={[
                   'rounded-full transition-all',
                   isCurrent ? 'w-2.5 h-2.5' : 'w-1.5 h-1.5',

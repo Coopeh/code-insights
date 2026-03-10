@@ -210,7 +210,7 @@ function getCurrentIsoWeek(): string {
   return `${year}-W${String(weekNum).padStart(2, '0')}`;
 }
 
-const ISO_WEEK_RE = /^\d{4}-W(\d{2})$/;
+const ISO_WEEK_RE = /^(\d{4})-W(\d{2})$/;
 
 async function reflectAction(options: {
   section?: string;
@@ -220,13 +220,14 @@ async function reflectAction(options: {
   const baseUrl = getBaseUrl();
   const week = options.week || getCurrentIsoWeek();
 
-  // Validate --week format: must be YYYY-WNN with week number 1-53
+  // Validate --week format: must be YYYY-WNN with year 2020-2100 and week number 1-53
   if (options.week) {
     const match = ISO_WEEK_RE.exec(options.week);
-    const weekNum = match ? parseInt(match[1], 10) : 0;
-    if (!match || weekNum < 1 || weekNum > 53) {
+    const year = match ? parseInt(match[1], 10) : 0;
+    const weekNum = match ? parseInt(match[2], 10) : 0;
+    if (!match || weekNum < 1 || weekNum > 53 || year < 2020 || year > 2100) {
       console.log(chalk.red('  Invalid week format: "' + options.week + '"'));
-      console.log(chalk.dim('  Use YYYY-WNN format, e.g., 2026-W10'));
+      console.log(chalk.dim('  Use YYYY-WNN format with year 2020-2100, e.g., 2026-W10'));
       console.log();
       process.exit(1);
     }
