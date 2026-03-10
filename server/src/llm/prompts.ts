@@ -79,24 +79,45 @@ export function formatMessagesForAnalysis(messages: SQLiteMessageRow[]): string 
     .join('\n\n');
 }
 
-// Shared guidance for friction category precision.
-// Contrastive pairs help the LLM distinguish between visually-similar categories.
-// Novel categories are encouraged for specific patterns that don't fit.
+// Shared guidance for friction category and attribution classification.
+// Contrastive pairs help the LLM distinguish similar categories.
+// Attribution field captures who contributed to the friction for actionability.
 export const FRICTION_CLASSIFICATION_GUIDANCE = `
-IMPORTANT — friction category precision:
-Use contrastive examples to pick the right category:
-- wrong-approach = bad STRATEGY (tried rewriting instead of patching; chose wrong algorithm)
-- knowledge-gap = incorrect KNOWLEDGE (used deprecated API, wrong function signature, misread docs)
-- stale-assumptions = incorrect STATE assumption (assumed package installed, assumed file existed, wrong version)
-- context-loss = AI FORGOT something it knew earlier in the same session
-- repeated-mistakes = same error 2+ times after correction
-- scope-creep = AI did MORE than asked (added unrequested features, changed files not mentioned)
-- incomplete-requirements = the USER's request was ambiguous or missing critical detail
-- documentation-gap = official docs were missing, wrong, or too sparse to resolve the issue
-- tooling-limitation = tool genuinely cannot do what was needed (e.g., WebFetch returned incomplete content, CLI has no flag for needed behavior)
-Do NOT use "tooling-limitation" for: agent spawning failures (→ "agent-orchestration-failure"), API rate limits (→ "rate-limit-hit"), or wrong approaches that self-corrected (→ "wrong-approach").
-User rejects a tool call → not friction (omit entirely).
-When no preferred category fits, create a specific kebab-case category — a precise novel category is better than a vague canonical one.`;
+FRICTION CLASSIFICATION GUIDANCE:
+
+Each friction point captures WHAT went wrong (category + description) and WHO contributed (attribution).
+
+CATEGORIES — classify the TYPE of friction:
+- "wrong-approach": AI pursued a strategy that didn't fit the task — wrong architecture, wrong tool, wrong pattern
+- "knowledge-gap": AI applied incorrect knowledge about a library, API, framework, or language feature
+- "stale-assumptions": AI worked from assumptions about current state that were incorrect (stale files, changed config, different environment)
+- "incomplete-requirements": AI worked from instructions missing critical context, constraints, or acceptance criteria
+- "context-loss": AI lost track of prior decisions or constraints established earlier in the session
+- "scope-creep": AI expanded work beyond the boundaries of the stated task
+- "repeated-mistakes": AI made the same or similar error multiple times despite correction
+- "documentation-gap": Relevant docs existed but were inaccessible during the session
+- "tooling-limitation": The tool genuinely lacked a needed capability
+
+"tooling-limitation" PRECISION — do NOT use for:
+- Agent orchestration failures (spawning, communication) → "agent-orchestration-failure"
+- Wrong commands that get self-corrected → "wrong-approach"
+- API rate limits → "rate-limit-hit"
+- User-rejected tool calls → not friction (omit)
+
+ATTRIBUTION — classify WHO contributed to the friction:
+- "user-actionable": Better user input would likely have prevented this. Evidence: vague prompt, missing context, no constraints specified, late intervention, or ambiguous correction.
+- "ai-capability": AI failed despite adequate user input. Evidence: user gave clear instructions that the AI ignored, misread, or failed to follow.
+- "environmental": Neither user nor AI could have prevented this — tooling limits, missing docs, infrastructure issues.
+
+Decision logic:
+1. Is the cause external to the user-AI interaction? → "environmental"
+2. Was the user's input before the friction vague, missing context, or lacking constraints? → "user-actionable"
+3. Was the user's input clear and the AI still failed? → "ai-capability"
+When genuinely mixed, lean "user-actionable" — this tool helps users improve.
+
+DESCRIPTION — write a neutral one-sentence description of what happened. Include specific details (file names, APIs, error messages). Do NOT assign blame in the description — let the attribution field carry that.
+
+When no category fits, create a specific kebab-case category. A precise novel category is better than a vague canonical one.`;
 
 export const CANONICAL_FRICTION_CATEGORIES = [
   'wrong-approach',
@@ -156,7 +177,8 @@ Before extracting individual insights, assess the session as a whole. Extract th
 3. friction_points: Identify up to 5 moments where progress was blocked or slowed (array, max 5).
    Each friction point has:
    - category: Use one of these PREFERRED categories when applicable: ${CANONICAL_FRICTION_CATEGORIES.join(', ')}. Create a new kebab-case category only when none of these fit.
-   - description: One sentence describing what went wrong
+   - attribution: "user-actionable" (better user input would have prevented this), "ai-capability" (AI failed despite adequate input), or "environmental" (external constraint)
+   - description: One neutral sentence describing what happened, with specific details (file names, APIs, errors)
    - severity: "high" (blocked progress for multiple turns), "medium" (caused a detour), "low" (minor hiccup)
    - resolution: "resolved" (fixed in session), "workaround" (bypassed), "unresolved" (still broken)
 ${FRICTION_CLASSIFICATION_GUIDANCE}
@@ -269,7 +291,8 @@ Extract insights in this JSON format:
     "friction_points": [
       {
         "category": "kebab-case-category",
-        "description": "One sentence about what went wrong",
+        "attribution": "user-actionable | ai-capability | environmental",
+        "description": "One neutral sentence about what happened, with specific details",
         "severity": "high | medium | low",
         "resolution": "resolved | workaround | unresolved"
       }
@@ -336,6 +359,7 @@ export interface AnalysisResponse {
     iteration_count: number;
     friction_points: Array<{
       category: string;
+      attribution?: string;
       description: string;
       severity: string;
       resolution: string;
@@ -478,7 +502,7 @@ Extract session facets — a holistic assessment of how the session went:
 1. outcome_satisfaction: "high" (completed successfully), "medium" (partial), "low" (problems), "abandoned" (gave up)
 2. workflow_pattern: The dominant pattern, or null. Values: "plan-then-implement", "iterative-refinement", "debug-fix-verify", "explore-then-build", "direct-execution"
 3. friction_points: Up to 5 moments where progress stalled (array).
-   Each: { category (kebab-case, prefer: ${CANONICAL_FRICTION_CATEGORIES.join(', ')}), description (one sentence), severity ("high"|"medium"|"low"), resolution ("resolved"|"workaround"|"unresolved") }
+   Each: { category (kebab-case, prefer: ${CANONICAL_FRICTION_CATEGORIES.join(', ')}), attribution ("user-actionable"|"ai-capability"|"environmental"), description (one neutral sentence with specific details), severity ("high"|"medium"|"low"), resolution ("resolved"|"workaround"|"unresolved") }
 ${FRICTION_CLASSIFICATION_GUIDANCE}
 4. effective_patterns: Up to 3 things that worked well (array).
    Each: { category (kebab-case, prefer: ${CANONICAL_PATTERN_CATEGORIES.join(', ')}), description (specific technique, 1-2 sentences), confidence (0-100) }
