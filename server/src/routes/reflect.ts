@@ -12,12 +12,12 @@ import {
   WORKING_STYLE_SYSTEM_PROMPT,
   generateWorkingStylePrompt,
 } from '../llm/reflect-prompts.js';
-import { buildWhereClause, buildPeriodFilter, getAggregatedData } from './shared-aggregation.js';
+import { buildWhereClause, buildPeriodFilter, parseIsoWeek, formatIsoWeek, getAggregatedData } from './shared-aggregation.js';
 import type { ReflectSection } from '@code-insights/cli/types';
 
 const app = new Hono();
 
-const MIN_FACETS_FOR_REFLECT = 20;
+const MIN_FACETS_FOR_REFLECT = 8;
 
 const ALL_SECTIONS: ReflectSection[] = ['friction-wins', 'rules-skills', 'working-style'];
 
@@ -185,8 +185,15 @@ app.post('/generate', async (c) => {
       // Only save snapshot if the request was not aborted mid-generation.
       // Saving partial results would cause stale/incomplete data to auto-load on next visit.
       if (!c.req.raw.signal.aborted) {
-        const windowEnd = new Date().toISOString();
-        const windowStart = buildPeriodFilter(period);
+        // For ISO week periods, use the exact week boundaries as window metadata.
+        // This ensures the snapshot metadata accurately reflects the week it covers.
+        const isoWeekBounds = parseIsoWeek(period);
+        const windowStart = isoWeekBounds
+          ? isoWeekBounds.start.toISOString()
+          : buildPeriodFilter(period);
+        const windowEnd = isoWeekBounds
+          ? isoWeekBounds.end.toISOString()
+          : new Date().toISOString();
         const projectKey = body.project || '__all__';
 
         db.prepare(`
@@ -238,6 +245,57 @@ app.get('/results', (c) => {
   const aggregated = getAggregatedData(db, where, params, project, source);
 
   return c.json(aggregated);
+});
+
+// GET /api/reflect/weeks
+// Returns the last 8 ISO weeks that have sessions, with snapshot status for each.
+// Used by the WeekSelector component to show which weeks have reflections.
+app.get('/weeks', (c) => {
+  const db = getDb();
+  const project = c.req.query('project');
+
+  // Compute the Monday of the current ISO week so we can generate the last 8 weeks
+  const now = new Date();
+  const nowDay = now.getUTCDay(); // 0=Sun
+  const daysToMonday = nowDay === 0 ? 6 : nowDay - 1;
+  const thisMondayMs = now.getTime() - daysToMonday * 86400000;
+
+  // Build list of last 8 ISO week strings (most recent first)
+  const weekStrings: string[] = [];
+  for (let i = 0; i < 8; i++) {
+    const weekMonday = new Date(thisMondayMs - i * 7 * 86400000);
+    weekStrings.push(formatIsoWeek(weekMonday));
+  }
+
+  // Query sessions in each week's date range, LEFT JOIN to snapshots
+  const projectCondition = project ? 'AND s.project_id = ?' : '';
+  const projectParam = project ? [project] : [];
+
+  const weeks = weekStrings.map((week) => {
+    const bounds = parseIsoWeek(week)!;
+
+    const sessionRow = db.prepare(
+      `SELECT COUNT(*) as count FROM sessions s
+       WHERE s.deleted_at IS NULL
+         AND s.started_at >= ?
+         AND s.started_at < ?
+         ${projectCondition}`
+    ).get(bounds.start.toISOString(), bounds.end.toISOString(), ...projectParam) as { count: number };
+
+    const projectKey = project || '__all__';
+    const snapshotRow = db.prepare(
+      `SELECT generated_at FROM reflect_snapshots WHERE period = ? AND project_id = ?`
+    ).get(week, projectKey) as { generated_at: string } | undefined;
+
+    return {
+      week,
+      sessionCount: sessionRow.count,
+      hasSnapshot: !!snapshotRow,
+      generatedAt: snapshotRow?.generated_at ?? null,
+    };
+  });
+
+  return c.json({ weeks });
 });
 
 // GET /api/reflect/snapshot
