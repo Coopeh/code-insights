@@ -1,0 +1,884 @@
+we recently updated the facet extraction logic for session insights which is required for the latest reflect feature. I have many sessions missing the new format of facets/patterns data. Can you run re-analysis of all the sessions for which i had already generated insights from cli directly instead of ui?
+
+---
+
+we recently updated the facet extraction logic for session insights which is required for the latest reflect feature. I have many sessions missing the new format of facets/patterns data. Can you run re-analysis of all the sessions for which i had already generated insights from cli directly instead of ui?
+
+---
+
+I think Option A is enough for now. I am just being too lazy to re-analyze 40+ sessions via browser dashboard
+
+---
+
+<task-notification>
+<task-id>by0iqhmz4</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-melagiri-Workspace-codeInsights-code-insights/tasks/by0iqhmz4.output</output-file>
+<status>completed</status>
+<summary>Background command "Run facet backfill for 39 sessions with auto-confirm" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: /private/tmp/claude-501/-Users-melagiri-Workspace-codeInsights-code-insights/tasks/by0iqhmz4.output
+
+---
+
+i think all 39 are done. check again
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+I am seeing this in the UI. friction categories as chart and patterns as list of text. is that correct? And also, the categories in friction, do we need to revisit them to ensure we remove duplicates or near similar ones? we also have friction points like missing-dependency, merge-conflict, race-condition. i am not sure if these are right? we are here to capture friction point in user ai session behaviour, isn't it.  
+
+Run the first one on display of both after addressing the categories in friction sectino
+
+---
+
+yes, i think this is the right approach. Just run the categories again with @"llm-expert (agent)" to finalize them. give them the effective patterns categories as well and explain the intent behind this feature
+
+---
+
+yes, create this as a feature branch and run it with full ceremony. ensure multiple rounds of review until we zero down review comments
+
+---
+
+# /start-feature — Auto-Setup Feature Development Team
+
+**Feature**: Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page.
+
+You are setting up a hybrid agent team for feature development. The PM agent leads the team and owns the ceremony. Your job is minimal setup, then hand control to PM.
+
+---
+
+## Step 1: Create Git Worktree
+
+Slugify the feature description into a branch name:
+- Take `Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page.`, lowercase it, replace spaces/special chars with hyphens, truncate to 50 chars
+- Prefix with `feature/` (e.g., "add demo mode onboarding" -> `feature/add-demo-mode-onboarding`)
+
+```bash
+# Example (adapt the slug from Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page.):
+BRANCH_NAME="feature/<slugified-arguments>"
+git fetch origin
+git worktree add ../code-insights-${BRANCH_NAME#feature/} -b ${BRANCH_NAME} origin/main
+```
+
+If the worktree or branch already exists, inform the user and ask how to proceed.
+
+Run `pnpm install` in the worktree:
+```bash
+cd ../code-insights-${BRANCH_NAME#feature/} && pnpm install
+```
+
+---
+
+## Step 2: Create Named Team
+
+Create the team using TeamCreate. Use the slugified branch name (without `feature/` prefix) as the team name:
+
+```
+TeamCreate {
+  team_name: "feat-<slugified-arguments>",
+  description: "Feature team: Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page."
+}
+```
+
+---
+
+## Step 3: Spawn PM Agent
+
+The PM agent handles scoping, GitHub Issues, and task graph creation. It does NOT spawn other agents — only the orchestrator can spawn agents.
+
+```
+Task {
+  name: "pm-agent",
+  subagent_type: "product-manager",
+  team_name: "feat-<slugified-arguments>",
+  prompt: "You are the PM for this feature team.
+
+FEATURE REQUEST: Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page.
+WORKTREE: ../code-insights-<slugified-arguments>/
+BRANCH: feature/<slugified-arguments>
+TEAM: feat-<slugified-arguments>
+
+Your responsibilities are scoping, GitHub Issues, task graph, and handoff preparation.
+IMPORTANT: You CANNOT spawn agents. Only the orchestrator can. When you need an agent spawned, message the orchestrator with the request.
+
+Follow this protocol:
+
+1. SCOPE: Read docs in docs/ and CLAUDE.md to understand what this feature involves. Check for existing design docs in docs/plans/. Check docs/architecture/ for architecture context. If the scope is unclear, message the orchestrator for clarification.
+
+2. ISSUES: Search for an existing GitHub Issue that matches this feature. If one exists, use it. If not, create one with proper description, acceptance criteria, and T-shirt size. Record the issue number.
+
+3. TASK GRAPH: Create the ceremony tasks using TaskCreate, then set dependencies with TaskUpdate:
+   - Task: 'TA: Review architecture alignment' (no dependencies) -- SKIP if internal-only (new components, UI, styling)
+   - Task: 'LLM Expert: Design prompt architecture' (no dependencies) -- SKIP if feature doesn't involve LLM calls
+   - Task: 'PM: Prepare handoff context in GitHub Issue' (no dependencies, you do this yourself)
+   - Task: 'Dev: Read handoff and design docs, prepare questions' (blockedBy: TA + LLM Expert if applicable + PM handoff)
+   - Task: 'Dev + TA: Reach consensus on implementation approach' (blockedBy: above) -- SKIP if internal-only
+   - Task: 'Dev: Implement feature in worktree' (blockedBy: above)
+   - Task: 'Dev: Create PR and run CI checks' (blockedBy: above)
+   - Task: 'Review: Triple-layer code review' (blockedBy: above)
+   - Task: 'Post review summary to GitHub PR' (blockedBy: above)
+
+4. DO YOUR OWN TASK: Work on your handoff task -- prepare context in the GitHub Issue (description, acceptance criteria, relevant doc paths, implementation guidance).
+
+5. REQUEST AGENT SPAWNS: When your handoff task is done, message the orchestrator:
+   - If TA is needed: 'SPAWN_REQUEST: ta-agent — [brief context]'
+   - When dev prerequisites are met: 'SPAWN_REQUEST: dev-agent — [brief context including issue number and key details]'
+   The orchestrator will spawn the agents and assign tasks.
+
+   SKIP TA if the feature is internal-only (new components, UI fixes, styling, LLM provider additions). In that case, mark the TA task as completed with note 'Skipped -- internal-only change'.
+
+   If the feature involves LLM calls (prompts, model selection, token budgets, structured output):
+   - 'SPAWN_REQUEST: llm-expert-agent — [brief context about the LLM aspect]'
+   The LLM Expert will design the prompt architecture, token budget, and model recommendation before dev implements.
+
+   SKIP LLM Expert if the feature doesn't touch LLM code. Mark the task as completed with note 'Skipped -- no LLM impact'.
+
+6. MONITOR: Check TaskList periodically. When Dev creates a PR, message the orchestrator to trigger /start-review on the PR number.
+
+7. REPORT: When review is posted, message the orchestrator: 'PR #XX for Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page. is ready for founder review and merge.'
+
+IMPORTANT RULES:
+- NEVER merge PRs -- founder-only
+- NEVER try to spawn agents -- message the orchestrator instead
+- All dev work happens in the worktree
+- If you need user clarification, message the orchestrator who will ask the user
+- You can message existing teammates directly via SendMessage for routine coordination
+- Task dependencies enforce ceremony order -- don't skip steps
+- CI gate for this project: pnpm build (no test framework yet)",
+  mode: "bypassPermissions"
+}
+```
+
+---
+
+## Step 4: Orchestrator Spawns Agents on PM Request
+
+After PM completes its handoff and sends a SPAWN_REQUEST message, the orchestrator spawns the requested agent:
+
+**For TA (if PM requests it):**
+```
+Task {
+  name: "ta-agent",
+  subagent_type: "technical-architect",
+  team_name: "feat-<slugified-arguments>",
+  prompt: "You are the TA for feature team feat-<slugified-arguments>. Feature: Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page.. Check TaskList for your assigned tasks. Use SendMessage to communicate with pm-agent and later dev-agent. Mark tasks in_progress when starting, completed when done.",
+  mode: "bypassPermissions"
+}
+```
+Assign the TA task to ta-agent.
+
+**For LLM Expert (if PM requests it):**
+```
+Task {
+  name: "llm-expert-agent",
+  subagent_type: "llm-expert",
+  team_name: "feat-<slugified-arguments>",
+  prompt: "You are the LLM Expert for feature team feat-<slugified-arguments>. Feature: Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page.. Check TaskList for your assigned tasks. Design the prompt architecture, token budget, model recommendation, and output schema for the LLM aspects of this feature. Use SendMessage to communicate with pm-agent and ta-agent. Mark tasks in_progress when starting, completed when done.",
+  mode: "bypassPermissions"
+}
+```
+Assign the LLM Expert task to llm-expert-agent.
+
+**For Dev (when PM requests it):**
+```
+Task {
+  name: "dev-agent",
+  subagent_type: "engineer",
+  team_name: "feat-<slugified-arguments>",
+  prompt: "You are the Dev for feature team feat-<slugified-arguments>. Feature: Revise friction category taxonomy and display for AI session behavior focus. 9 canonical categories replacing 15, legacy alias remapping, contrastive prompt guidance, and unified category+description list display for both friction and patterns on the Patterns page.. Worktree: ../code-insights-<slugified-arguments>/. All code work happens in the worktree. Check TaskList for your tasks. Use SendMessage to communicate with pm-agent. Mark tasks in_progress/completed. CI gate: pnpm build must pass.",
+  mode: "bypassPermissions"
+}
+```
+Assign the next unblocked dev task to dev-agent.
+
+---
+
+## Step 5: Supervise
+
+After spawning agents, your role is active supervisor:
+
+1. **PM handles scoping and task graph** — orchestrator handles all agent spawning
+2. **Spawn agents when PM sends SPAWN_REQUEST messages**
+3. **Intervene when**:
+   - PM messages you asking for user clarification -> relay to user
+   - An agent is stuck or reports a blocker -> help unblock
+   - PM requests `/start-review` -> run the review command on the PR
+4. **When PM reports "ready for merge"** -> inform the user
+
+---
+
+## Step 5: Cleanup (After PR Merge)
+
+After the founder merges the PR:
+
+1. Send shutdown requests to all teammates (pm-agent, ta-agent, dev-agent)
+2. Delete the team: `TeamDelete`
+3. Clean up worktree:
+```bash
+git worktree remove ../code-insights-<slugified-arguments>
+```
+4. Confirm cleanup is complete
+
+---
+
+## Important Rules
+
+- **NEVER merge the PR** — founder-only
+- **Only the orchestrator spawns agents** — sub-agents CANNOT use the Task tool to spawn teammates. PM must send SPAWN_REQUEST messages to the orchestrator.
+- **PM handles scoping and coordination** — it creates task graphs, GitHub Issues, and prepares handoff context
+- **Orchestrator is the agent factory** — spawns TA and Dev agents when PM requests them
+- **All dev work happens in the worktree**
+- **Task dependencies enforce ceremony order** — agents can't skip steps
+- **TA is optional** for internal-only changes — PM decides based on scope
+
+---
+
+<teammate-message teammate_id="pm-agent" color="blue">
+{"type":"idle_notification","from":"pm-agent","timestamp":"2026-03-10T00:29:11.081Z","idleReason":"available","summary":"[to orchestrator] SPAWN_REQUEST: dev-agent for issue #126"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="pm-agent" color="blue">
+{"type":"idle_notification","from":"pm-agent","timestamp":"2026-03-10T00:29:20.726Z","idleReason":"available","summary":"[to pm-agent] Task #2 already done, issue #126 created"}
+</teammate-message>
+
+<teammate-message teammate_id="pm-agent" color="blue">
+{"type":"idle_notification","from":"pm-agent","timestamp":"2026-03-10T00:29:24.925Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="dev-agent" color="green">
+{"type":"idle_notification","from":"dev-agent","timestamp":"2026-03-10T00:35:06.041Z","idleReason":"available","summary":"[to pm-agent] PR #127 ready — friction taxonomy + list display"}
+</teammate-message>
+
+<teammate-message teammate_id="dev-agent" color="green">
+{"type":"idle_notification","from":"dev-agent","timestamp":"2026-03-10T00:35:12.606Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+# /start-review — Triple-Layer Code Review Team
+
+**PR**: 127
+
+You are setting up a triple-layer code review for PR `127`. This can be used standalone or as part of a `/start-feature` team workflow.
+
+---
+
+## Step 1: Get PR Details
+
+Fetch the PR details:
+
+```bash
+# Get the correct owner from git remote
+git remote get-url origin | sed 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/'
+```
+
+Use `gh pr view 127` to get PR title, description, and diff stats.
+Use `gh pr diff 127` to get the diff.
+
+Determine the PR scope:
+- Count files changed and lines changed
+- Identify if it touches schema concerns (types.ts, SQLite schema, server API)
+- Decide if Wild Card reviewer is needed (see criteria below)
+
+---
+
+## Step 2: Determine Review Scope
+
+**Invoke Wild Card (3rd reviewer) if ANY of these apply:**
+- New feature with multiple files changed
+- Complex business logic
+- Schema impact (types.ts, SQLite migrations, server API changes)
+- Architectural changes
+- 200+ lines of changes
+
+**Skip Wild Card if ALL of these apply:**
+- Simple bug fix (< 50 lines)
+- Single file change
+- Straightforward UI/component change
+- Config/CI changes only
+
+**Invoke LLM Expert (4th reviewer) if ANY of these apply:**
+- PR touches `server/src/llm/` (prompts, providers, export-prompts)
+- PR adds or modifies LLM API calls
+- PR changes structured output schemas or SSE streaming
+- PR modifies token budgets or model selection logic
+- PR adds new LLM-powered features
+
+**Skip LLM Expert if ALL of these apply:**
+- No LLM code touched
+- Pure UI, CLI, or schema changes
+- Provider (source tool) implementations only
+
+---
+
+## Step 3: Run Parallel Independent Reviews
+
+**CRITICAL**: All reviews run in parallel. No reviewer sees another's comments. This prevents bias.
+
+**Launch TA Insider Review:**
+```
+Task {
+  name: "ta-reviewer",
+  subagent_type: "technical-architect",
+  prompt: "You are performing a Phase 1 INSIDER review of PR #127 in the code-insights repo.
+
+  Fetch the PR diff using: gh pr diff 127
+  Also fetch the PR details: gh pr view 127
+
+  Follow your Phase 1 review protocol:
+  1. Read the PR description and any linked GitHub Issue
+  2. Check if the change touches schema concerns (types.ts, SQLite schema)
+  3. Review code against existing patterns in the codebase
+  4. Check existing CLAUDE.md conventions compliance
+  5. Verify data contract patterns are followed (if data flow changed)
+  6. Check shadcn/ui and component conventions (if UI changes)
+
+  Output your review in the structured format:
+  ## TA Review (Phase 1 - Insider): [PR Title]
+  ### Architecture Alignment
+  ### Issues Found (with priority markers)
+  ### Phase 1 Verdict
+
+  DO NOT look at any other review comments. Your review must be independent.",
+  mode: "bypassPermissions"
+}
+```
+
+**Launch Outsider Review:**
+```
+Task {
+  name: "outsider-reviewer",
+  subagent_type: "superpowers:code-reviewer",
+  prompt: "You are performing an independent OUTSIDER review of PR #127 in the code-insights repo.
+
+  Fetch the PR diff using: gh pr diff 127
+
+  Review for:
+  - Security issues (XSS, injection, auth bypass)
+  - Best practices (React, TypeScript, Node.js)
+  - Logic bugs and edge cases
+  - Performance concerns
+  - Accessibility issues
+
+  Output a structured review with findings categorized as blocking, suggestions, and notes.",
+  mode: "bypassPermissions"
+}
+```
+
+**Launch LLM Expert Review (if applicable):**
+```
+Task {
+  name: "llm-expert-reviewer",
+  subagent_type: "llm-expert",
+  prompt: "You are performing an independent LLM EXPERT review of PR #127 in the code-insights repo.
+
+  Fetch the PR diff using: gh pr diff 127
+  Also fetch the PR details: gh pr view 127
+
+  Review all LLM-related code for:
+  - Prompt quality: clarity, specificity, output format constraints
+  - Token efficiency: redundant instructions, over-prompting, prompt stuffing
+  - Output consistency: structured output schemas, JSON mode, enum enforcement
+  - Model selection: is the chosen model appropriate for the task complexity?
+  - Resilience: handling malformed LLM output, timeouts, retries, rate limits
+  - Cross-model compatibility: prompts that only work with one model family
+  - Cost implications: token budget estimates, unnecessary Opus/GPT-4 usage for simple tasks
+  - Streaming patterns: SSE implementation, partial response handling
+
+  Rate each prompt on: clarity (1-5), token efficiency (1-5), output consistency (1-5), resilience (1-5).
+
+  Output your review in the structured format:
+  ## LLM Expert Review: [PR Title]
+  ### Prompt Quality Assessment
+  ### Token Efficiency
+  ### Model Selection
+  ### Issues Found (with priority markers)
+  ### Recommendations
+
+  DO NOT look at any other review comments. Your review must be independent.",
+  mode: "bypassPermissions"
+}
+```
+
+**Launch Wild Card Review (if applicable):**
+```
+Task {
+  name: "wildcard-reviewer",
+  subagent_type: "superpowers:code-reviewer",
+  prompt: "You are performing an independent WILD CARD review of PR #127 in the code-insights repo.
+
+  Fetch the PR diff using: gh pr diff 127
+
+  Your role is to provide a fresh perspective with NO constraints:
+  - Challenge assumptions in the implementation
+  - Look for edge cases others might miss
+  - Question whether the approach is the simplest that could work
+  - Check for hidden complexity or tech debt being introduced
+  - Look at error handling from a user's perspective
+
+  Output a structured review with findings categorized as blocking, suggestions, and notes.",
+  mode: "bypassPermissions"
+}
+```
+
+Wait for ALL reviews to complete before proceeding.
+
+---
+
+## Step 4: TA Synthesis
+
+After all reviews are collected, launch the TA synthesis pass:
+
+```
+Task {
+  name: "ta-synthesizer",
+  subagent_type: "technical-architect",
+  prompt: "You are performing Phase 2 SYNTHESIS for PR #127.
+
+  The orchestrator will provide you with the independent review outputs (outsider, wild card if applicable, and LLM expert if applicable).
+
+  Follow your Phase 2 synthesis protocol:
+  1. Read all review comments (outsider, wild card, LLM expert)
+  2. Re-review the PR with all reviews in context
+  3. For each outsider/wild card/LLM expert comment, evaluate:
+     - Does this conflict with project patterns or conventions?
+     - Is this a valid point that should be applied?
+     - Did you miss this in Phase 1?
+  4. For each comment: AGREE or PUSHBACK WITH REASON
+  5. Create the consolidated final list
+
+  Output in the structured format:
+  ## TA Synthesis (Phase 2): [PR Title]
+  ### Review of Outsider Comments
+  ### Second Pass Findings
+  ### Consolidated Review (For Dev Agent)
+  - FIX NOW items
+  - NOT APPLICABLE items with technical rationale
+  - ESCALATE TO FOUNDER items with reason
+  ### Final Verdict",
+  mode: "bypassPermissions"
+}
+```
+
+---
+
+## Step 5: Deliver Results
+
+After synthesis is complete:
+
+1. **If part of a /start-feature team**: Send the consolidated review to the dev-agent via SendMessage. Mark the review task as completed.
+
+2. **If standalone**: Present the consolidated review to the user. Ask if they want to:
+   - Have the review summary posted to the GitHub PR
+   - Have fixes implemented automatically
+
+3. **Post review summary to GitHub PR** using `gh pr comment`:
+
+```bash
+gh pr comment 127 --body "$(cat <<'EOF'
+## Triple-Layer Code Review Summary
+
+### Reviewers
+| Role | Focus |
+|------|-------|
+| TA (Insider) | Pattern compliance, schema impact, architecture |
+| Outsider | Security, best practices, logic bugs |
+| LLM Expert | Prompt quality, token efficiency, model selection (if applicable) |
+| Wild Card | Edge cases, fresh perspective |
+
+### Issues Found & Resolution
+#### FIX NOW
+[List from synthesis]
+
+#### NOT APPLICABLE
+[List with technical rationale]
+
+### Verification
+[Status of fixes if any were applied]
+
+**Review complete. [Ready for merge / Changes required].**
+EOF
+)"
+```
+
+---
+
+## Important Rules
+
+- **NEVER merge the PR** — founder-only
+- **Reviews MUST be independent** — no reviewer sees another's output during Phase 1
+- **TA synthesis is authoritative** — TA can mark outsider comments as "NOT APPLICABLE" with technical justification
+- **Always post summary to GitHub PR** — this creates the audit trail
+
+---
+
+<teammate-message teammate_id="dev-agent" color="green">
+{"type":"idle_notification","from":"dev-agent","timestamp":"2026-03-10T00:35:16.789Z","idleReason":"available"}
+</teammate-message>
+
+<teammate-message teammate_id="pm-agent" color="blue">
+{"type":"idle_notification","from":"pm-agent","timestamp":"2026-03-10T00:35:17.193Z","idleReason":"available","summary":"[to orchestrator] PR #127 ready — trigger /start-review 127"}
+</teammate-message>
+
+<teammate-message teammate_id="dev-agent" color="green">
+{"type":"idle_notification","from":"dev-agent","timestamp":"2026-03-10T00:35:20.492Z","idleReason":"available"}
+</teammate-message>
+
+<teammate-message teammate_id="pm-agent" color="blue">
+{"type":"idle_notification","from":"pm-agent","timestamp":"2026-03-10T00:35:20.519Z","idleReason":"available"}
+</teammate-message>
+
+<teammate-message teammate_id="outsider-reviewer" color="purple">
+{"type":"idle_notification","from":"outsider-reviewer","timestamp":"2026-03-10T00:35:48.332Z","idleReason":"available"}
+</teammate-message>
+
+<teammate-message teammate_id="wildcard-reviewer" color="pink">
+{"type":"idle_notification","from":"wildcard-reviewer","timestamp":"2026-03-10T00:35:57.096Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="llm-expert-reviewer" color="orange" summary="LLM Expert Review of PR #127 complete">
+## LLM Expert Review: Revise friction category taxonomy (15→9)
+
+### Prompt Quality Assessment
+
+**FRICTION_CLASSIFICATION_GUIDANCE** (the core change)
+
+| Metric | Old | New | Rating |
+|--------|-----|-----|--------|
+| Clarity | 3/5 | 5/5 | Major improvement |
+| Token Efficiency | 3/5 | 4/5 | Good improvement |
+| Output Consistency | 3/5 | 5/5 | Major improvement |
+
+The old guidance was structured as negative anchoring ("Do NOT use X for Y") which only steered the LLM away from one category (`tooling-limitation`) but gave no positive guidance for the other 14. The new guidance uses **contrastive definitions** — each category gets a one-line definition with a distinguishing signal word in caps (STRATEGY, KNOWLEDGE, STATE, FORGOT, etc.). This is a textbook prompt engineering improvement: contrastive pairs with semantic anchors dramatically reduce classification ambiguity.
+
+### Token Efficiency
+
+**Rating: 4/5** — Good, with one minor note.
+
+The new guidance is slightly longer in raw characters but delivers far more information per token. The old version spent tokens on 4 negative examples for a single category. The new version covers all 9 categories with contrastive definitions in roughly the same token budget. Net: better information density.
+
+One minor inefficiency: the `tooling-limitation` negative examples at the bottom (`Do NOT use "tooling-limitation" for: agent spawning failures...`) partially overlap with the contrastive definition above it. This is ~20 tokens of redundancy but is justified as belt-and-suspenders for the known catch-all problem. Not worth removing.
+
+### Contrastive Guidance Quality
+
+**Rating: 5/5** — Excellent.
+
+The contrastive pairs are well-designed for LLM classification:
+
+1. **wrong-approach vs knowledge-gap**: Strategy vs Knowledge — clean semantic boundary. "Tried rewriting instead of patching" (strategy) vs "used deprecated API" (knowledge). LLMs will distinguish these correctly.
+
+2. **knowledge-gap vs stale-assumptions**: Knowledge vs State — subtler but the examples nail it. "Wrong function signature" (knowledge) vs "assumed package installed" (state). The key insight is that stale-assumptions is about the *environment state* being different from what was assumed, while knowledge-gap is about *technical facts* being wrong.
+
+3. **context-loss vs repeated-mistakes**: These could be confused (both involve "doing something wrong again") but the definitions disambiguate well — context-loss is about *forgetting within a session*, repeated-mistakes is about *failing to learn from corrections*.
+
+4. **scope-creep vs incomplete-requirements**: Both involve scope mismatch but from opposite directions — AI did too much vs user specified too little. Clear distinction.
+
+5. **documentation-gap vs tooling-limitation**: External resource vs tool capability — straightforward.
+
+**Potential confusion point** (minor): `stale-assumptions` clusters 6 legacy categories (missing-dependency, config-drift, stale-cache, version-mismatch, permission-issue, environment-mismatch). Some of these — particularly `permission-issue` — could arguably be `knowledge-gap` (the AI didn't know it needed sudo) rather than `stale-assumptions` (the AI assumed it had permissions). However, the current mapping is defensible: the AI *assumed* a state (has permissions) that was incorrect, which fits the "incorrect STATE assumption" definition. This is a judgment call and the current choice is reasonable.
+
+### Issues Found
+
+**P3 (Low) — Old comment not updated in source file:**
+The comment on line 82-84 of `prompts.ts` still says:
+```
+// Steers the LLM away from the `tooling-limitation` catch-all via negative anchoring
+// and contrastive examples.
+```
+The PR diff updates this to:
+```
+// Contrastive pairs help the LLM distinguish between visually-similar categories.
+```
+This is correct in the diff — just confirming it's included. No action needed.
+
+**P3 (Low) — Category list in FACET_ONLY_SYSTEM_PROMPT uses template interpolation:**
+Both `SESSION_ANALYSIS_SYSTEM_PROMPT` and `FACET_ONLY_SYSTEM_PROMPT` interpolate `CANONICAL_FRICTION_CATEGORIES.join(', ')`. Since the array is the single source of truth, both prompts automatically pick up the new 9 categories. This is a good pattern — no drift risk. No action needed.
+
+**P4 (Informational) — No enum enforcement in structured output schema:**
+The friction category field is typed as `string` in both the JSON schema example and the TypeScript interface (`category: string`). This means the LLM can still hallucinate novel categories. This is *intentional* per the guidance ("create a specific kebab-case category") and the normalization layer handles it at read time. This is the right design — strict enum enforcement would lose the ability to capture novel friction patterns. No action needed.
+
+**P4 (Informational) — Cross-model compatibility:**
+The contrastive definition format (`category = SIGNAL_WORD (examples)`) is model-agnostic and works well across Claude, GPT-4, Gemini, and Ollama models. The capitalized signal words (STRATEGY, KNOWLEDGE, STATE, FORGOT) serve as attention anchors that work consistently across model families. No issues.
+
+### Recommendations
+
+1. **No blocking issues.** The prompt changes are well-crafted and represent a clear improvement in classification quality.
+
+2. **The alias mapping is sound.** The 11 legacy-to-new mappings in `friction-normalize.ts` are reasonable. The heaviest cluster is `stale-assumptions` (6 legacy categories), which makes sense — the old taxonomy over-specified environment/dependency issues that are all fundamentally "assumed incorrect state."
+
+3. **Test coverage is thorough.** The tests cover exact match, case-insensitive match, Levenshtein fuzzy match, substring match, all 11 legacy remappings, and the full canonical set. The aggregation tests correctly verify that `type-error` now resolves to `knowledge-gap` through the alias chain.
+
+4. **Dashboard change is clean.** Replacing the bar chart with a list display is appropriate — the new 9-category taxonomy is small enough that a list with examples is more informative than a chart. The severity-colored badge preserves the visual signal that the bar chart color provided.
+
+**Verdict: Approve.** No LLM-related issues found. The taxonomy revision and contrastive guidance are well-designed improvements that will produce more consistent and actionable friction classification across all supported LLM providers.
+</teammate-message>
+
+<teammate-message teammate_id="llm-expert-reviewer" color="orange">
+{"type":"idle_notification","from":"llm-expert-reviewer","timestamp":"2026-03-10T00:37:01.365Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="ta-reviewer" color="yellow" summary="PR #127 insider review complete — APPROVED">
+Phase 1 insider review of PR #127 is complete and posted as a PR comment.
+
+**Verdict: APPROVED** from architecture perspective.
+
+Key findings:
+- No data contract impact — friction categories are strings, not typed unions. SQLite schema unchanged.
+- Legacy alias map (11 remappings) follows the exact same pattern as effective pattern normalization from PR #125. Backward compatible.
+- Dashboard list layout is a pixel-perfect mirror of the Effective Patterns list already on the page.
+- Prompt guidance significantly improved — contrastive pairs instead of negative anchoring.
+- Test coverage is thorough: all 9 canonicals, all 11 aliases, Levenshtein, case-insensitive variants.
+- Zero issues requiring fixes.
+
+Ready for Phase 2 synthesis once outsider and LLM expert reviews are in.
+</teammate-message>
+
+<teammate-message teammate_id="ta-reviewer" color="yellow">
+{"type":"idle_notification","from":"ta-reviewer","timestamp":"2026-03-10T00:37:34.153Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="ta-synthesizer" color="cyan" summary="PR #127 synthesis complete, ready to merge">
+## TA Synthesis (Phase 2) Complete for PR #127
+
+**Final Verdict: Ready to merge — no fixes required.**
+
+Posted as PR comment: https://github.com/melagiri/code-insights/pull/127#issuecomment-4027825227
+
+### Summary of Findings
+
+**FIX NOW:** None.
+
+All available reviews (Insider, LLM Expert) approved unanimously:
+- No schema impact, no API contract changes, no type changes
+- 11 legacy aliases correctly map old 15-category taxonomy to new 9 categories
+- Contrastive prompt guidance is a significant quality improvement over negative anchoring
+- Dashboard list layout mirrors established Effective Patterns pattern
+- Test coverage is thorough: 9 canonicals, 11 aliases, Levenshtein, case-insensitive
+- Backward compatibility via alias map follows PR #125 pattern exactly
+
+**NOT APPLICABLE:** No outsider/wild card findings were retrievable from the GitHub API (comments returned empty). Synthesis proceeded with the 2 available reviews.
+
+**ESCALATE:** None.
+
+The PR is clean and focused. Recommend proceeding to merge.
+</teammate-message>
+
+<teammate-message teammate_id="ta-synthesizer" color="cyan">
+{"type":"idle_notification","from":"ta-synthesizer","timestamp":"2026-03-10T00:39:38.921Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+I want to revisit the categories again while implementation is going on. Some categories like 'repeated-mistakes', 'stale-assumptions' form good candidates for progress feature as well as reflect feature, isn't it? I want to get some thoughts on how we design the progress feature which will be checking if the friction points of previous sessions have been resolved and effective patterns are seen more in future reflections of user. Ask @"llm-expert (agent)" for their view on this
+
+---
+
+And one more thing, i see for all friction points:
+
+       wrong-approach         — AI chose the wrong strategy or path
+       knowledge-gap          — AI misunderstood a library, API, framework, or language feature
+       stale-assumptions      — AI operated on incorrect assumptions about current state
+       incomplete-requirements — User's instructions were ambiguous or missing critical context
+       context-loss           — AI lost track of prior decisions or constraints mid-session
+       scope-creep            — AI went beyond what was asked
+       repeated-mistakes      — AI kept making the same error after correction
+       documentation-gap      — Correct info exists but AI couldn't access it
+       tooling-limitation     — AI's tool genuinely couldn't do what was needed
+
+We are talking about AI missing something, AI doing something incorrectly. While that is true we have to capture from both lens.. What wrong or mistake that the user did which led to AI drift away into issues. This tool is mainly to understand user level issues and meanwhile capture few tooling problems which is why user is not able to get by with proper workflow..
+
+We have to think from that angle.
+
+---
+
+i like this, but are we fully pushing the blame on user saying because user didn't do this and AI couldn't complete? Are we able to capture genuine AI misses in this new catogories?
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+Or we can further categorize these in 2 ways. Where user went wrong. and then using this in context building the where ai went wrong friction points with clear distinction stating is it ai issue or because user couldn't give enought context or information or direction, ai went haywire..
+
+---
+
+yes, seem opinion from LLM Expert. After frictions, ask LLM to audit the effective patterns as well again. let that be a separate prompt after finalizing friction categories and approach finalization
+
+---
+
+I say we update PR#127 because we have touched friction points. 
+
+effective patterns can be next ask. First let's close the loop on friction points
+
+---
+
+<teammate-message teammate_id="dev-agent" color="green" summary="Attribution field pushed to PR #127">
+Attribution field changes are pushed to PR #127. Here's what was done:
+
+1. **cli/src/types.ts** — Added `attribution?: 'user-actionable' | 'ai-capability' | 'environmental'` to `FrictionPoint` interface (optional for backward compat).
+
+2. **server/src/llm/prompts.ts** — Replaced `FRICTION_CLASSIFICATION_GUIDANCE` entirely with the new version including attribution guidance. Added `attribution` field to the `friction_points` spec in both `SESSION_ANALYSIS_SYSTEM_PROMPT` and `FACET_ONLY_SYSTEM_PROMPT`. Updated the JSON schema example and `AnalysisResponse` type.
+
+3. **server/src/routes/facets.ts** — `/api/facets/outdated` now uses a UNION query to flag sessions missing `attribution` on friction_points OR missing `category` on effective_patterns. Sessions failing both checks are counted once (UNION deduplicates).
+
+CI gate: `pnpm build` passes, 126/126 tests pass. PR description updated.
+</teammate-message>
+
+<teammate-message teammate_id="dev-agent" color="green">
+{"type":"idle_notification","from":"dev-agent","timestamp":"2026-03-10T01:12:29.417Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+9 + 11 ? what are those aliases?
+
+---
+
+Overall, we will have no more than 9 showing to user?
+
+---
+
+We have addressed the UI as well in this PR, right?
+
+---
+
+the latest changes and updates aren't present in the github PR. Update the description and add relevant comments and then i will merge
+
+---
+
+<teammate-message teammate_id="dev-agent" color="green" summary="PR #127 description and comment updated">
+PR #127 description updated and Round 2 comment posted.
+
+- PR body now covers both rounds with full change details, schema impact, and testing notes
+- Comment at https://github.com/melagiri/code-insights/pull/127#issuecomment-4028016663 summarizes the attribution field addition specifically
+</teammate-message>
+
+<teammate-message teammate_id="dev-agent" color="green">
+{"type":"idle_notification","from":"dev-agent","timestamp":"2026-03-10T01:38:49.527Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+merged
+
+---
+
+<teammate-message teammate_id="system">
+{"type":"teammate_terminated","message":"dev-agent has shut down."}
+</teammate-message>
+
+<teammate-message teammate_id="dev-agent" color="green">
+{"type":"shutdown_approved","requestId":"shutdown-1773106796513@dev-agent","from":"dev-agent","timestamp":"2026-03-10T01:40:01.540Z","paneId":"in-process","backendType":"in-process"}
+</teammate-message>
+
+<teammate-message teammate_id="system">
+{"type":"teammate_terminated","message":"pm-agent has shut down."}
+</teammate-message>
+
+<teammate-message teammate_id="pm-agent" color="blue">
+{"type":"shutdown_approved","requestId":"shutdown-1773106796025@pm-agent","from":"pm-agent","timestamp":"2026-03-10T01:40:09.042Z","paneId":"in-process","backendType":"in-process"}
+</teammate-message>
+
+---
+
+I want to now update the documentation. We worked through the friction points which are not in @docs/PRODUCT.md @docs/VISION.md @docs/ARCHITECTURE.md docs. Ask @"technical-architect (agent)" and @"devtools-cofounder (agent)" to update documents they own from the summary that you provide on what changes have been made. They can take a look at code as well to verify before updating the docs. We can include the changes we intend to do for effective patterns as well into it
+
+---
+
+<teammate-message teammate_id="cofounder-docs" color="blue" summary="PRODUCT.md and VISION.md updated for friction taxonomy">
+Completed PRODUCT.md and VISION.md updates for the friction taxonomy revision (PR #127). Here's what changed:
+
+**docs/PRODUCT.md:**
+- Updated friction points bullet: now lists all 9 canonical AI-session-focused categories explicitly
+- Added new bullet for the attribution model (user-actionable / ai-capability / environmental)
+- Updated effective patterns mention to reference 8 canonical categories
+- Updated friction normalization bullet to mention 9 categories and alias mapping for legacy migration
+- Added "Upcoming" paragraph about Progress tracking feature
+
+**docs/VISION.md:**
+- Phase 8 section: replaced generic "friction category refinement" bullets with specific mentions of the 15→9 taxonomy revision, attribution model, and consistent list presentation
+- Added effective pattern normalization mention
+- What's Next section: added 3 new items at top priority position — effective patterns audit, progress tracking with weekly snapshots, and friction-to-pattern affinity map
+
+All changes verified against the actual merged code in `server/src/llm/prompts.ts` (CANONICAL_FRICTION_CATEGORIES) and `cli/src/types.ts` (FrictionPoint.attribution type).
+
+Files modified:
+- `/Users/melagiri/Workspace/codeInsights/code-insights/docs/PRODUCT.md`
+- `/Users/melagiri/Workspace/codeInsights/code-insights/docs/VISION.md`
+</teammate-message>
+
+<teammate-message teammate_id="cofounder-docs" color="blue">
+{"type":"idle_notification","from":"cofounder-docs","timestamp":"2026-03-10T01:44:57.566Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="ta-docs" color="red" summary="ARCHITECTURE.md updated for friction taxonomy revision">
+ARCHITECTURE.md has been updated with three focused changes reflecting PR #127:
+
+1. **Key Types table** (line 143): Added `FrictionPoint` type with its optional `attribution` field and union values.
+
+2. **New "Friction & Pattern Normalization" subsection** (lines 148-160): Documents:
+   - 9 canonical friction categories (replacing the old 15)
+   - 8 canonical effective pattern categories
+   - Normalization pipeline (exact → alias → Levenshtein → substring → pass-through)
+   - Legacy alias remapping (11 old categories → current 9)
+   - Attribution model with the three classification values
+
+3. **Server API Routes table** (line 177): Updated `/api/facets` description to mention the `/api/facets/outdated` endpoint and its dual detection (missing effective_patterns.category OR missing friction_points.attribution).
+
+All changes verified against the actual source code in `cli/src/types.ts`, `server/src/llm/friction-normalize.ts`, `server/src/llm/prompts.ts`, and `server/src/routes/facets.ts`. PRODUCT.md was already up to date from PR #127.
+
+File modified: `/Users/melagiri/Workspace/codeInsights/code-insights/docs/ARCHITECTURE.md`
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="ta-docs" color="red">
+{"type":"idle_notification","from":"ta-docs","timestamp":"2026-03-10T01:45:11.724Z","idleReason":"available"}
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="system">
+{"type":"teammate_terminated","message":"ta-docs has shut down."}
+</teammate-message>
+
+<teammate-message teammate_id="system">
+{"type":"teammate_terminated","message":"cofounder-docs has shut down."}
+</teammate-message>
+
+<teammate-message teammate_id="ta-docs" color="red">
+{"type":"shutdown_approved","requestId":"shutdown-1773107124721@ta-docs","from":"ta-docs","timestamp":"2026-03-10T01:45:27.481Z","paneId":"in-process","backendType":"in-process"}
+</teammate-message>
+
+<teammate-message teammate_id="cofounder-docs" color="blue">
+{"type":"shutdown_approved","requestId":"shutdown-1773107125229@cofounder-docs","from":"cofounder-docs","timestamp":"2026-03-10T01:45:27.786Z","paneId":"in-process","backendType":"in-process"}
+</teammate-message>
+
+---
+
+are there any other docs that we needed to update?
+
+---
+
+Update @docs/ROADMAP.md and @CLAUDE.md . i think we can delete the @docs/insights-generation-analysis.md doc, confirm
+
+---
+
+yes, commit them to master direct
