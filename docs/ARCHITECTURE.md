@@ -140,9 +140,24 @@ Dashboard (dashboard/src/)   -> Reads from Server API
 | `ClaudeMessage` | Individual message entry |
 | `ParsedSession` | Aggregated session with metadata, title, character |
 | `Insight` | Types: summary, decision, learning, technique, prompt_quality; source: 'llm' |
+| `FrictionPoint` | Friction with category, severity, resolution, description; optional `attribution` field (`'user-actionable' \| 'ai-capability' \| 'environmental'`) |
 | `SessionCharacter` | 7 classifications: deep_focus, bug_hunt, feature_build, exploration, refactor, learning, quick_task |
 | `ClaudeInsightConfig` | Config format |
 | `SyncState` | File modification tracking for incremental sync |
+
+### Friction & Pattern Normalization
+
+Both friction points and effective patterns use canonical category taxonomies with Levenshtein-based normalization (`server/src/llm/friction-normalize.ts`, `server/src/llm/pattern-normalize.ts`).
+
+**Friction categories (9 canonical):** `wrong-approach`, `knowledge-gap`, `stale-assumptions`, `incomplete-requirements`, `context-loss`, `scope-creep`, `repeated-mistakes`, `documentation-gap`, `tooling-limitation`
+
+**Effective pattern categories (8 canonical):** `structured-planning`, `incremental-implementation`, `verification-workflow`, `systematic-debugging`, `self-correction`, `context-gathering`, `domain-expertise`, `effective-tooling`
+
+**Normalization pipeline:** exact match → alias lookup → Levenshtein (distance ≤ 2) → substring match → pass-through (novel category). Normalization runs at write time in `saveFacetsToDb()` and at read time as a belt-and-suspenders guard.
+
+**Legacy alias remapping:** 11 old friction categories (from the original 15-category taxonomy) are aliased to the current 9. See `FRICTION_ALIASES` in `friction-normalize.ts`.
+
+**Attribution model:** Each friction point carries an optional `attribution` field classifying who contributed: `user-actionable` (better input would have prevented it), `ai-capability` (AI failed despite adequate input), or `environmental` (external constraint). Old data without attribution is detected by the `/api/facets/outdated` endpoint.
 
 ---
 
@@ -159,7 +174,7 @@ Dashboard (dashboard/src/)   -> Reads from Server API
 | `/api/config` | Configuration endpoints (including LLM) |
 | `/api/export` | Export generation (SSE streaming) |
 | `/api/telemetry` | Telemetry identity & opt-out |
-| `/api/facets` | Session facets data |
+| `/api/facets` | Session facets data; `/api/facets/outdated` detects sessions missing effective_patterns.category or friction_points.attribution |
 | `/api/reflect` | Cross-session synthesis endpoints |
 
 ---

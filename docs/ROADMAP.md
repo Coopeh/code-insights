@@ -93,12 +93,20 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
   - `code-insights reflect backfill` for legacy session facet extraction
   - `GET /api/facets/missing` endpoint for backfill discovery
 
-- [x] **8.8 Friction Category Refinement** (v3.6.1) ✅
-  - Improved canonical categories, reduced misclassification
+- [x] **8.8 Effective Pattern Normalization** (PR #125) ✅
+  - 8 canonical effective pattern categories with confidence filtering
+  - Pattern normalizer with Levenshtein matching (mirrors friction normalizer)
 
 - [x] **8.9 Patterns Page Refinement** (v3.6.1) ✅
   - Outcome badge and usage stats on session detail
   - Source tool badge for all sessions
+
+- [x] **8.10 Friction Taxonomy Revision** (PR #127) ✅
+  - 15 generic categories → 9 AI-session-focused categories (wrong-approach, knowledge-gap, stale-assumptions, incomplete-requirements, context-loss, scope-creep, repeated-mistakes, documentation-gap, tooling-limitation)
+  - 11 legacy alias remappings for backward compatibility
+  - Attribution model: each friction point classified as user-actionable, ai-capability, or environmental
+  - Contrastive classification guidance with evidence-based decision tree
+  - Friction bar chart → category+description list (matching effective patterns layout)
 
 ### Deliverables
 - ✅ Session facets with Schema V3 migration
@@ -106,6 +114,7 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
 - ✅ CLI reflect command and stats patterns subcommand
 - ✅ Dashboard Patterns page with three synthesis sections
 - ✅ Snapshot caching, guardrails, backfill CLI
+- ✅ Friction taxonomy revision (15→9) with attribution model
 
 ---
 
@@ -132,6 +141,8 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
 
 ## What's Next
 
+- Effective patterns audit (review 8 pattern categories with same rigor as friction revision)
+- Progress tracking: weekly snapshots, friction-to-pattern transformation detection, user-actionable improvement trends
 - Test suite expansion (Vitest)
 - Slash commands for quick insights from the terminal
 - LLM cost tracking per call (app-wide)

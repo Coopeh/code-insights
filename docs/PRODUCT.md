@@ -85,8 +85,9 @@ Cross-session pattern detection and synthesis, powered by session facets:
 **Session Facets** — Structured metadata extracted during LLM analysis for each session:
 - Outcome satisfaction (high/medium/low/mixed)
 - Workflow pattern (iterative, plan-then-execute, exploratory, debugging, etc.)
-- Friction points (categorized: unclear-requirements, wrong-approach, tool-limitations, etc.)
-- Effective patterns (what worked well and why)
+- Friction points with 9 canonical AI-session-focused categories: wrong-approach, knowledge-gap, stale-assumptions, incomplete-requirements, context-loss, scope-creep, repeated-mistakes, documentation-gap, tooling-limitation
+- Friction attribution model: each friction point is classified as user-actionable (better input would have prevented it), ai-capability (AI failed despite adequate input), or environmental (external constraint)
+- Effective patterns (what worked well and why, with 8 canonical categories)
 - Course correction tracking (whether the session changed direction and why)
 
 **CLI Commands:**
@@ -103,10 +104,12 @@ Cross-session pattern detection and synthesis, powered by session facets:
 - Dedicated `session_facets` SQLite table (Schema V3) with indexed scalar columns and JSON arrays
 - Facet extraction integrated into the existing analysis prompt (facets first, then insights)
 - Lightweight facet-only backfill for previously-analyzed sessions (summary + first/last 20 messages)
-- Friction category normalization via Levenshtein distance matching to canonical categories
+- Friction category normalization via Levenshtein distance matching to 9 canonical categories, with alias mapping for legacy category migration
 - Synthesis prompts pre-aggregate data in code, then feed ranked summaries to LLM for narration
 - Reflect snapshots cached in `reflect_snapshots` table (Schema V4) with staleness tracking
 - 20-session minimum threshold for meaningful synthesis; coverage warning when < 50% analyzed
+
+**Upcoming:** Progress tracking — "Am I getting better?" Weekly snapshots comparing friction trends and pattern emergence over time, helping developers see how their AI collaboration skills evolve.
 
 ### Dashboard Views
 

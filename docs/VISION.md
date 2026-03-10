@@ -86,10 +86,15 @@ Code Insights is a utility, not a product. It should:
 - Dashboard Patterns page with three sections: Friction & Wins, Rules & Skills, Working Style
 - Facet backfill CLI command and server endpoint for previously-analyzed sessions
 - Reflect snapshot caching with staleness tracking (Schema V4)
-- Friction category refinement with improved canonical categories
-- Patterns page refinement with outcome badges and usage stats
+- Effective pattern normalization with 8 canonical categories and confidence filtering
+- Friction taxonomy revision: 15 generic categories → 9 AI-session-focused categories answering "where did the AI-human collaboration break down?"
+- Friction attribution model: each friction point classified as user-actionable, ai-capability, or environmental — capturing both user and AI contributions to friction
+- Consistent category+description list presentation for both friction and effective patterns
 
 ### What's Next
+- Effective patterns audit: review the 8 pattern categories with the same rigor applied to friction
+- Progress tracking: "Am I getting better?" — weekly snapshots comparing friction trends and pattern emergence, tracking user-actionable friction declining and new patterns solidifying
+- Friction-to-pattern affinity map (e.g., stale-assumptions friction → context-gathering pattern)
 - Test suite expansion (Vitest)
 - Slash commands for quick insights from the terminal
 - LLM cost tracking per call (app-wide)

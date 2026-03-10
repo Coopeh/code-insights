@@ -142,6 +142,11 @@ Sessions are classified into one of 7 types based on tool call patterns:
 ### Title Generation
 Multi-tier fallback: Claude summary -> user message (scored) -> character-based -> generic fallback.
 
+### Friction & Pattern Taxonomy
+- **9 friction categories:** `wrong-approach`, `knowledge-gap`, `stale-assumptions`, `incomplete-requirements`, `context-loss`, `scope-creep`, `repeated-mistakes`, `documentation-gap`, `tooling-limitation`
+- **8 effective pattern categories:** `structured-planning`, `incremental-implementation`, `verification-workflow`, `systematic-debugging`, `self-correction`, `context-gathering`, `domain-expertise`, `effective-tooling`
+- **Attribution model:** Each friction point carries `attribution: 'user-actionable' | 'ai-capability' | 'environmental'`
+
 ### Multi-Source Support
 The CLI and dashboard support sessions from multiple AI coding tools via the `sourceTool` field.
 
