@@ -68,7 +68,9 @@ function formatRelativeDate(iso: string): string {
 
 
 // Compute the current ISO week identifier (YYYY-WNN) in UTC.
-// Uses the same "Jan 4 is always in week 1" logic as the server.
+// Mirrors formatIsoWeek/parseIsoWeek in server/src/routes/shared-aggregation.ts
+// -- kept here to avoid a server-side import in the dashboard bundle.
+// IMPORTANT: keep in sync with the canonical server implementation.
 function getCurrentIsoWeek(): string {
   const now = new Date();
   const nowDay = now.getUTCDay();
@@ -159,6 +161,11 @@ export default function PatternsPage() {
   const handleProjectChange = useCallback((projectId: string | undefined) => {
     setSelectedProject(projectId);
     setReflectResults(null);
+    // Reset to current week so auto-navigation re-fires for the new project context.
+    // The initialWeekRef guard in the auto-navigate effect uses getCurrentIsoWeek(),
+    // so resetting currentWeek to that value re-enables the "jump to most recent snapshot" logic.
+    setCurrentWeek(getCurrentIsoWeek());
+    initialWeekRef.current = getCurrentIsoWeek();
   }, []);
 
   const handleGenerate = useCallback(async () => {

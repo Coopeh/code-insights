@@ -22,6 +22,7 @@ export function parseIsoWeek(weekStr: string): { start: Date; end: Date } | null
 
   const year = parseInt(match[1], 10);
   const week = parseInt(match[2], 10);
+  if (week < 1 || week > 53) return null;
 
   // Jan 4 is always in ISO week 1. Find that Monday.
   const jan4 = new Date(Date.UTC(year, 0, 4));

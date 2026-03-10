@@ -189,6 +189,9 @@ async function backfillBatch(
 // Actions
 // ---------------------------------------------------------------------------
 
+// Mirrors formatIsoWeek/parseIsoWeek in server/src/routes/shared-aggregation.ts
+// -- kept here so the CLI doesn't import server code.
+// IMPORTANT: keep in sync with the canonical server implementation.
 function getCurrentIsoWeek(): string {
   const now = new Date();
   const nowDay = now.getUTCDay();
@@ -207,6 +210,8 @@ function getCurrentIsoWeek(): string {
   return `${year}-W${String(weekNum).padStart(2, '0')}`;
 }
 
+const ISO_WEEK_RE = /^\d{4}-W(\d{2})$/;
+
 async function reflectAction(options: {
   section?: string;
   week?: string;
@@ -214,6 +219,18 @@ async function reflectAction(options: {
 }): Promise<void> {
   const baseUrl = getBaseUrl();
   const week = options.week || getCurrentIsoWeek();
+
+  // Validate --week format: must be YYYY-WNN with week number 1-53
+  if (options.week) {
+    const match = ISO_WEEK_RE.exec(options.week);
+    const weekNum = match ? parseInt(match[1], 10) : 0;
+    if (!match || weekNum < 1 || weekNum > 53) {
+      console.log(chalk.red('  Invalid week format: "' + options.week + '"'));
+      console.log(chalk.dim('  Use YYYY-WNN format, e.g., 2026-W10'));
+      console.log();
+      process.exit(1);
+    }
+  }
 
   await checkServer(baseUrl);
 

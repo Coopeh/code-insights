@@ -9,8 +9,9 @@ interface WeekSelectorProps {
 }
 
 // Parse an ISO week string into UTC Monday/Sunday boundaries.
-// Mirrors parseIsoWeek in shared-aggregation.ts -- kept here to avoid
-// a server-side import in the dashboard bundle.
+// Mirrors parseIsoWeek + parseIsoWeekBounds in server/src/routes/shared-aggregation.ts
+// -- kept here to avoid a server-side import in the dashboard bundle.
+// IMPORTANT: keep in sync with the canonical server implementation.
 function parseIsoWeekBounds(weekStr: string): { start: Date; end: Date } | null {
   const match = /^(\d{4})-W(\d{2})$/.exec(weekStr);
   if (!match) return null;
@@ -34,15 +35,19 @@ function formatUtcDate(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-// Format "Mar 4-10, 2026" from an ISO week string
+// Format "Mar 4-10, 2026" from an ISO week string.
+// Cross-month weeks (e.g., Mar 30 - Apr 5) include the month on the end date.
 function formatWeekLabel(weekStr: string): string {
   const bounds = parseIsoWeekBounds(weekStr);
   if (!bounds) return weekStr;
 
   const startLabel = formatUtcDate(bounds.start);
-  const endDay = bounds.end.getUTCDate();
   const year = bounds.end.getUTCFullYear();
-  return `${startLabel}\u2013${endDay}, ${year}`;
+  const crossMonth = bounds.start.getUTCMonth() !== bounds.end.getUTCMonth();
+  const endLabel = crossMonth
+    ? formatUtcDate(bounds.end)           // "Apr 5"
+    : String(bounds.end.getUTCDate());    // "10"
+  return `${startLabel}\u2013${endLabel}, ${year}`;
 }
 
 export function WeekSelector({ currentWeek, weeks, onWeekChange }: WeekSelectorProps) {
@@ -109,9 +114,11 @@ export function WeekSelector({ currentWeek, weeks, onWeekChange }: WeekSelectorP
         </Button>
       </div>
 
-      {/* Dot indicators -- show up to 8 recent weeks */}
+      {/* Dot indicators -- show up to 8 recent weeks.
+          Dots are supplementary navigation; primary nav is via arrow buttons.
+          tabIndex={-1} keeps dots out of the tab order while keeping them mouse-clickable. */}
       {weeks.length > 0 && (
-        <div className="flex items-center gap-1" aria-hidden="true">
+        <div className="flex items-center gap-1">
           {weeks.map((w) => {
             const isCurrent = w.week === currentWeek;
             const dotBounds = parseIsoWeekBounds(w.week);
@@ -123,6 +130,7 @@ export function WeekSelector({ currentWeek, weeks, onWeekChange }: WeekSelectorP
               <button
                 key={w.week}
                 title={label}
+                tabIndex={-1}
                 onClick={() => w.sessionCount > 0 && onWeekChange(w.week)}
                 className={[
                   'rounded-full transition-all',

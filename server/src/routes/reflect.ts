@@ -260,40 +260,58 @@ app.get('/weeks', (c) => {
   const daysToMonday = nowDay === 0 ? 6 : nowDay - 1;
   const thisMondayMs = now.getTime() - daysToMonday * 86400000;
 
-  // Build list of last 8 ISO week strings (most recent first)
-  const weekStrings: string[] = [];
+  // Build list of last 8 ISO week strings (most recent first) with their boundaries
+  type WeekEntry = { week: string; start: string; end: string };
+  const weekEntries: WeekEntry[] = [];
   for (let i = 0; i < 8; i++) {
     const weekMonday = new Date(thisMondayMs - i * 7 * 86400000);
-    weekStrings.push(formatIsoWeek(weekMonday));
+    const week = formatIsoWeek(weekMonday);
+    const bounds = parseIsoWeek(week)!;
+    weekEntries.push({ week, start: bounds.start.toISOString(), end: bounds.end.toISOString() });
   }
 
-  // Query sessions in each week's date range, LEFT JOIN to snapshots
+  // Oldest week start and newest week end span the full 8-week range
+  const rangeStart = weekEntries[weekEntries.length - 1].start;
+  const rangeEnd = weekEntries[0].end;
+  const projectKey = project || '__all__';
+
+  // Bulk query 1: session counts per week boundary using CASE bucketing.
+  // Each session is assigned to its week by checking which Monday-to-Monday
+  // range its started_at falls into. Avoids 8 separate COUNT queries.
   const projectCondition = project ? 'AND s.project_id = ?' : '';
-  const projectParam = project ? [project] : [];
+  const projectParams: string[] = project ? [project] : [];
 
-  const weeks = weekStrings.map((week) => {
-    const bounds = parseIsoWeek(week)!;
+  const sessionCountRows = db.prepare(`
+    SELECT
+      ${weekEntries.map((_, i) => `SUM(CASE WHEN s.started_at >= ? AND s.started_at < ? THEN 1 ELSE 0 END) as w${i}`).join(',\n      ')}
+    FROM sessions s
+    WHERE s.deleted_at IS NULL
+      AND s.started_at >= ?
+      AND s.started_at < ?
+      ${projectCondition}
+  `).get(
+    ...weekEntries.flatMap(e => [e.start, e.end]),
+    rangeStart,
+    rangeEnd,
+    ...projectParams
+  ) as Record<string, number> | undefined;
 
-    const sessionRow = db.prepare(
-      `SELECT COUNT(*) as count FROM sessions s
-       WHERE s.deleted_at IS NULL
-         AND s.started_at >= ?
-         AND s.started_at < ?
-         ${projectCondition}`
-    ).get(bounds.start.toISOString(), bounds.end.toISOString(), ...projectParam) as { count: number };
+  // Bulk query 2: all snapshots for these weeks in one query
+  const weekPlaceholders = weekEntries.map(() => '?').join(', ');
+  const snapshotRows = db.prepare(`
+    SELECT period, generated_at
+    FROM reflect_snapshots
+    WHERE period IN (${weekPlaceholders}) AND project_id = ?
+  `).all(...weekEntries.map(e => e.week), projectKey) as Array<{ period: string; generated_at: string }>;
 
-    const projectKey = project || '__all__';
-    const snapshotRow = db.prepare(
-      `SELECT generated_at FROM reflect_snapshots WHERE period = ? AND project_id = ?`
-    ).get(week, projectKey) as { generated_at: string } | undefined;
+  const snapshotMap = new Map(snapshotRows.map(r => [r.period, r.generated_at]));
 
-    return {
-      week,
-      sessionCount: sessionRow.count,
-      hasSnapshot: !!snapshotRow,
-      generatedAt: snapshotRow?.generated_at ?? null,
-    };
-  });
+  const weeks = weekEntries.map((entry, i) => ({
+    week: entry.week,
+    sessionCount: (sessionCountRows?.[`w${i}`] ?? 0),
+    hasSnapshot: snapshotMap.has(entry.week),
+    generatedAt: snapshotMap.get(entry.week) ?? null,
+  }));
 
   return c.json({ weeks });
 });
