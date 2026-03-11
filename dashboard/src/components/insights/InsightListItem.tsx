@@ -78,11 +78,13 @@ export function InsightListItem({ insight, showProject = false, allInsightIds, h
     ? renderTypeContent(insight.type, metadata, bullets)
     : null;
 
-  // Prompt quality score for collapsed badge
+  // Prompt quality score for collapsed badge — dual-read new and legacy schema
   const pqScore = insight.type === 'prompt_quality'
-    ? (typeof (metadata as Record<string, unknown>).efficiencyScore === 'number'
-        ? (metadata as Record<string, unknown>).efficiencyScore as number
-        : null)
+    ? (typeof (metadata as Record<string, unknown>).efficiency_score === 'number'
+        ? (metadata as Record<string, unknown>).efficiency_score as number
+        : typeof (metadata as Record<string, unknown>).efficiencyScore === 'number'
+          ? (metadata as Record<string, unknown>).efficiencyScore as number
+          : null)
     : null;
 
   return (

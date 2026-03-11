@@ -90,8 +90,10 @@ export function SessionListPanel({
     for (const insight of insights) {
       if (insight.type === 'prompt_quality') {
         const metadata = parseJsonField<Record<string, unknown>>(insight.metadata, {});
-        if (typeof metadata.efficiencyScore === 'number') {
-          map.set(insight.session_id, metadata.efficiencyScore);
+        const score = typeof metadata.efficiency_score === 'number' ? metadata.efficiency_score
+          : typeof metadata.efficiencyScore === 'number' ? metadata.efficiencyScore : null;
+        if (score !== null) {
+          map.set(insight.session_id, score);
         }
       }
     }
