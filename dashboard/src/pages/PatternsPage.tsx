@@ -173,7 +173,7 @@ export default function PatternsPage() {
     } finally {
       setGenerating(false);
     }
-  }, [currentWeek, selectedProject]);
+  }, [currentWeek, selectedProject, queryClient]);
 
   const handleCopy = useCallback((text: string, key: string) => {
     navigator.clipboard.writeText(text);

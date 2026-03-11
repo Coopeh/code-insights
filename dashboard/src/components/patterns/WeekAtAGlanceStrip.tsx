@@ -57,6 +57,7 @@ export function WeekAtAGlanceStrip({
           <p
             className="text-base font-semibold leading-snug truncate"
             style={{
+              color: '#60a5fa', // fallback for browsers without background-clip: text support
               background: 'linear-gradient(to right, #3b82f6, #a855f7)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
