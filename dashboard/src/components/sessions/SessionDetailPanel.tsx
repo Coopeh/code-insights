@@ -281,7 +281,8 @@ export function SessionDetailPanel({ sessionId, onDelete }: SessionDetailPanelPr
   const promptQualityScore = (() => {
     if (!promptQualityInsight) return undefined;
     const meta = parseJsonField<Record<string, unknown>>(promptQualityInsight.metadata, {});
-    return typeof meta.efficiencyScore === 'number' ? meta.efficiencyScore : undefined;
+    return typeof meta.efficiency_score === 'number' ? meta.efficiency_score
+      : typeof meta.efficiencyScore === 'number' ? meta.efficiencyScore : undefined;
   })();
 
   const summaryInsight = insights.find((i) => i.type === 'summary');
