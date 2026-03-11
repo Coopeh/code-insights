@@ -173,7 +173,37 @@ export interface InsightMetadata {
   // Legacy learning/technique
   context?: string;
   applicability?: string;
-  // Prompt quality fields
+  // Prompt quality fields (new taxonomy — v3.x)
+  efficiency_score?: number;
+  message_overhead?: number;
+  takeaways?: Array<{
+    type: 'improve' | 'reinforce';
+    category: string;
+    label: string;
+    message_ref: string;
+    original?: string;
+    better_prompt?: string;
+    why?: string;
+    what_worked?: string;
+    why_effective?: string;
+  }>;
+  findings?: Array<{
+    category: string;
+    type: 'deficit' | 'strength';
+    description: string;
+    message_ref: string;
+    impact: 'high' | 'medium' | 'low';
+    confidence: number;
+    suggested_improvement?: string;
+  }>;
+  dimension_scores?: {
+    context_provision: number;
+    request_specificity: number;
+    scope_management: number;
+    information_timing: number;
+    correction_quality: number;
+  };
+  // Legacy prompt quality fields (pre-taxonomy — still in old insights)
   efficiencyScore?: number;
   wastedTurns?: Array<{ messageIndex: number; whatWentWrong?: string; reason?: string; originalMessage?: string; suggestedRewrite?: string; turnsWasted?: number }>;
   antiPatterns?: Array<{ name: string; description?: string; count: number; examples: string[]; fix?: string }>;
