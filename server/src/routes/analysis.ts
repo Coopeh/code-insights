@@ -9,6 +9,15 @@ import type { SQLiteMessageRow, SessionData } from '../llm/analysis.js';
 
 const app = new Hono();
 
+/** Auto-apply an LLM-generated summary title as the session's generated_title. */
+function applyGeneratedTitle(sessionId: string, insights: Array<{ type: string; title?: string }>) {
+  const summaryInsight = insights.find(i => i.type === 'summary');
+  if (!summaryInsight?.title) return;
+  const db = getDb();
+  db.prepare('UPDATE sessions SET generated_title = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(summaryInsight.title.slice(0, 120), sessionId);
+}
+
 // POST /api/analysis/session
 // Body: { sessionId: string }
 // Fetches session + messages from SQLite, runs LLM analysis, saves insights, returns results.
@@ -66,6 +75,7 @@ app.post('/session', async (c) => {
       type: 'session',
       count: result.insights.length,
     });
+    applyGeneratedTitle(body.sessionId, result.insights);
   }
   return c.json(result, result.success ? 200 : 422);
 });
@@ -155,14 +165,14 @@ app.get('/session/stream', async (c) => {
           type: 'session',
           count: result.insights.length,
         });
-        const summaryInsight = result.insights.find(i => i.type === 'summary');
+        applyGeneratedTitle(sessionId, result.insights);
+
         await stream.writeSSE({
           event: 'complete',
           data: JSON.stringify({
             success: true,
             insightCount: result.insights.length,
             tokenUsage: result.usage,
-            suggestedTitle: summaryInsight?.title ?? null,
           }),
         });
       }
@@ -327,7 +337,6 @@ app.get('/prompt-quality/stream', async (c) => {
             success: true,
             insightCount: result.insights.length,
             tokenUsage: result.usage,
-            suggestedTitle: null,
           }),
         });
       }

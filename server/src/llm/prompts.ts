@@ -2,7 +2,6 @@
 // Ported from web repo (src/lib/llm/prompts.ts) with SQLite-aware message formatting.
 
 import { jsonrepair } from 'jsonrepair';
-import type { SessionCharacter } from '@code-insights/cli/types';
 
 // SQLite row format for messages — snake_case with JSON-encoded arrays.
 // This matches the shape returned by server/src/routes/messages.ts.
@@ -260,9 +259,8 @@ export const SESSION_ANALYSIS_SYSTEM_PROMPT = `You are a senior staff engineer w
 
 Your audience is a developer who has never seen this session but works on the same codebase. They need enough context to understand WHY a decision was made, WHAT specific gotcha was discovered, and WHEN this knowledge applies.
 
-PART 1 — SESSION FACETS (extract these first as a holistic session assessment):
-
-Before extracting individual insights, assess the session as a whole. Extract these structured facets:
+=== PART 1: SESSION FACETS ===
+Extract these FIRST as a holistic session assessment:
 
 1. outcome_satisfaction: Rate the session outcome.
    - "high": Task completed successfully, user satisfied
@@ -298,20 +296,13 @@ ${EFFECTIVE_PATTERN_CLASSIFICATION_GUIDANCE}
 
 If the session has minimal friction and straightforward execution, use empty arrays for friction_points, set outcome_satisfaction to "high", and iteration_count to 0.
 
-PART 2 — INSIGHTS (then extract these):
+=== PART 2: INSIGHTS ===
+Then extract these:
 
 You will extract:
 1. **Summary**: A narrative of what was accomplished and the outcome
 2. **Decisions**: Technical choices made — with full situation context, reasoning, rejected alternatives, trade-offs, and conditions for revisiting (max 3)
 3. **Learnings**: Technical discoveries, gotchas, debugging breakthroughs — with the observable symptom, root cause, and a transferable takeaway (max 5)
-4. **Session Character**: Classify the session into exactly one of these types based on its overall nature:
-   - deep_focus: Long, concentrated work on a specific problem or area (50+ messages, deep into one topic)
-   - bug_hunt: Debugging-driven — investigating errors, tracing issues, fixing bugs
-   - feature_build: Building new functionality — creating files, adding endpoints, wiring components
-   - exploration: Research-oriented — reading code, searching, understanding before acting
-   - refactor: Restructuring existing code — renaming, moving, reorganizing without new features
-   - learning: Knowledge-seeking — asking questions, understanding concepts, getting explanations
-   - quick_task: Short and focused — small fix, config change, or one-off task (<10 messages)
 
 Quality Standards:
 - Only include insights you would write in a team knowledge base for future reference
@@ -335,23 +326,7 @@ DO NOT include insights like these (too generic/trivial):
 - "Fixed a bug in the code" (what bug? what was the root cause?)
 - Anything that restates the task without adding transferable knowledge
 
-Here are examples of EXCELLENT insights — this is the quality bar:
-
-EXCELLENT decision:
-{
-  "title": "Use better-sqlite3 instead of sql.js for local database",
-  "situation": "Needed a SQLite driver for a Node.js CLI that stores session data locally. Single-user, read-heavy from dashboard, occasional writes during sync.",
-  "choice": "better-sqlite3 — synchronous C++ binding with native SQLite access, no async overhead.",
-  "reasoning": "CLI runs locally with no concurrent users. Synchronous API eliminates callback complexity. WAL mode provides concurrent read access for the dashboard while CLI writes.",
-  "alternatives": [
-    {"option": "sql.js (WASM build)", "rejected_because": "3x slower for bulk inserts, entire DB in memory, no WAL support"},
-    {"option": "PostgreSQL via Docker", "rejected_because": "Violates local-first constraint — requires running a server process"}
-  ],
-  "trade_offs": "Requires native compilation (node-gyp) which can fail on some systems. No browser compatibility.",
-  "revisit_when": "If multi-device sync is added or users report node-gyp build failures.",
-  "confidence": 92,
-  "evidence": ["User#3: 'We need something that works without a server'", "Assistant#4: 'better-sqlite3 with WAL mode gives concurrent reads...'"]
-}
+Here is an example of an EXCELLENT insight — this is the quality bar:
 
 EXCELLENT learning:
 {
@@ -392,25 +367,32 @@ Extract insights in this JSON format:
     "iteration_count": 0,
     "friction_points": [
       {
-        "_reasoning": "User's prompt said 'fix the auth' without specifying which auth flow or file. Step 1: not external. Step 2: vague prompt → user-actionable. Category: incomplete-requirements (missing constraints).",
+        "_reasoning": "User said 'fix the auth' without specifying OAuth vs session-based or which file. Step 1: not external — this is about the prompt, not infrastructure. Step 2: user could have specified which auth flow → user-actionable. Category: incomplete-requirements fits better than vague-request because specific constraints (which flow, which file) were missing, not the overall task description.",
         "category": "incomplete-requirements",
         "attribution": "user-actionable",
-        "description": "Missing specification of which auth flow to fix caused implementation of wrong OAuth provider",
+        "description": "Missing specification of which auth flow (OAuth vs session) caused implementation of wrong provider in auth.ts",
         "severity": "medium",
+        "resolution": "resolved"
+      },
+      {
+        "_reasoning": "AI applied Express middleware pattern to a Hono route despite conversation showing Hono imports. Step 1: not external. Step 2: user provided clear Hono context in prior messages. Step 3: AI failed despite adequate input → ai-capability. Category: knowledge-gap — incorrect framework API knowledge was applied.",
+        "category": "knowledge-gap",
+        "attribution": "ai-capability",
+        "description": "Express-style middleware pattern applied to Hono route despite Hono imports visible in conversation context",
+        "severity": "high",
         "resolution": "resolved"
       }
     ],
     "effective_patterns": [
       {
-        "_reasoning": "User configured multi-agent team in CLAUDE.md with PM/TA/Dev roles. Step 1: user infrastructure → user-driven. Category: effective-tooling (agent delegation). Not baseline — agent delegation is beyond basic tool usage.",
-        "category": "effective-tooling",
-        "description": "Multi-agent team delegation (PM scoping, TA review, Dev implementation) enabled parallel architecture review and implementation",
-        "confidence": 85,
-        "driver": "user-driven"
+        "_reasoning": "Before editing, AI read 8 files across server/src/routes/ and server/src/llm/ to understand the data flow. Baseline check: 8 files across 2 directories = beyond routine (<5 file) reads. Step 1: no CLAUDE.md rule requiring this. Step 2: user didn't ask for investigation. Step 3: AI explored autonomously → ai-driven. Category: context-gathering (active investigation, not pre-existing knowledge).",
+        "category": "context-gathering",
+        "description": "Read 8 files across routes/ and llm/ directories to map the data flow before modifying the aggregation query, preventing a type mismatch that would have required rework",
+        "confidence": 88,
+        "driver": "ai-driven"
       }
     ]
   },
-  "session_character": "deep_focus | bug_hunt | feature_build | exploration | refactor | learning | quick_task",
   "summary": {
     "title": "Brief title describing main accomplishment (max 80 chars)",
     "content": "2-4 sentence narrative: what was the goal, what was done, what was the outcome. Mention the primary file or component changed.",
@@ -451,10 +433,6 @@ Evidence should reference the labeled turns in the conversation (e.g., "User#2",
 Respond with valid JSON only, wrapped in <json>...</json> tags. Do not include any other text.`;
 }
 
-const VALID_SESSION_CHARACTERS = new Set<string>([
-  'deep_focus', 'bug_hunt', 'feature_build', 'exploration', 'refactor', 'learning', 'quick_task',
-]);
-
 export interface AnalysisResponse {
   facets?: {
     outcome_satisfaction: string;
@@ -478,7 +456,6 @@ export interface AnalysisResponse {
       driver?: 'user-driven' | 'ai-driven' | 'collaborative';
     }>;
   };
-  session_character?: SessionCharacter;
   summary: {
     title: string;
     content: string;
@@ -574,11 +551,6 @@ export function parseAnalysisResponse(response: string): ParseResult<AnalysisRes
 
   parsed.decisions = parsed.decisions || [];
   parsed.learnings = parsed.learnings || [];
-
-  // Validate session_character — drop if not a recognized value
-  if (parsed.session_character && !VALID_SESSION_CHARACTERS.has(parsed.session_character)) {
-    parsed.session_character = undefined;
-  }
 
   // Observability: warn when LLM still uses "tooling-limitation".
   // Monitors whether FRICTION_CLASSIFICATION_GUIDANCE is working.

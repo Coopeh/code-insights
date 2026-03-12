@@ -34,7 +34,6 @@ export interface AnalysisState {
     success: boolean;
     insightCount?: number;
     tokenUsage?: { inputTokens: number; outputTokens: number };
-    suggestedTitle?: string | null;
     error?: string;
   } | null;
 }
@@ -172,11 +171,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
                 success: boolean;
                 insightCount: number;
                 tokenUsage?: { inputTokens: number; outputTokens: number };
-                suggestedTitle?: string | null;
               };
 
               queryClient.invalidateQueries({ queryKey: ['insights'] });
               queryClient.invalidateQueries({ queryKey: ['session', session.id] });
+              queryClient.invalidateQueries({ queryKey: ['sessions'] });
 
               const successMsg = `${result.insightCount} insight${result.insightCount !== 1 ? 's' : ''} saved for "${sessionTitle}"`;
 
@@ -190,7 +189,6 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
                   success: true,
                   insightCount: result.insightCount,
                   tokenUsage: result.tokenUsage,
-                  suggestedTitle: result.suggestedTitle,
                 },
               });
               toast.success(successMsg, { id: ANALYSIS_TOAST_ID });
