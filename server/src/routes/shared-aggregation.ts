@@ -127,7 +127,6 @@ export interface AggregatedPQCategory {
   category: string;
   label: string;
   count: number;
-  sessionsAffected: number;
 }
 
 export interface RateLimitInfo {
@@ -435,17 +434,15 @@ export function aggregatePQFindings(
   where: string,
   params: (string | number)[]
 ): { pqDeficits: AggregatedPQCategory[]; pqStrengths: AggregatedPQCategory[] } {
-  // where may be '' (empty) in tests or a full WHERE clause.
-  // We always need a condition on i.type, so use AND if where is present, WHERE otherwise.
   const hasWhere = where.length > 0;
-  const typeCondition = hasWhere ? 'AND i.type = \'prompt_quality\'' : 'WHERE i.type = \'prompt_quality\'';
+  const extraPrefix = hasWhere ? 'AND' : 'WHERE';
 
   const rows = db.prepare(`
     SELECT i.metadata, i.session_id
     FROM insights i
     JOIN sessions s ON i.session_id = s.id
     ${where}
-    ${typeCondition}
+    ${extraPrefix} i.type = 'prompt_quality'
   `).all(...params) as Array<{ metadata: string; session_id: string }>;
 
   const deficitCounts = new Map<string, Set<string>>();
@@ -472,7 +469,6 @@ export function aggregatePQFindings(
         category,
         label: PQ_CATEGORY_LABELS[category] ?? category,
         count: sessions.size,
-        sessionsAffected: sessions.size,
       }))
       .filter(e => e.count >= 2)
       .sort((a, b) => b.count - a.count);

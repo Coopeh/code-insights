@@ -39,10 +39,10 @@ export function generateFrictionWinsPrompt(data: {
 PROMPT QUALITY SIGNALS (supplementary):
 
 Deficits:
-${(data.pqSignals!.deficits.map(d => `  ${d.category}: ${d.count}`).join('\n') || '  (none above threshold)')}
+${((data.pqSignals?.deficits ?? []).map(d => `  ${d.category}: ${d.count}`).join('\n') || '  (none above threshold)')}
 
 Strengths:
-${(data.pqSignals!.strengths.map(s => `  ${s.category}: ${s.count}`).join('\n') || '  (none above threshold)')}
+${((data.pqSignals?.strengths ?? []).map(s => `  ${s.category}: ${s.count}`).join('\n') || '  (none above threshold)')}
 `
     : '';
 
