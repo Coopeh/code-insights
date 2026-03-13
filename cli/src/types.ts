@@ -189,7 +189,9 @@ export interface InsightMetadata {
   root_cause?: string;
   takeaway?: string;
   applies_when?: string;
-  // Summary-specific
+  // Summary-specific — narrative outcome from LLM summary extraction.
+  // Distinct from session_facets.outcome_satisfaction ('high'|'medium'|'low'|'abandoned')
+  // which is a quantitative satisfaction rating used for Patterns/Reflect aggregation.
   outcome?: 'success' | 'partial' | 'abandoned' | 'blocked';
   // Technique/learning-specific (legacy v2)
   context?: string;
