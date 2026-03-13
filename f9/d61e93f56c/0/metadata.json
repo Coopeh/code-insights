@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "f9d61e93f56c",
+  "session_id": "2fe9795d-e760-465b-a19a-ba0898e8dad0",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-13T00:48:11.112264Z",
+  "branch": "test/coverage-75-percent",
+  "checkpoints_count": 10,
+  "files_touched": [
+    "cli/src/commands/stats/data/aggregation.test.ts",
+    "cli/src/commands/stats/render/format.test.ts",
+    "docs/superpowers/plans/2026-03-12-test-coverage-75-percent.md",
+    "server/src/export/agent-rules.test.ts",
+    "server/src/llm/export-prompts.test.ts",
+    "server/src/llm/reflect-prompts.test.ts",
+    "server/src/routes/analysis.test.ts",
+    "server/src/routes/export.test.ts",
+    "server/src/routes/facets.test.ts",
+    "server/src/routes/shared-aggregation.test.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "220fda64a50c",
+  "token_usage": {
+    "input_tokens": 10016,
+    "cache_creation_tokens": 709100,
+    "cache_read_tokens": 6010568,
+    "output_tokens": 52891,
+    "api_call_count": 61
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-13T00:48:10.752161Z",
+    "agent_lines": 2654,
+    "human_added": 13918,
+    "human_modified": 9,
+    "human_removed": 0,
+    "total_committed": 16580,
+    "agent_percentage": 16.00723763570567
+  }
+}
