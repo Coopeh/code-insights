@@ -78,7 +78,11 @@ export function formatMessagesForAnalysis(messages: SQLiteMessageRow[]): string 
         if (msgClass === 'tool-result') {
           roleLabel = '[tool-result]';
         } else if (msgClass === 'system-artifact') {
-          roleLabel = '[auto-compact]';
+          // Auto-compact summaries use two known prefixes — everything else (slash commands,
+          // skill loads) is a generic system artifact, not a compaction event.
+          const isAutoCompact = m.content.startsWith('Here is a summary of our conversation')
+            || m.content.startsWith('This session is being continued');
+          roleLabel = isAutoCompact ? '[auto-compact]' : '[system]';
         } else {
           // Genuine human message — increment counter
           roleLabel = `User#${userIndex++}`;
@@ -765,7 +769,7 @@ Before evaluating, mentally walk through the conversation and identify:
 4. Whether critical context or requirements were provided late
 5. Whether the user discussed the plan/approach before implementation
 6. Moments where the user's prompt was notably well-crafted
-7. If context compactions occurred, note that the AI may have lost context — repeated instructions after a compaction are NOT a user prompting deficit
+7. If context compactions occurred, note that the AI may have lost context — repeated instructions IMMEDIATELY after a compaction are NOT a user prompting deficit
 These are your candidate findings. Only include them if they are genuinely actionable.
 
 ${PROMPT_QUALITY_CLASSIFICATION_GUIDANCE}
@@ -777,7 +781,7 @@ Guidelines:
 - A score of 50 means about half the messages could have been more efficient
 - Include BOTH deficits and strengths — what went right matters as much as what went wrong
 - If the user prompted well, say so — don't manufacture issues
-- If the session had context compactions, do NOT penalize the user for repeating instructions after a compaction — the AI lost context, not the user
+- If the session had context compactions, do NOT penalize the user for repeating instructions immediately after a compaction — the AI lost context, not the user. Repetition unrelated to compaction events should still be flagged.
 
 Length Guidance:
 - Max 4 takeaways (ordered: improve first, then reinforce), max 8 findings
@@ -794,12 +798,14 @@ export function generatePromptQualityPrompt(
     humanMessageCount: number;
     assistantMessageCount: number;
     toolExchangeCount: number;  // total messages - human - assistant
-  }
+  },
+  meta?: SessionMetadata  // V6 metadata — compact counts + slash commands for context signals
 ): string {
   return `Analyze the user's prompting quality in this AI coding session.
 
 Project: ${projectName}
 Session shape: ${sessionMeta.humanMessageCount} user messages, ${sessionMeta.assistantMessageCount} assistant messages, ${sessionMeta.toolExchangeCount} tool exchanges
+${formatSessionMetaLine(meta)}
 
 --- CONVERSATION ---
 ${formattedMessages}

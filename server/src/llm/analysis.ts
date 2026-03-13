@@ -345,6 +345,7 @@ export async function analyzePromptQuality(
     const assistantMessages = messages.filter(m => m.type === 'assistant');
     const toolExchangeCount = messages.length - humanMessages.length - assistantMessages.length;
 
+    const sessionMeta = buildSessionMeta(session);
     const prompt = generatePromptQualityPrompt(
       session.project_name,
       analysisInput,
@@ -352,7 +353,8 @@ export async function analyzePromptQuality(
         humanMessageCount: humanMessages.length,
         assistantMessageCount: assistantMessages.length,
         toolExchangeCount,
-      }
+      },
+      sessionMeta  // V6 context signals (compact counts, slash commands)
     );
 
     options?.onProgress?.({ phase: 'analyzing' });

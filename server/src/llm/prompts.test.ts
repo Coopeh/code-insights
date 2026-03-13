@@ -278,6 +278,38 @@ describe('formatMessagesForAnalysis', () => {
     expect(result).not.toContain('User#2');
   });
 
+  it('labels slash command user messages as [system] (not [auto-compact]) and does NOT increment User#N', () => {
+    // Slash commands are system artifacts but NOT compaction events — they get [system] label.
+    const messages = [
+      makeMessage({ id: 'msg-1', type: 'user', content: 'Start work' }),
+      makeMessage({ id: 'msg-2', type: 'user', content: '/compact' }),
+      makeMessage({ id: 'msg-3', type: 'user', content: 'Continue work' }),
+    ];
+    const result = formatMessagesForAnalysis(messages);
+    expect(result).toContain('### User#0:');
+    expect(result).toContain('### [system]:');
+    expect(result).not.toContain('[auto-compact]');
+    expect(result).toContain('### User#1:');
+    expect(result).not.toContain('User#2');
+  });
+
+  it('distinguishes [auto-compact] from [system] when both appear in same session', () => {
+    const autoCompactContent = 'This session is being continued from a previous conversation...';
+    const messages = [
+      makeMessage({ id: '1', type: 'user', content: 'Do something' }),
+      makeMessage({ id: '2', type: 'user', content: '/review' }),
+      makeMessage({ id: '3', type: 'user', content: autoCompactContent }),
+      makeMessage({ id: '4', type: 'user', content: 'Continue' }),
+    ];
+    const result = formatMessagesForAnalysis(messages);
+    expect(result).toContain('### [system]:');
+    expect(result).toContain('### [auto-compact]:');
+    // User index should still count only genuine human messages (2 of them: 'Do something' + 'Continue')
+    expect(result).toContain('### User#0:');
+    expect(result).toContain('### User#1:');
+    expect(result).not.toContain('User#2');
+  });
+
   it('preserves User#N counter continuity across mixed message types', () => {
     const toolResult = '[{"type":"tool_result","tool_use_id":"toolu_1","content":"done"}]';
     const messages = [
@@ -363,6 +395,27 @@ describe('generatePromptQualityPrompt', () => {
       toolExchangeCount: 0,
     });
     expect(result).toContain('2 user messages, 2 assistant messages, 0 tool exchanges');
+  });
+
+  it('omits Context signals line when meta is not provided', () => {
+    const result = generatePromptQualityPrompt('proj', 'conversation', sessionMeta);
+    expect(result).not.toContain('Context signals:');
+  });
+
+  it('includes Context signals line when meta with compactions is provided', () => {
+    const result = generatePromptQualityPrompt('proj', 'conversation', sessionMeta, {
+      compactCount: 1,
+      autoCompactCount: 2,
+    });
+    expect(result).toContain('Context signals:');
+    expect(result).toContain('context compaction');
+  });
+
+  it('includes slash commands in Context signals when meta has slash commands', () => {
+    const result = generatePromptQualityPrompt('proj', 'conversation', sessionMeta, {
+      slashCommands: ['/review', '/test'],
+    });
+    expect(result).toContain('slash commands used: /review, /test');
   });
 });
 
