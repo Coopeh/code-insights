@@ -62,4 +62,8 @@ describe('kebabToTitleCase', () => {
   it('handles single word', () => {
     expect(kebabToTitleCase('planning')).toBe('Planning');
   });
+
+  it('handles empty string', () => {
+    expect(kebabToTitleCase('')).toBe('');
+  });
 });

@@ -1,6 +1,6 @@
 // Effective pattern category normalization.
 // Clusters similar free-form pattern categories to canonical ones during aggregation.
-// Mirrors friction-normalize.ts — same algorithm, same matching rules.
+// Delegates to normalize-utils.ts for the shared levenshtein/normalizeCategory algorithm.
 
 import { CANONICAL_PATTERN_CATEGORIES } from './prompts.js';
 import { normalizeCategory, kebabToTitleCase } from './normalize-utils.js';

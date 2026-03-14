@@ -1,6 +1,6 @@
 // Prompt quality category normalization.
 // Clusters similar free-form categories to canonical ones during aggregation.
-// Mirrors friction-normalize.ts and pattern-normalize.ts — same algorithm, same matching rules.
+// Delegates to normalize-utils.ts for the shared levenshtein/normalizeCategory algorithm.
 
 import { CANONICAL_PQ_CATEGORIES, CANONICAL_PQ_STRENGTH_CATEGORIES } from './prompts.js';
 import { normalizeCategory, kebabToTitleCase } from './normalize-utils.js';
