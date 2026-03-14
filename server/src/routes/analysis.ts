@@ -1,11 +1,16 @@
 import { Hono } from 'hono';
-import { streamSSE } from 'hono/streaming';
 import { getDb } from '@code-insights/cli/db/client';
-import { trackEvent, captureError } from '@code-insights/cli/utils/telemetry';
+import { trackEvent } from '@code-insights/cli/utils/telemetry';
 import { parseIntParam } from '../utils.js';
 import { loadLLMConfig } from '../llm/client.js';
 import { analyzeSession, analyzePromptQuality, findRecurringInsights } from '../llm/analysis.js';
-import { loadSessionForAnalysis, loadSessionMessages, requireLLM } from './route-helpers.js';
+import {
+  loadSessionForAnalysis,
+  loadSessionMessages,
+  requireLLM,
+  trackAnalysisResult,
+  streamSessionAnalysis,
+} from './route-helpers.js';
 
 const app = new Hono();
 
@@ -36,33 +41,14 @@ app.post('/session', requireLLM(), async (c) => {
 
   const messages = loadSessionMessages(db, body.sessionId);
 
-  const llmConfig = loadLLMConfig();
   const startTime = Date.now();
   const result = await analyzeSession(session, messages);
-  const baseProperties = {
-    type: 'session',
-    llm_provider: llmConfig?.provider,
-    llm_model: llmConfig?.model,
-    duration_ms: Date.now() - startTime,
-    success: result.success,
-  };
-  if (!result.success) {
-    const errorProperties = {
-      ...baseProperties,
-      error_type: result.error_type,
-      error_message: result.error,
-      response_preview: result.response_preview,
-    };
-    trackEvent('analysis_run', errorProperties);
-    captureError(new Error(result.error ?? 'analysis_run failed'), errorProperties);
-  } else {
-    trackEvent('analysis_run', baseProperties);
-    trackEvent('insight_generated', {
-      type: 'session',
-      count: result.insights.length,
-    });
-    applyGeneratedTitle(body.sessionId, result.insights);
-  }
+  trackAnalysisResult('session', result, startTime, {
+    onSuccess: () => {
+      trackEvent('insight_generated', { type: 'session', count: result.insights.length });
+      applyGeneratedTitle(body.sessionId!, result.insights);
+    },
+  });
   return c.json(result, result.success ? 200 : 422);
 });
 
@@ -85,77 +71,19 @@ app.get('/session/stream', requireLLM(), async (c) => {
 
   const messages = loadSessionMessages(db, sessionId);
 
-  const llmConfig = loadLLMConfig();
-  return streamSSE(c, async (stream) => {
-    const streamStart = Date.now();
-    try {
-      const abortSignal = c.req.raw.signal;
-
-      await stream.writeSSE({
-        event: 'progress',
-        data: JSON.stringify({ phase: 'loading_messages', message: 'Loading messages...' }),
-      });
-
-      const result = await analyzeSession(session, messages, {
-        signal: abortSignal,
-        onProgress: (progress) => {
-          const message = progress.phase === 'saving'
-            ? 'Saving insights...'
-            : progress.currentChunk && progress.totalChunks
-              ? `Analyzing... (${progress.currentChunk} of ${progress.totalChunks})`
-              : 'Analyzing...';
-          void stream.writeSSE({
-            event: 'progress',
-            data: JSON.stringify({ ...progress, message }),
-          }).catch(() => {});
-        },
-      });
-
-      const streamBaseProperties = {
-        type: 'session',
-        llm_provider: llmConfig?.provider,
-        llm_model: llmConfig?.model,
-        duration_ms: Date.now() - streamStart,
-        success: result.success,
-      };
-      if (!result.success) {
-        const streamErrorProperties = {
-          ...streamBaseProperties,
-          error_type: result.error_type,
-          error_message: result.error,
-          response_preview: result.response_preview,
-        };
-        trackEvent('analysis_run', streamErrorProperties);
-        captureError(new Error(result.error ?? 'analysis_run stream failed'), streamErrorProperties);
-        await stream.writeSSE({
-          event: 'error',
-          data: JSON.stringify({ error: result.error ?? 'Analysis failed' }),
-        });
-      } else {
-        trackEvent('analysis_run', streamBaseProperties);
-        trackEvent('insight_generated', {
-          type: 'session',
-          count: result.insights.length,
-        });
-        applyGeneratedTitle(sessionId, result.insights);
-
-        await stream.writeSSE({
-          event: 'complete',
-          data: JSON.stringify({
-            success: true,
-            insightCount: result.insights.length,
-            tokenUsage: result.usage,
-          }),
-        });
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      captureError(err, { type: 'session_stream', llm_provider: llmConfig?.provider, llm_model: llmConfig?.model });
-      await stream.writeSSE({
-        event: 'error',
-        data: JSON.stringify({ error: message }),
-      }).catch(() => {});
-    }
+  return streamSessionAnalysis(c, session, messages, {
+    analysisType: 'session',
+    analysisFn: analyzeSession,
+    progressMessage: (progress) =>
+      progress.phase === 'saving'
+        ? 'Saving insights...'
+        : progress.currentChunk && progress.totalChunks
+          ? `Analyzing... (${progress.currentChunk} of ${progress.totalChunks})`
+          : 'Analyzing...',
+    onSuccess: (result) => {
+      trackEvent('insight_generated', { type: 'session', count: result.insights.length });
+      applyGeneratedTitle(sessionId, result.insights);
+    },
   });
 });
 
@@ -177,32 +105,13 @@ app.post('/prompt-quality', requireLLM(), async (c) => {
 
   const messages = loadSessionMessages(db, body.sessionId);
 
-  const llmConfig = loadLLMConfig();
-  const pqStart = Date.now();
+  const startTime = Date.now();
   const result = await analyzePromptQuality(session, messages);
-  const pqBaseProperties = {
-    type: 'prompt-quality',
-    llm_provider: llmConfig?.provider,
-    llm_model: llmConfig?.model,
-    duration_ms: Date.now() - pqStart,
-    success: result.success,
-  };
-  if (!result.success) {
-    const pqErrorProperties = {
-      ...pqBaseProperties,
-      error_type: result.error_type,
-      error_message: result.error,
-      response_preview: result.response_preview,
-    };
-    trackEvent('analysis_run', pqErrorProperties);
-    captureError(new Error(result.error ?? 'prompt_quality analysis failed'), pqErrorProperties);
-  } else {
-    trackEvent('analysis_run', pqBaseProperties);
-    trackEvent('insight_generated', {
-      type: 'prompt_quality',
-      count: result.insights.length,
-    });
-  }
+  trackAnalysisResult('prompt-quality', result, startTime, {
+    onSuccess: () => {
+      trackEvent('insight_generated', { type: 'prompt_quality', count: result.insights.length });
+    },
+  });
   return c.json(result, result.success ? 200 : 422);
 });
 
@@ -225,73 +134,14 @@ app.get('/prompt-quality/stream', requireLLM(), async (c) => {
 
   const messages = loadSessionMessages(db, sessionId);
 
-  const llmConfig = loadLLMConfig();
-  return streamSSE(c, async (stream) => {
-    const pqStreamStart = Date.now();
-    try {
-      const abortSignal = c.req.raw.signal;
-
-      await stream.writeSSE({
-        event: 'progress',
-        data: JSON.stringify({ phase: 'loading_messages', message: 'Loading messages...' }),
-      });
-
-      const result = await analyzePromptQuality(session, messages, {
-        signal: abortSignal,
-        onProgress: (progress) => {
-          const message = progress.phase === 'saving'
-            ? 'Saving insights...'
-            : 'Analyzing prompt quality...';
-          void stream.writeSSE({
-            event: 'progress',
-            data: JSON.stringify({ ...progress, message }),
-          }).catch(() => {});
-        },
-      });
-
-      const pqStreamBaseProperties = {
-        type: 'prompt-quality',
-        llm_provider: llmConfig?.provider,
-        llm_model: llmConfig?.model,
-        duration_ms: Date.now() - pqStreamStart,
-        success: result.success,
-      };
-      if (!result.success) {
-        const pqStreamErrorProperties = {
-          ...pqStreamBaseProperties,
-          error_type: result.error_type,
-          error_message: result.error,
-          response_preview: result.response_preview,
-        };
-        trackEvent('analysis_run', pqStreamErrorProperties);
-        captureError(new Error(result.error ?? 'prompt_quality stream failed'), pqStreamErrorProperties);
-        await stream.writeSSE({
-          event: 'error',
-          data: JSON.stringify({ error: result.error ?? 'Prompt quality analysis failed' }),
-        });
-      } else {
-        trackEvent('analysis_run', pqStreamBaseProperties);
-        trackEvent('insight_generated', {
-          type: 'prompt_quality',
-          count: result.insights.length,
-        });
-        await stream.writeSSE({
-          event: 'complete',
-          data: JSON.stringify({
-            success: true,
-            insightCount: result.insights.length,
-            tokenUsage: result.usage,
-          }),
-        });
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      captureError(err, { type: 'prompt_quality_stream', llm_provider: llmConfig?.provider, llm_model: llmConfig?.model });
-      await stream.writeSSE({
-        event: 'error',
-        data: JSON.stringify({ error: message }),
-      }).catch(() => {});
-    }
+  return streamSessionAnalysis(c, session, messages, {
+    analysisType: 'prompt-quality',
+    analysisFn: analyzePromptQuality,
+    progressMessage: (progress) =>
+      progress.phase === 'saving' ? 'Saving insights...' : 'Analyzing prompt quality...',
+    onSuccess: (result) => {
+      trackEvent('insight_generated', { type: 'prompt_quality', count: result.insights.length });
+    },
   });
 });
 
@@ -329,31 +179,20 @@ app.post('/recurring', requireLLM(), async (c) => {
     session_id: string;
   }>;
 
-  const llmConfig = loadLLMConfig();
-  const recurringStart = Date.now();
+  const startTime = Date.now();
   const result = await findRecurringInsights(insights);
-  const recurringBaseProperties = {
-    type: 'recurring',
-    llm_provider: llmConfig?.provider,
-    llm_model: llmConfig?.model,
-    duration_ms: Date.now() - recurringStart,
+  // recurring errors don't carry error_type/response_preview — pass them as undefined;
+  // trackAnalysisResult handles undefined gracefully (omits from event properties).
+  trackAnalysisResult('recurring', {
     success: result.success,
-  };
-  if (!result.success) {
-    const recurringErrorProperties = {
-      ...recurringBaseProperties,
-      error_type: 'api_error',
-      error_message: result.error,
-    };
-    trackEvent('analysis_run', recurringErrorProperties);
-    captureError(new Error(result.error ?? 'recurring insights failed'), recurringErrorProperties);
-  } else {
-    trackEvent('analysis_run', recurringBaseProperties);
-    trackEvent('insight_generated', {
-      type: 'recurring',
-      count: result.groups.length,
-    });
-  }
+    error: result.error,
+    error_type: result.success ? undefined : 'api_error',
+    response_preview: undefined,
+  }, startTime, {
+    onSuccess: () => {
+      trackEvent('insight_generated', { type: 'recurring', count: result.groups.length });
+    },
+  });
   return c.json(result, result.success ? 200 : 422);
 });
 
