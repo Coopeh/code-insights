@@ -50,12 +50,12 @@ export function formatModelName(model: string): string {
   if (/^claude-opus-4/.test(model)) return 'Opus 4.x';
   // Claude 4.x sonnet variants
   if (/^claude-sonnet-4/.test(model)) return 'Sonnet 4.x';
-  // Claude 3.5 sonnet (must come before generic haiku/sonnet 3 checks)
-  if (/^claude-3-5-sonnet/.test(model)) return 'Sonnet 3.5';
-  // Claude 3.5 haiku (must come before generic haiku 3 check)
-  if (/^claude-3-5-haiku/.test(model)) return 'Haiku 3.5';
-  // Claude haiku variants (covers haiku-4-5, haiku-3, etc.)
+  // Claude haiku variants (covers haiku-4-5, haiku-3-5, etc.)
   if (/^claude-haiku/.test(model)) return 'Haiku';
+  // Claude 3.5 sonnet
+  if (/^claude-3-5-sonnet/.test(model)) return 'Sonnet 3.5';
+  // Claude 3.5 haiku
+  if (/^claude-3-5-haiku/.test(model)) return 'Haiku 3.5';
   // Claude 3 opus
   if (/^claude-3-opus/.test(model)) return 'Opus 3';
   // Claude 3 sonnet
