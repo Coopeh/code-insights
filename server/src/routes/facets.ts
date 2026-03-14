@@ -1,9 +1,13 @@
 import { Hono } from 'hono';
-import { streamSSE } from 'hono/streaming';
 import { getDb } from '@code-insights/cli/db/client';
 import { extractFacetsOnly, analyzePromptQuality } from '../llm/analysis.js';
 import { buildWhereClause, getAggregatedData } from './shared-aggregation.js';
-import { loadSessionForAnalysis, loadSessionMessages, requireLLM } from './route-helpers.js';
+import {
+  loadSessionForAnalysis,
+  loadSessionMessages,
+  requireLLM,
+  streamBatchBackfill,
+} from './route-helpers.js';
 
 const app = new Hono();
 
@@ -171,78 +175,12 @@ app.post('/backfill', requireLLM(), async (c) => {
 
   const db = getDb();
 
-  return streamSSE(c, async (stream) => {
-    const abortSignal = c.req.raw.signal;
-    let completed = 0;
-    let failed = 0;
-    const total = body.sessionIds!.length;
-
-    for (const sessionId of body.sessionIds!) {
-      if (abortSignal.aborted) break;
-
-      const session = loadSessionForAnalysis(db, sessionId);
-
-      if (!session) {
-        failed++;
-        await stream.writeSSE({
-          event: 'progress',
-          data: JSON.stringify({
-            completed,
-            failed,
-            total,
-            currentSessionId: sessionId,
-          }),
-        });
-        continue;
-      }
-
-      // Skip sessions that already have facets unless force=true (used when re-processing
-      // outdated sessions that have stale attribution/driver/category fields).
-      if (!body.force) {
-        const existingFacet = db.prepare(
-          'SELECT 1 FROM session_facets WHERE session_id = ?'
-        ).get(sessionId);
-        if (existingFacet) {
-          completed++;
-          await stream.writeSSE({
-            event: 'progress',
-            data: JSON.stringify({
-              completed,
-              failed,
-              total,
-              currentSessionId: sessionId,
-            }),
-          });
-          continue;
-        }
-      }
-
-      // Load all messages for full-context facet extraction
-      const messages = loadSessionMessages(db, sessionId);
-
-      const result = await extractFacetsOnly(session, messages, { signal: abortSignal });
-      if (result.success) {
-        completed++;
-      } else {
-        failed++;
-      }
-
-      await stream.writeSSE({
-        event: 'progress',
-        data: JSON.stringify({
-          completed,
-          failed,
-          total,
-          currentSessionId: sessionId,
-          ...(result.success ? {} : { error: result.error }),
-        }),
-      });
-    }
-
-    await stream.writeSSE({
-      event: 'complete',
-      data: JSON.stringify({ completed, failed, total }),
-    });
+  return streamBatchBackfill(c, body.sessionIds, body.force ?? false, {
+    shouldSkip: (sessionId) => {
+      return !!db.prepare('SELECT 1 FROM session_facets WHERE session_id = ?').get(sessionId);
+    },
+    analysisFn: (session, messages, options) =>
+      extractFacetsOnly(session, messages, options),
   });
 });
 
@@ -318,77 +256,12 @@ app.post('/backfill-pq', requireLLM(), async (c) => {
 
   const db = getDb();
 
-  return streamSSE(c, async (stream) => {
-    const abortSignal = c.req.raw.signal;
-    let completed = 0;
-    let failed = 0;
-    const total = body.sessionIds!.length;
-
-    for (const sessionId of body.sessionIds!) {
-      if (abortSignal.aborted) break;
-
-      const session = loadSessionForAnalysis(db, sessionId);
-
-      if (!session) {
-        failed++;
-        await stream.writeSSE({
-          event: 'progress',
-          data: JSON.stringify({
-            completed,
-            failed,
-            total,
-            currentSessionId: sessionId,
-          }),
-        });
-        continue;
-      }
-
-      // Skip sessions that already have a prompt_quality insight unless force=true.
-      // force=true is used when re-processing outdated PQ insights (old schema lacking findings).
-      if (!body.force) {
-        const existingPq = db.prepare(
-          "SELECT 1 FROM insights WHERE session_id = ? AND type = 'prompt_quality'"
-        ).get(sessionId);
-        if (existingPq) {
-          completed++;
-          await stream.writeSSE({
-            event: 'progress',
-            data: JSON.stringify({
-              completed,
-              failed,
-              total,
-              currentSessionId: sessionId,
-            }),
-          });
-          continue;
-        }
-      }
-
-      const messages = loadSessionMessages(db, sessionId);
-
-      const result = await analyzePromptQuality(session, messages, { signal: abortSignal });
-      if (result.success) {
-        completed++;
-      } else {
-        failed++;
-      }
-
-      await stream.writeSSE({
-        event: 'progress',
-        data: JSON.stringify({
-          completed,
-          failed,
-          total,
-          currentSessionId: sessionId,
-          ...(result.success ? {} : { error: result.error }),
-        }),
-      });
-    }
-
-    await stream.writeSSE({
-      event: 'complete',
-      data: JSON.stringify({ completed, failed, total }),
-    });
+  return streamBatchBackfill(c, body.sessionIds, body.force ?? false, {
+    shouldSkip: (sessionId) => {
+      return !!db.prepare("SELECT 1 FROM insights WHERE session_id = ? AND type = 'prompt_quality'").get(sessionId);
+    },
+    analysisFn: (session, messages, options) =>
+      analyzePromptQuality(session, messages, options),
   });
 });
 
