@@ -211,8 +211,6 @@ async function backfillBatchToEndpoint(
 // Actions
 // ---------------------------------------------------------------------------
 
-// getCurrentIsoWeek() imported from ../utils/date-utils.js
-
 const ISO_WEEK_RE = /^(\d{4})-W(\d{2})$/;
 
 async function reflectAction(options: {

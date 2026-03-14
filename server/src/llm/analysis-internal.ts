@@ -30,6 +30,11 @@ export interface AnalysisResult {
   };
 }
 
+// ─── Shared constants ─────────────────────────────────────────────────────────
+
+/** Maximum input tokens to send to the LLM (leaves room for the response). */
+export const MAX_INPUT_TOKENS = 80000;
+
 // ─── Shared helper ────────────────────────────────────────────────────────────
 
 /**

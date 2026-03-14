@@ -17,6 +17,7 @@ import type {
   TodayStats,
   TodaySession,
   ModelStatsEntry,
+  GroupedMetric,
 } from './types.js';
 import { getModelPricing } from '../../../utils/pricing.js';
 import {
@@ -53,11 +54,11 @@ export { bucketKey, createBuckets, groupByDay, computeDayStats, computeRangeStat
 export function computeTopProjects(
   sessions: SessionRow[],
   limit: number,
-): import('./types.js').GroupedMetric[] {
+): GroupedMetric[] {
   const groups = groupBy(sessions, (s) => s.projectName);
   const total = sessions.length;
 
-  const metrics: import('./types.js').GroupedMetric[] = [];
+  const metrics: GroupedMetric[] = [];
   for (const [name, group] of groups) {
     metrics.push({
       name,
@@ -125,7 +126,7 @@ export function computeOverview(
     .map((s) => s.sourceTool)
     .filter((t): t is string => t != null);
   const uniqueSourceTools = new Set(sourceToolNames);
-  let sourceTools: import('./types.js').GroupedMetric[] = [];
+  let sourceTools: GroupedMetric[] = [];
   if (uniqueSourceTools.size >= 2) {
     const groups = groupBy(
       sessions.filter((s) => s.sourceTool != null),
@@ -205,7 +206,7 @@ export function computeCostBreakdown(
 
   // By project
   const projectGroups = groupBy(costSessions, (s) => s.projectName);
-  const byProject: import('./types.js').GroupedMetric[] = [];
+  const byProject: GroupedMetric[] = [];
   for (const [name, group] of projectGroups) {
     const cost = sum(group, (s) => s.estimatedCostUsd!);
     byProject.push({
@@ -220,7 +221,7 @@ export function computeCostBreakdown(
   // By model
   const modelSessions = costSessions.filter((s) => s.primaryModel != null);
   const modelGroups = groupBy(modelSessions, (s) => s.primaryModel!);
-  const byModel: import('./types.js').GroupedMetric[] = [];
+  const byModel: GroupedMetric[] = [];
   for (const [name, group] of modelGroups) {
     const cost = sum(group, (s) => s.estimatedCostUsd!);
     byModel.push({

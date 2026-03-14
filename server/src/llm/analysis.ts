@@ -33,6 +33,7 @@ import {
   type SessionData,
 } from './analysis-db.js';
 import {
+  MAX_INPUT_TOKENS,
   buildSessionMeta,
   type AnalysisProgress,
   type AnalysisOptions,
@@ -48,9 +49,6 @@ export { extractFacetsOnly } from './facet-extraction.js';
 // Re-export shared types (routes and route-helpers import these from analysis.ts)
 export type { AnalysisProgress, AnalysisOptions, AnalysisResult };
 export type { InsightRow, SessionData };
-
-// Maximum tokens to send to LLM (leaving room for response)
-const MAX_INPUT_TOKENS = 80000;
 
 /**
  * Analyze a session and generate insights, saving them to SQLite.

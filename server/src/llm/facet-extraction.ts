@@ -12,10 +12,7 @@ import {
   saveFacetsToDb,
   type SessionData,
 } from './analysis-db.js';
-import { buildSessionMeta } from './analysis-internal.js';
-
-// Maximum tokens to send to LLM (leaving room for response)
-const MAX_INPUT_TOKENS = 80000;
+import { MAX_INPUT_TOKENS, buildSessionMeta } from './analysis-internal.js';
 
 /**
  * Extract facets only for a session that already has insights (backfill).
