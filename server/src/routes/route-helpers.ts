@@ -201,7 +201,7 @@ export function streamSessionAnalysis(
         captureError(new Error(result.error ?? `${opts.analysisType} stream failed`), errorProperties);
         await stream.writeSSE({
           event: 'error',
-          data: JSON.stringify({ error: result.error ?? 'Analysis failed' }),
+          data: JSON.stringify({ error: result.error ?? `${opts.analysisType} analysis failed` }),
         });
       } else {
         trackEvent('analysis_run', baseProperties);
@@ -217,8 +217,11 @@ export function streamSessionAnalysis(
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
+      // Normalize hyphens to underscores so 'prompt-quality_stream' becomes
+      // 'prompt_quality_stream' — matching the original per-handler telemetry strings.
+      const telemetryType = opts.analysisType.replace(/-/g, '_');
       captureError(err, {
-        type: `${opts.analysisType}_stream`,
+        type: `${telemetryType}_stream`,
         llm_provider: llmConfig?.provider,
         llm_model: llmConfig?.model,
       });

@@ -179,8 +179,7 @@ app.post('/backfill', requireLLM(), async (c) => {
     shouldSkip: (sessionId) => {
       return !!db.prepare('SELECT 1 FROM session_facets WHERE session_id = ?').get(sessionId);
     },
-    analysisFn: (session, messages, options) =>
-      extractFacetsOnly(session, messages, options),
+    analysisFn: extractFacetsOnly,
   });
 });
 
@@ -260,8 +259,7 @@ app.post('/backfill-pq', requireLLM(), async (c) => {
     shouldSkip: (sessionId) => {
       return !!db.prepare("SELECT 1 FROM insights WHERE session_id = ? AND type = 'prompt_quality'").get(sessionId);
     },
-    analysisFn: (session, messages, options) =>
-      analyzePromptQuality(session, messages, options),
+    analysisFn: analyzePromptQuality,
   });
 });
 
