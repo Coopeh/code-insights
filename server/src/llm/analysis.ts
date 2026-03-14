@@ -32,11 +32,6 @@ import {
   type SessionData,
 } from './analysis-db.js';
 
-// Re-export SQLiteMessageRow so routes can import it from analysis.ts directly
-export type { SQLiteMessageRow };
-// Re-export DB types for backward compat (routes import InsightRow and SessionData from here)
-export type { InsightRow, SessionData } from './analysis-db.js';
-
 // Maximum tokens to send to LLM (leaving room for response)
 const MAX_INPUT_TOKENS = 80000;
 
@@ -64,8 +59,6 @@ export interface AnalysisResult {
   };
 }
 
-// Re-export ParseError so routes can import it from analysis.ts
-export type { ParseError };
 
 /**
  * Analyze a session and generate insights, saving them to SQLite.
