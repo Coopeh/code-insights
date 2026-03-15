@@ -274,17 +274,19 @@ app.get('/weeks', (c) => {
     return c.json({ weeks: [] });
   }
 
-  // Compute the Monday of the current ISO week
+  // Compute the UTC midnight of the Monday of the current ISO week.
+  // Truncating to midnight ensures the while-loop comparison is stable
+  // regardless of the time-of-day component in started_at values.
   const now = new Date();
   const nowDay = now.getUTCDay(); // 0=Sun
   const daysToMonday = nowDay === 0 ? 6 : nowDay - 1;
-  const thisMondayMs = now.getTime() - daysToMonday * 86400000;
+  const thisMondayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - daysToMonday * 86400000;
 
-  // Compute the Monday of the earliest session's ISO week
+  // Compute the UTC midnight of the Monday of the earliest session's ISO week.
   const earliestDate = new Date(earliestRow.earliest);
   const earliestDay = earliestDate.getUTCDay();
   const daysToEarliestMonday = earliestDay === 0 ? 6 : earliestDay - 1;
-  const earliestMondayMs = earliestDate.getTime() - daysToEarliestMonday * 86400000;
+  const earliestMondayMs = Date.UTC(earliestDate.getUTCFullYear(), earliestDate.getUTCMonth(), earliestDate.getUTCDate()) - daysToEarliestMonday * 86400000;
 
   // Generate all weeks from earliest through current (most recent first).
   // Cap at 520 weeks (~10 years) to stay under SQLite's 999 bind-variable limit
