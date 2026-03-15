@@ -118,8 +118,6 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
 
 ---
 
----
-
 ## Phase 8.5: Taxonomy & Classification Refinement ✅
 
 **Goal:** Deepen the quality of facet classification with richer taxonomy, attribution model, and ISO week navigation
