@@ -287,11 +287,13 @@ app.get('/weeks', (c) => {
   const earliestMondayMs = earliestDate.getTime() - daysToEarliestMonday * 86400000;
 
   // Generate all weeks from earliest through current (most recent first).
-  // Each step is one week (7 days). We go from current backward to earliest.
+  // Cap at 520 weeks (~10 years) to stay under SQLite's 999 bind-variable limit
+  // for the snapshot IN (...) query (each week uses 1 placeholder + 1 for project_id).
+  const MAX_WEEKS = 520;
   type WeekEntry = { week: string; start: string; end: string };
   const weekEntries: WeekEntry[] = [];
   let weekMondayMs = thisMondayMs;
-  while (weekMondayMs >= earliestMondayMs - 86400000) { // small buffer for float precision
+  while (weekMondayMs >= earliestMondayMs && weekEntries.length < MAX_WEEKS) {
     const weekMonday = new Date(weekMondayMs);
     const week = formatIsoWeek(weekMonday);
     const bounds = parseIsoWeek(week)!;
@@ -302,16 +304,16 @@ app.get('/weeks', (c) => {
   const projectKey = project || '__all__';
 
   // Query 1: session counts per ISO week using GROUP BY.
-  // We GROUP BY the ISO Monday for each session. SQLite's 'weekday 1' is Monday;
-  // combining with '-7 days' gives the preceding Monday for any date including Monday itself.
-  // Selecting the GROUP BY expression directly avoids ambiguity of selecting an arbitrary
-  // started_at from each group. Returns one row per week that has sessions — O(sessions), not O(weeks).
+  // The Thursday trick: 'weekday 4' advances to the ISO week's Thursday (or stays if already
+  // Thursday), then '-3 days' gives that week's Monday. This handles all 7 days correctly —
+  // unlike 'weekday 1, -7 days' which overshoots by one week for sessions starting on Monday.
+  // Returns one row per week that has sessions — O(sessions), not O(weeks).
   const rangeStart = weekEntries[weekEntries.length - 1].start;
   const rangeEnd = weekEntries[0].end;
 
   const sessionCountRaw = db.prepare(`
     SELECT
-      date(s.started_at, 'weekday 1', '-7 days') as week_monday,
+      date(s.started_at, 'weekday 4', '-3 days') as week_monday,
       COUNT(*) as cnt
     FROM sessions s
     WHERE s.deleted_at IS NULL
