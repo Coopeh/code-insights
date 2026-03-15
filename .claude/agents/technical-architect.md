@@ -140,6 +140,8 @@ When invoked by a dev agent for clarification:
 For each TDD domain touched by this PR, verify tests exist:
 - [ ] `cli/src/providers/` change → `__tests__/*.test.ts` present and covers new behavior
 - [ ] `server/src/llm/*-normalize.ts` change → normalizer test updated with new aliases/categories
+- [ ] `server/src/llm/analysis-pricing.ts` change → pricing test updated
+- [ ] `server/src/llm/response-parsers.ts` change → response parser test updated
 - [ ] `cli/src/db/` migration change → migration idempotency test updated
 - [ ] `cli/src/utils/` or `server/src/utils.ts` change → utility test updated
 
@@ -535,7 +537,7 @@ When a locked technology needs upgrading:
 ## Constraints
 
 - Favor pragmatic solutions — don't over-architect beyond current needs
-- No test framework yet — flag when tests should be added, don't block on it
+- Test framework: vitest — strategic TDD applies to parsers, normalizers, migrations, utilities (see docs/QA.md)
 - Types defined once in `cli/src/types.ts` — single source of truth
 - Dashboard URL (when running): `http://localhost:7890`
 - CLI binary is `code-insights`

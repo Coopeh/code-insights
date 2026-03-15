@@ -75,16 +75,6 @@ describe('ClaudeCodeProvider', () => {
     expect(session!.assistantMessageCount).toBeGreaterThan(0);
   });
 
-  it('sets sourceTool to "claude-code" on parsed session', async () => {
-    const filePath = path.join(tempDir, UUID_FILENAME);
-    fs.writeFileSync(filePath, VALID_SESSION_JSONL);
-
-    const session = await provider.parse(filePath);
-
-    expect(session).not.toBeNull();
-    expect(session!.sourceTool).toBe('claude-code');
-  });
-
   // ────────────────────────────────────────────────────
   // parse — empty file
   // ────────────────────────────────────────────────────
@@ -147,17 +137,23 @@ describe('ClaudeCodeProvider', () => {
   });
 
   // ────────────────────────────────────────────────────
-  // parse — sourceTool enforcement
+  // parse — sourceTool enforcement on malformed-but-parseable file
   // ────────────────────────────────────────────────────
 
-  it('always stamps sourceTool as "claude-code" regardless of file content', async () => {
-    // The provider overrides sourceTool after parseJsonlFile returns,
-    // so even if the underlying parser sets a different value, we get 'claude-code'.
+  it('stamps sourceTool even when file contains mixed valid and malformed lines', async () => {
+    // Verifies that the provider's sourceTool override runs on any non-null result,
+    // not just on perfectly-formed files. The bad line is skipped; valid lines parse.
+    const mixedContent = [
+      'not valid json',
+      VALID_SESSION_JSONL.split('\n')[0],
+      VALID_SESSION_JSONL.split('\n')[1],
+    ].join('\n');
     const filePath = path.join(tempDir, UUID_FILENAME);
-    fs.writeFileSync(filePath, VALID_SESSION_JSONL);
+    fs.writeFileSync(filePath, mixedContent);
 
     const session = await provider.parse(filePath);
 
+    expect(session).not.toBeNull();
     expect(session!.sourceTool).toBe('claude-code');
   });
 

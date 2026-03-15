@@ -407,7 +407,7 @@ Before coordinating work, ground yourself in the current state:
 - Architecture: single-repo pnpm workspace monorepo (cli/ + dashboard/ + server/). Local-first, no cloud
 - Free, open-source tool helping developers analyze AI coding sessions and build knowledge over time — no monetization
 - This is a personal learning tool — no team/org features, no surveillance framing
-- No test framework yet — track when tests should be added, don't block on it
+- Test framework: vitest — TDD required for parsers, normalizers, migrations, utilities (see docs/QA.md)
 - Types defined once in `cli/src/types.ts` — single source of truth
 - CLI binary is `code-insights`
 - pnpm is the package manager

@@ -82,6 +82,8 @@ Code Insights uses **strategic TDD** — test-first development applied surgical
 |-------|--------|------|----------------|-----------|
 | **MUST TDD** | Source providers (parsers) | `cli/src/providers/` | 90%+ | External file formats break silently — a provider regression corrupts sync |
 | **MUST TDD** | Normalizers | `server/src/llm/*-normalize.ts` | 85%+ | 40+ alias mappings; a regression silently corrupts every user's insights |
+| **MUST TDD** | Analysis pricing | `server/src/llm/analysis-pricing.ts` | 85%+ | Cost calculations are silent — wrong math silently under/overcharges users |
+| **MUST TDD** | Response parsers | `server/src/llm/response-parsers.ts` | 85%+ | LLM output parsing failures corrupt stored insights silently |
 | **MUST TDD** | Migrations | `cli/src/db/migrate.ts`, `schema.ts` | 90%+ | Schema changes are irreversible; bugs in migrations can corrupt the database |
 | **MUST TDD** | Shared utilities | `server/src/utils.ts`, `cli/src/utils/` | 85%+ | Pure functions — trivial to test, used across the codebase |
 | **SHOULD TDD** | API routes | `server/src/routes/` | 70%+ | High-value but SQLite coupling makes setup harder |

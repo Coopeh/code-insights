@@ -252,6 +252,6 @@ When spawned as a team member:
 - CLI is open source (`@code-insights/cli`), dashboard is embedded in the CLI package
 - CLI binary: `code-insights`
 - Multi-source support: parses sessions from Claude Code, Cursor, Codex CLI, Copilot CLI
-- No test framework yet — don't block strategic decisions on test coverage
+- Test framework: vitest — strategic TDD in place for parsers, normalizers, migrations, utilities (see docs/QA.md)
 - pnpm is the package manager (workspace monorepo)
 - All agents are autonomous within their domain — advise, don't micromanage

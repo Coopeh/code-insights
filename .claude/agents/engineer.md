@@ -159,6 +159,8 @@ Before writing any implementation code, check whether your change touches a TDD 
 |-------|--------|------|----------------|
 | **MUST TDD** | Parsers (source providers) | `cli/src/providers/` | 90%+ |
 | **MUST TDD** | Normalizers | `server/src/llm/*-normalize.ts` | 85%+ |
+| **MUST TDD** | Analysis pricing | `server/src/llm/analysis-pricing.ts` | 85%+ |
+| **MUST TDD** | Response parsers | `server/src/llm/response-parsers.ts` | 85%+ |
 | **MUST TDD** | Migrations | `cli/src/db/` | 90%+ |
 | **MUST TDD** | Shared utilities | `server/src/utils.ts`, `cli/src/utils/` | 85%+ |
 | **SHOULD TDD** | API routes | `server/src/routes/` | 70%+ |
