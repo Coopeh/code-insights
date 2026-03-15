@@ -284,13 +284,24 @@ describe('Reflect routes', () => {
   // ──────────────────────────────────────────────────────
 
   describe('GET /api/reflect/weeks', () => {
-    it('returns 8 weeks array with expected shape', async () => {
+    it('returns weeks array spanning from earliest session through current week', async () => {
+      // Seed a session so the endpoint has a range to generate
+      const now = new Date();
+      const nowDay = now.getUTCDay();
+      const daysToMonday = nowDay === 0 ? 6 : nowDay - 1;
+      const thisMonday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - daysToMonday * 86400000);
+      const sessionStart = new Date(thisMonday.getTime() + 3600000).toISOString(); // Monday + 1 hour
+      seedSessionWithFacets('sess-shape-1', { startedAt: sessionStart });
+
       const app = createApp();
       const res = await app.request('/api/reflect/weeks');
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(Array.isArray(body.weeks)).toBe(true);
-      expect(body.weeks).toHaveLength(8);
+      // Data-driven: at minimum contains the current week (where the seeded session lives)
+      expect(body.weeks.length).toBeGreaterThanOrEqual(1);
+      // Most recent week is first
+      expect(body.weeks[0].week).toMatch(/^\d{4}-W\d{2}$/);
     });
 
     it('each week entry has ISO week format and required fields', async () => {
@@ -313,13 +324,17 @@ describe('Reflect routes', () => {
       const now = new Date();
       const nowDay = now.getUTCDay();
       const daysToMonday = nowDay === 0 ? 6 : nowDay - 1;
-      const thisMonday = new Date(now.getTime() - daysToMonday * 86400000);
+      const thisMonday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - daysToMonday * 86400000);
       const year = thisMonday.getUTCFullYear();
       // Compute ISO week number
       const jan4 = new Date(Date.UTC(year, 0, 4));
       const jan4Day = jan4.getUTCDay() || 7;
       const weekNum = Math.ceil(((thisMonday.getTime() - jan4.getTime()) / 86400000 + jan4Day) / 7);
       const currentWeek = `${year}-W${String(weekNum).padStart(2, '0')}`;
+
+      // Seed a session in the current week so the endpoint generates a week range
+      const sessionStart = new Date(thisMonday.getTime() + 3600000).toISOString(); // Monday + 1 hour
+      seedSessionWithFacets('sess-snapshot-1', { startedAt: sessionStart });
 
       testDb.prepare(`
         INSERT INTO reflect_snapshots (period, project_id, results_json, generated_at, window_start, window_end, session_count, facet_count)
