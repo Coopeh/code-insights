@@ -2,6 +2,12 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.0.1] - 2026-03-16
+
+### Fixed
+
+- **Reflect snapshot timestamp** — The "Generated Xd ago" label on the Patterns page showed the ISO week end date instead of when the reflection was actually generated. Fixed positional parameter mismatch in snapshot INSERT that set `generated_at` to `window_end`.
+
 ## [4.0.0] - 2026-03-16
 
 ### Added
