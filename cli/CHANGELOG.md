@@ -2,6 +2,19 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.1.0] - 2026-03-18
+
+### Added
+
+- **Zero-config first-run** — Running `code-insights` with no arguments now automatically syncs sessions and opens the dashboard. One command to value in 30 seconds, no `init` required.
+- **Dashboard auto-sync** — The `dashboard` command runs a quick sync before starting the server, so data is always fresh. Skip with `--no-sync`.
+- **Guided empty states** — InsightsPage shows a guided path to LLM configuration when no analysis exists, replacing the generic "no insights" message.
+
+### Changed
+
+- **`init` is now optional** — The database and config are auto-created on first use. `init` remains available for customizing settings but is no longer a required first step.
+- **Documentation overhaul** — README, CLI reference, CLAUDE.md, MIGRATION.md, CONTRIBUTING.md, PRODUCT.md, and VISION.md all updated to reflect the zero-config flow.
+
 ## [4.0.1] - 2026-03-16
 
 ### Fixed
