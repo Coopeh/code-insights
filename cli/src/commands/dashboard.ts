@@ -4,7 +4,7 @@ import { existsSync } from 'fs';
 import chalk from 'chalk';
 import ora from 'ora';
 import net from 'net';
-import { trackEvent, captureError, classifyError } from '../utils/telemetry.js';
+import { trackEvent, identifyUser, captureError, classifyError } from '../utils/telemetry.js';
 import { printBanner } from '../utils/banner.js';
 import { runSync } from './sync.js';
 
@@ -51,6 +51,7 @@ export async function dashboardCommand(options: DashboardOptions): Promise<void>
   if (options.sync !== false) {
     try {
       await runSync({ quiet: false });
+      void identifyUser();
     } catch (err) {
       // Sync failure is non-fatal — dashboard still opens with whatever data exists
       console.warn(chalk.yellow(`  Sync warning: ${err instanceof Error ? err.message : String(err)}`));
