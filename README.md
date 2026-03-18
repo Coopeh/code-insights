@@ -25,11 +25,24 @@ Parses session history from Claude Code, Cursor, Codex CLI, Copilot CLI, and VS 
 ## Quick Start
 
 ```bash
-npm install -g @code-insights/cli
+# Try instantly (no install needed)
+npx @code-insights/cli
 
-code-insights init      # Set up config and local database
-code-insights sync      # Parse sessions from all detected AI tools
-code-insights dashboard # Open the built-in dashboard at localhost:7890
+# Or install globally
+npm install -g @code-insights/cli
+code-insights                          # sync sessions + open dashboard
+```
+
+### Individual commands
+
+```bash
+code-insights stats                    # terminal analytics (no dashboard needed)
+code-insights stats today              # today's sessions
+
+code-insights dashboard                # start dashboard server (auto-syncs first)
+code-insights dashboard --no-sync      # start dashboard without syncing
+code-insights sync                     # sync sessions only
+code-insights init                     # customize settings (optional)
 ```
 
 ## What It Does
