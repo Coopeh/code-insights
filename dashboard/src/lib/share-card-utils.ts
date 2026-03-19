@@ -194,8 +194,9 @@ export function drawShareCard(
   ctx.lineWidth = 8;
   ctx.stroke();
 
-  // Score arc (filled portion)
+  // Score arc (filled portion) — save/restore to prevent lineCap leaking to subsequent strokes
   if (score !== null && score > 0) {
+    ctx.save();
     const arcGradient = ctx.createLinearGradient(
       SCORE_CX - SCORE_R, SCORE_CY,
       SCORE_CX + SCORE_R, SCORE_CY
@@ -212,6 +213,7 @@ export function drawShareCard(
     ctx.lineWidth = 8;
     ctx.lineCap = 'round';
     ctx.stroke();
+    ctx.restore();
   }
 
   // Score number
@@ -254,9 +256,10 @@ export function drawShareCard(
 
   for (const bar of FINGERPRINT_BARS) {
     const barY = bar.yCentre - BAR_H / 2;
-    const score = props.dimensionScores
-      ? (props.dimensionScores[bar.field as keyof PQDimensionScores] as number)
-      : 0;
+    // Dimension score is null if no data for this dimension — show track only (no fill)
+    const dimScore: number | null = props.dimensionScores
+      ? (props.dimensionScores[bar.field as keyof PQDimensionScores] as number | null)
+      : null;
 
     // Draw bar track (full width pill)
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
@@ -270,12 +273,9 @@ export function drawShareCard(
     ctx.roundRect(BAR_START_X, barY, BAR_MAX_W, BAR_H, BAR_RADIUS);
     ctx.stroke();
 
-    // Draw bar fill (colored pill, minimum 20px)
-    const fillW = props.dimensionScores
-      ? Math.max(MIN_FILL_W, Math.round((score / 100) * BAR_MAX_W))
-      : 0;
-
-    if (fillW > 0) {
+    // Draw bar fill — only if dimension has data. Null = no data, skip fill entirely.
+    if (dimScore !== null) {
+      const fillW = Math.max(MIN_FILL_W, Math.round((dimScore / 100) * BAR_MAX_W));
       ctx.fillStyle = bar.color;
       ctx.beginPath();
       ctx.roundRect(BAR_START_X, barY, fillW, BAR_H, BAR_RADIUS);

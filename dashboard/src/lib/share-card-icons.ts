@@ -113,7 +113,6 @@ export function drawIcon(
   ctx.lineWidth = 2 / scale; // keep 2px stroke weight regardless of scale
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.fillStyle = 'none';
 
   // Paths
   for (const d of icon.paths) {

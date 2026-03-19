@@ -137,11 +137,11 @@ export interface RateLimitInfo {
 
 export interface PQDimensionScores {
   overall: number;
-  context_provision: number;
-  request_specificity: number;
-  scope_management: number;
-  information_timing: number;
-  correction_quality: number;
+  context_provision: number | null;  // null if no data for this dimension
+  request_specificity: number | null;
+  scope_management: number | null;
+  information_timing: number | null;
+  correction_quality: number | null;
 }
 
 export interface AggregatedData {
@@ -565,12 +565,12 @@ export function computePQScores(
   const hasData = DIMENSION_KEYS.some(k => counts[k] > 0);
   if (!hasData) return null;
 
-  // Per-dimension averages — default to 0 for dimensions with no data points
+  // Per-dimension averages — null for dimensions with no data points (honest signal)
   const dimScores = Object.fromEntries(
-    DIMENSION_KEYS.map(k => [k, counts[k] > 0 ? Math.round(sums[k] / counts[k]) : 0])
-  ) as Record<typeof DIMENSION_KEYS[number], number>;
+    DIMENSION_KEYS.map(k => [k, counts[k] > 0 ? Math.round(sums[k] / counts[k]) : null])
+  ) as Record<typeof DIMENSION_KEYS[number], number | null>;
 
-  const dimAverages = DIMENSION_KEYS.filter(k => counts[k] > 0).map(k => dimScores[k]);
+  const dimAverages = DIMENSION_KEYS.filter(k => counts[k] > 0).map(k => dimScores[k] as number);
   const overall = Math.round(dimAverages.reduce((s, v) => s + v, 0) / dimAverages.length);
 
   return {

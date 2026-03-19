@@ -238,11 +238,11 @@ export interface RateLimitInfo {
 
 export interface PQDimensionScores {
   overall: number;
-  context_provision: number;
-  request_specificity: number;
-  scope_management: number;
-  information_timing: number;
-  correction_quality: number;
+  context_provision: number | null;  // null if no data for this dimension
+  request_specificity: number | null;
+  scope_management: number | null;
+  information_timing: number | null;
+  correction_quality: number | null;
 }
 
 export interface FacetAggregation {
