@@ -25,6 +25,8 @@ interface WeekAtAGlanceStripProps {
   rateLimitSessionsAffected?: number;
   sourceTools?: string[];
   currentWeek: string;  // ISO week string (e.g. "2026-W11") — used for share card footer month
+  promptClarityScore?: number;  // 0-100, undefined = no PQ data — passed through to share card
+  effectivePatterns?: Array<{ label: string; frequency: number }>;  // top patterns for share card
 }
 
 // DB outcome_satisfaction values: 'high' | 'medium' | 'low' | 'abandoned'
@@ -58,6 +60,8 @@ export function WeekAtAGlanceStrip({
   rateLimitSessionsAffected,
   sourceTools,
   currentWeek,
+  promptClarityScore,
+  effectivePatterns,
 }: WeekAtAGlanceStripProps) {
   const outcomeTotal = Object.values(outcomeDistribution).reduce((s, v) => s + v, 0);
   const hasOutcomes = outcomeTotal > 0;
@@ -102,8 +106,9 @@ export function WeekAtAGlanceStrip({
         streak: streak ?? 0,
         sourceTools: sourceTools ?? [],
         characterDistribution: characterDistribution ?? {},
-        outcomeDistribution,
         currentWeek,
+        promptClarityScore,
+        effectivePatterns,
       });
       toast.success('Working style card downloaded');
     } catch {
@@ -111,7 +116,7 @@ export function WeekAtAGlanceStrip({
     } finally {
       setIsDownloading(false);
     }
-  }, [isDownloading, displayTagline, taglineSubtitle, totalSessions, streak, sourceTools, characterDistribution, outcomeDistribution, currentWeek]);
+  }, [isDownloading, displayTagline, taglineSubtitle, totalSessions, streak, sourceTools, characterDistribution, currentWeek, promptClarityScore, effectivePatterns]);
 
   return (
     <>

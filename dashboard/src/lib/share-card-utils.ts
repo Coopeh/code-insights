@@ -1,5 +1,6 @@
 // Utilities for the shareable working style card.
 // Canvas 2D implementation — no external dependencies, pixel-perfect text rendering.
+// V2: Content-dense redesign — stacked bar, strengths pills, prompt clarity score.
 
 // Keep in sync with SOURCE_LABELS in dashboard/src/components/sessions/CompactSessionRow.tsx
 export const SOURCE_TOOL_DISPLAY_NAMES: Record<string, string> = {
@@ -23,57 +24,6 @@ export const SOURCE_TOOL_PILL_COLORS: Record<string, ToolPillColors> = {
   'copilot-cli': { bg: '#0f2027', text: '#22d3ee', border: 'rgba(34,211,238,0.3)' },
   'copilot':     { bg: '#1c172e', text: '#a78bfa', border: 'rgba(167,139,250,0.3)' },
 };
-
-export interface MilestonePill {
-  icon: string;
-  label: string;
-  iconColor: string;
-}
-
-/**
- * Compute milestone pills from session stats.
- * Returns at most 4 pills, priority-ordered.
- */
-export function computeMilestones(
-  totalSessions: number,
-  streak: number,
-  sourceToolCount: number,
-  successRate: number
-): MilestonePill[] {
-  const milestones: MilestonePill[] = [];
-
-  const sessionThresholds = [1000, 500, 250, 100, 50] as const;
-  for (const t of sessionThresholds) {
-    if (totalSessions >= t) {
-      milestones.push({ icon: '★', label: `${t}+ Sessions`, iconColor: '#c084fc' });
-      break;
-    }
-  }
-
-  const streakThresholds = [90, 60, 30, 14, 7] as const;
-  for (const t of streakThresholds) {
-    if (streak >= t) {
-      milestones.push({ icon: '🔥', label: `${t}-Day Streak`, iconColor: '#f59e0b' });
-      break;
-    }
-  }
-
-  if (sourceToolCount >= 5) {
-    milestones.push({ icon: '⚡', label: '5 AI Tools', iconColor: '#22d3ee' });
-  } else if (sourceToolCount >= 4) {
-    milestones.push({ icon: '⚡', label: '4 AI Tools', iconColor: '#22d3ee' });
-  } else if (sourceToolCount >= 3) {
-    milestones.push({ icon: '⚡', label: '3+ AI Tools', iconColor: '#22d3ee' });
-  } else if (sourceToolCount >= 2) {
-    milestones.push({ icon: '⚡', label: '2+ AI Tools', iconColor: '#22d3ee' });
-  }
-
-  if (successRate > 85 && totalSessions >= 30) {
-    milestones.push({ icon: '✓', label: '85%+ Success', iconColor: '#4ade80' });
-  }
-
-  return milestones.slice(0, 4);
-}
 
 // Character type colors — match SESSION_CHARACTER_COLORS hues
 const CHARACTER_COLORS: Record<string, string> = {
@@ -170,13 +120,19 @@ export interface ShareCardProps {
   streak: number;
   sourceTools: string[];
   characterDistribution: Record<string, number>;
-  outcomeDistribution: Record<string, number>;
   currentWeek: string;
+  // V2 additions:
+  promptClarityScore?: number;              // 0-100, undefined = no PQ data
+  effectivePatterns?: Array<{               // top 3 by frequency
+    label: string;
+    frequency: number;
+  }>;
 }
 
 /**
  * Draw the full share card onto the given canvas at 1200x630px.
  * The canvas must already have width=1200 and height=630 set.
+ * V2: Content-dense layout — stacked bar, strengths pills, prompt clarity score.
  */
 export function drawShareCard(canvas: HTMLCanvasElement, props: ShareCardProps): void {
   const ctx = canvas.getContext('2d');
@@ -185,29 +141,30 @@ export function drawShareCard(canvas: HTMLCanvasElement, props: ShareCardProps):
   const W = 1200;
   const H = 630;
   const PAD = 48;
+  const CONTENT_W = W - PAD * 2; // 1104
 
-  // Background gradient
+  // ── Background ──────────────────────────────────────────────────────────────
+
   const bg = ctx.createLinearGradient(0, 0, W, H);
   bg.addColorStop(0, '#0f0f23');
   bg.addColorStop(1, '#1a1a3e');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Radial glow top-left (blue)
   const glow1 = ctx.createRadialGradient(-60, -60, 0, -60, -60, 380);
   glow1.addColorStop(0, 'rgba(59,130,246,0.18)');
   glow1.addColorStop(1, 'rgba(59,130,246,0)');
   ctx.fillStyle = glow1;
   ctx.fillRect(0, 0, W, H);
 
-  // Radial glow bottom-right (violet)
   const glow2 = ctx.createRadialGradient(W + 80, H + 80, 0, W + 80, H + 80, 500);
   glow2.addColorStop(0, 'rgba(168,85,247,0.14)');
   glow2.addColorStop(1, 'rgba(168,85,247,0)');
   ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, W, H);
 
-  // Header: Logo + "CODE INSIGHTS"
+  // ── Section 1: Header (y = 48) ──────────────────────────────────────────────
+
   const LOGO_SIZE = 28;
   drawLogo(ctx, PAD, PAD, LOGO_SIZE);
 
@@ -217,69 +174,44 @@ export function drawShareCard(canvas: HTMLCanvasElement, props: ShareCardProps):
   ctx.fillText('CODE INSIGHTS', PAD + LOGO_SIZE + 10, PAD + LOGO_SIZE * 0.72);
   ctx.letterSpacing = '0px';
 
-  // Tool pills (top-right, right-aligned)
-  const tools = props.sourceTools.slice(0, 4);
-  const PILL_H = 24;
-  const PILL_PAD_X = 12;
-  ctx.font = `500 12px ${FONT_STACK}`;
+  const monthYear = getMonthYearFromWeek(props.currentWeek);
+  ctx.font = `500 14px ${FONT_STACK}`;
+  ctx.fillStyle = '#64748b';
+  ctx.textAlign = 'right';
+  ctx.fillText(monthYear, W - PAD, PAD + LOGO_SIZE * 0.72);
+  ctx.textAlign = 'left';
 
-  let pillX = W - PAD;
-  for (let i = tools.length - 1; i >= 0; i--) {
-    const tool = tools[i];
-    const colors = SOURCE_TOOL_PILL_COLORS[tool] ?? { bg: '#1e293b', text: '#94a3b8', border: 'rgba(148,163,184,0.3)' };
-    const label = SOURCE_TOOL_DISPLAY_NAMES[tool] ?? tool;
-    const textW = ctx.measureText(label).width;
-    const pillW = textW + PILL_PAD_X * 2;
-    pillX -= pillW;
+  // ── Section 2: Tagline + Subtitle (y = 128) ─────────────────────────────────
 
-    ctx.fillStyle = colors.bg;
-    ctx.beginPath();
-    ctx.roundRect(pillX, PAD, pillW, PILL_H, PILL_H / 2);
-    ctx.fill();
-
-    ctx.strokeStyle = colors.border;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(pillX, PAD, pillW, PILL_H, PILL_H / 2);
-    ctx.stroke();
-
-    ctx.fillStyle = colors.text;
-    ctx.fillText(label, pillX + PILL_PAD_X, PAD + PILL_H * 0.68);
-
-    pillX -= 8;
-  }
-
-  // Tagline
-  const TAGLINE_Y = PAD + LOGO_SIZE + 52;
+  const TAGLINE_Y = 128;
   ctx.font = `bold 44px ${FONT_STACK}`;
   ctx.fillStyle = '#a78bfa';
-  ctx.fillText(truncateText(ctx, props.tagline, W - PAD * 2), PAD, TAGLINE_Y);
+  ctx.fillText(truncateText(ctx, props.tagline, CONTENT_W), PAD, TAGLINE_Y);
 
-  // Tagline subtitle
-  let subtitleBottomY = TAGLINE_Y + 10;
+  let contentCursor = TAGLINE_Y + 10;
   if (props.taglineSubtitle) {
-    const SUBTITLE_Y = TAGLINE_Y + 36;
+    const SUBTITLE_Y = 164;
     ctx.font = `400 22px ${FONT_STACK}`;
     ctx.fillStyle = '#8b8ba0';
-    ctx.fillText(truncateText(ctx, props.taglineSubtitle, W - PAD * 2), PAD, SUBTITLE_Y);
-    subtitleBottomY = SUBTITLE_Y + 10;
+    ctx.fillText(truncateText(ctx, props.taglineSubtitle, CONTENT_W), PAD, SUBTITLE_Y);
+    contentCursor = SUBTITLE_Y + 10;
   }
 
-  // Stat boxes
-  const outcomeTotal = Object.values(props.outcomeDistribution).reduce((s, v) => s + v, 0);
-  const successCount = props.outcomeDistribution['high'] ?? 0;
-  const successRate = outcomeTotal > 0 ? Math.round((successCount / outcomeTotal) * 100) : 0;
+  // ── Section 3: Stat Boxes ───────────────────────────────────────────────────
 
-  const STAT_TOP = subtitleBottomY + 36;
-  const STAT_BOX_W = 160;
+  const STAT_BOX_W = 180;
   const STAT_BOX_H = 88;
   const STAT_GAP = 16;
   const STAT_RADIUS = 8;
+  const STAT_TOP = contentCursor + 36;
 
   const stats = [
     { value: abbreviateCount(props.totalSessions), label: 'SESSIONS' },
     { value: props.streak > 0 ? `${props.streak}d` : '\u2014', label: 'STREAK' },
-    { value: outcomeTotal > 0 ? `${successRate}%` : '\u2014', label: 'SUCCESS' },
+    {
+      value: props.promptClarityScore !== undefined ? String(props.promptClarityScore) : '\u2014',
+      label: 'PROMPT CLARITY',
+    },
   ];
 
   for (let i = 0; i < stats.length; i++) {
@@ -308,98 +240,196 @@ export function drawShareCard(canvas: HTMLCanvasElement, props: ShareCardProps):
     ctx.textAlign = 'left';
   }
 
-  // Character distribution legend
-  const LEGEND_TOP = STAT_TOP + STAT_BOX_H + 32;
+  const statBottom = STAT_TOP + STAT_BOX_H;
+
+  // ── Section 4: Character Distribution Bar ───────────────────────────────────
+
   const sortedChars = Object.entries(props.characterDistribution)
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 4);
+    .slice(0, 5);
   const charTotal = sortedChars.reduce((s, [, v]) => s + v, 0);
 
-  if (sortedChars.length > 0) {
-    ctx.font = `400 20px ${FONT_STACK}`;
+  let sectionBottom = statBottom;
+
+  if (sortedChars.length > 0 && charTotal > 0) {
+    const BAR_TOP = statBottom + 32;
+    const BAR_H = 36;
+    const BAR_RADIUS = 6;
+
+    // Clip to rounded rect so segments get rounded corners from the overall shape
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(PAD, BAR_TOP, CONTENT_W, BAR_H, BAR_RADIUS);
+    ctx.clip();
+
+    let segX = PAD;
+    for (let i = 0; i < sortedChars.length; i++) {
+      const [key, count] = sortedChars[i];
+      const pct = count / charTotal;
+      // Last segment fills the remainder to avoid a rounding gap at the bar's right edge
+      const segW = (i === sortedChars.length - 1)
+        ? (PAD + CONTENT_W) - segX
+        : Math.round(pct * CONTENT_W);
+      const color = CHARACTER_COLORS[key] ?? '#64748b';
+
+      ctx.fillStyle = color;
+      ctx.fillRect(segX, BAR_TOP, segW, BAR_H);
+
+      // Inline label for segments >= 15%
+      if (pct >= 0.15) {
+        const label = `${CHARACTER_LABELS[key] ?? key} ${Math.round(pct * 100)}%`;
+        ctx.font = `500 12px ${FONT_STACK}`;
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, segX + segW / 2, BAR_TOP + BAR_H * 0.62);
+        ctx.textAlign = 'left';
+      }
+
+      segX += segW;
+    }
+    ctx.restore();
+
+    // Legend row (y = BAR_TOP + BAR_H + 14)
+    const LEGEND_Y = BAR_TOP + BAR_H + 14;
+    ctx.font = `400 13px ${FONT_STACK}`;
     let legendX = PAD;
-    const DOT_R = 6;
-    const LEGEND_GAP = 28;
+    const DOT_R = 5;
+    const LEGEND_GAP = 24;
 
     for (const [key, count] of sortedChars) {
-      const pct = charTotal > 0 ? Math.round((count / charTotal) * 100) : 0;
+      const pct = Math.round((count / charTotal) * 100);
       const label = `${CHARACTER_LABELS[key] ?? key} ${pct}%`;
       const color = CHARACTER_COLORS[key] ?? '#64748b';
 
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(legendX + DOT_R, LEGEND_TOP - 5, DOT_R, 0, Math.PI * 2);
+      ctx.arc(legendX + DOT_R, LEGEND_Y - 4, DOT_R, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = '#94a3b8';
-      ctx.fillText(label, legendX + DOT_R * 2 + 8, LEGEND_TOP);
-      legendX += ctx.measureText(label).width + DOT_R * 2 + 8 + LEGEND_GAP;
+      ctx.fillText(label, legendX + DOT_R * 2 + 6, LEGEND_Y);
+      legendX += ctx.measureText(label).width + DOT_R * 2 + 6 + LEGEND_GAP;
     }
+
+    sectionBottom = LEGEND_Y + 6;
   }
 
-  // Milestone pills
-  const milestones = computeMilestones(props.totalSessions, props.streak, props.sourceTools.length, successRate);
-  if (milestones.length > 0) {
-    const MILESTONE_TOP = LEGEND_TOP + 44;
-    ctx.font = `400 18px ${FONT_STACK}`;
-    let mx = PAD;
-    const M_PAD = 14;
-    const M_PILL_H = 28;
+  // ── Section 5: Strengths Pills ──────────────────────────────────────────────
 
-    for (const m of milestones) {
-      const iconW = ctx.measureText(m.icon).width;
-      const labelW = ctx.measureText(m.label).width;
-      const pillW = iconW + labelW + M_PAD * 2 + 8;
-      const pillTop = MILESTONE_TOP - M_PILL_H * 0.72;
+  const topPatterns = (props.effectivePatterns ?? []).slice(0, 3);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  if (topPatterns.length > 0) {
+    const STRENGTHS_TOP = sectionBottom + 16;
+    const PILL_H = 32;
+    const PILL_PAD_X = 14;
+    const PILL_GAP = 10;
+
+    ctx.font = `600 11px ${FONT_STACK}`;
+    ctx.fillStyle = '#64748b';
+    ctx.letterSpacing = '1.5px';
+    ctx.fillText('STRENGTHS', PAD, STRENGTHS_TOP);
+    ctx.letterSpacing = '0px';
+
+    const PILLS_START_Y = STRENGTHS_TOP + 16;
+    let pillX = PAD;
+    let pillRow = 0;
+    const MAX_ROWS = 2;
+
+    ctx.font = `500 14px ${FONT_STACK}`;
+    for (const pattern of topPatterns) {
+      const starW = ctx.measureText('★').width;
+      const labelW = ctx.measureText(pattern.label).width;
+      const pillW = PILL_PAD_X * 2 + starW + 6 + labelW;
+
+      // Wrap to next row if needed
+      if (pillX + pillW > W - PAD && pillRow < MAX_ROWS - 1) {
+        pillX = PAD;
+        pillRow++;
+      }
+      if (pillRow >= MAX_ROWS) break;
+
+      const pillY = PILLS_START_Y + pillRow * (PILL_H + PILL_GAP);
+
+      ctx.fillStyle = 'rgba(167,139,250,0.1)';
       ctx.beginPath();
-      ctx.roundRect(mx, pillTop, pillW, M_PILL_H, M_PILL_H / 2);
+      ctx.roundRect(pillX, pillY, pillW, PILL_H, PILL_H / 2);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.strokeStyle = 'rgba(167,139,250,0.25)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(mx, pillTop, pillW, M_PILL_H, M_PILL_H / 2);
+      ctx.roundRect(pillX, pillY, pillW, PILL_H, PILL_H / 2);
       ctx.stroke();
 
-      ctx.fillStyle = m.iconColor;
-      ctx.fillText(m.icon, mx + M_PAD, MILESTONE_TOP);
+      const textBaseline = pillY + PILL_H * 0.64;
+      ctx.fillStyle = '#a78bfa';
+      ctx.fillText('★', pillX + PILL_PAD_X, textBaseline);
 
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText(m.label, mx + M_PAD + iconW + 8, MILESTONE_TOP);
+      ctx.fillStyle = '#c4b5fd';
+      ctx.fillText(pattern.label, pillX + PILL_PAD_X + starW + 6, textBaseline);
 
-      mx += pillW + 10;
+      pillX += pillW + PILL_GAP;
     }
   }
 
-  // Divider
-  const FOOTER_TOP = H - 90;
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  // ── Section 6: Footer (pinned to bottom) ────────────────────────────────────
+
+  const DIVIDER_Y = H - 120; // 510
+  const FOOTER_Y = H - 84;   // 546
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(PAD, FOOTER_TOP);
-  ctx.lineTo(W - PAD, FOOTER_TOP);
+  ctx.moveTo(PAD, DIVIDER_Y);
+  ctx.lineTo(W - PAD, DIVIDER_Y);
   ctx.stroke();
 
-  // Footer
   const FOOTER_LOGO_SIZE = 20;
-  const FOOTER_Y = FOOTER_TOP + 36;
-  drawLogo(ctx, PAD, FOOTER_TOP + 12, FOOTER_LOGO_SIZE);
+  drawLogo(ctx, PAD, FOOTER_Y - 14, FOOTER_LOGO_SIZE);
 
   ctx.font = `400 16px ${FONT_STACK}`;
   ctx.fillStyle = '#64748b';
   ctx.fillText('code-insights.app', PAD + FOOTER_LOGO_SIZE + 10, FOOTER_Y);
 
-  ctx.font = `400 14px ${FONT_STACK}`;
-  ctx.fillStyle = '#475569';
-  ctx.fillText('Analyze your AI coding sessions', PAD, FOOTER_Y + 22);
+  // Tool pills in footer center (after URL + 24px gap)
+  const urlW = ctx.measureText('code-insights.app').width;
+  const TOOL_PILL_START_X = PAD + FOOTER_LOGO_SIZE + 10 + urlW + 24;
+  const tools = props.sourceTools.slice(0, 4);
+  const TOOL_PILL_H = 22;
+  const TOOL_PILL_PAD_X = 10;
 
-  const monthYear = getMonthYearFromWeek(props.currentWeek);
-  const footerRight = `Patterns \u00b7 ${monthYear}`;
-  const footerRightW = ctx.measureText(footerRight).width;
-  ctx.fillText(footerRight, W - PAD - footerRightW, FOOTER_Y);
+  ctx.font = `500 11px ${FONT_STACK}`;
+  let toolX = TOOL_PILL_START_X;
+  for (const tool of tools) {
+    const colors = SOURCE_TOOL_PILL_COLORS[tool] ?? { bg: '#1e293b', text: '#94a3b8', border: 'rgba(148,163,184,0.3)' };
+    const label = SOURCE_TOOL_DISPLAY_NAMES[tool] ?? tool;
+    const textW = ctx.measureText(label).width;
+    const pillW = textW + TOOL_PILL_PAD_X * 2;
+
+    ctx.fillStyle = colors.bg;
+    ctx.beginPath();
+    ctx.roundRect(toolX, FOOTER_Y - TOOL_PILL_H + 4, pillW, TOOL_PILL_H, TOOL_PILL_H / 2);
+    ctx.fill();
+
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(toolX, FOOTER_Y - TOOL_PILL_H + 4, pillW, TOOL_PILL_H, TOOL_PILL_H / 2);
+    ctx.stroke();
+
+    ctx.fillStyle = colors.text;
+    ctx.fillText(label, toolX + TOOL_PILL_PAD_X, FOOTER_Y - 1);
+
+    toolX += pillW + 8;
+  }
+
+  // Footer right: #MyCodeStyle hashtag
+  ctx.font = `500 14px ${FONT_STACK}`;
+  ctx.fillStyle = '#a78bfa';
+  ctx.textAlign = 'right';
+  ctx.fillText('#MyCodeStyle', W - PAD, FOOTER_Y);
+  ctx.textAlign = 'left';
 }
 
 /**
