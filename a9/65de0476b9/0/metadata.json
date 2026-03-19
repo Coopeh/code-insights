@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "a965de0476b9",
+  "session_id": "6409d1b4-14bf-41a3-8535-0f10e909476f",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-19T02:21:54.223928Z",
+  "branch": "fix/share-card-blank-image",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "dashboard/src/components/patterns/ShareCardDonut.tsx",
+    "dashboard/src/components/patterns/WorkingStyleShareCard.tsx"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "dbe67c35e423",
+  "token_usage": {
+    "input_tokens": 211,
+    "cache_creation_tokens": 393147,
+    "cache_read_tokens": 15397752,
+    "output_tokens": 42528,
+    "api_call_count": 111
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-19T02:21:53.846466Z",
+    "agent_lines": 0,
+    "human_added": 17,
+    "human_modified": 17,
+    "human_removed": 0,
+    "total_committed": 18,
+    "agent_percentage": 0
+  }
+}
