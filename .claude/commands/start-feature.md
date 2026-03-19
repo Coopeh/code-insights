@@ -73,11 +73,18 @@ Follow this protocol:
    - Task: 'Dev: Read handoff and design docs, prepare questions' (blockedBy: TA + LLM Expert if applicable + PM handoff)
    - Task: 'Dev + TA: Reach consensus on implementation approach' (blockedBy: above) -- SKIP if internal-only
    - Task: 'Dev: Implement feature in worktree' (blockedBy: above)
-   - Task: 'Dev: Create PR and run CI checks' (blockedBy: above)
-   - Task: 'Review: Triple-layer code review' (blockedBy: above)
-   - Task: 'Post review summary to GitHub PR' (blockedBy: above)
+   - Task: 'Dev: Verify feature and create PR' (blockedBy: above) -- includes pre-PR verification protocol
+   - Task: 'Review: Triple-layer code review (loops until 0 FIX NOW)' (blockedBy: above)
+   - Task: 'Post final review summary to GitHub PR' (blockedBy: above)
 
 4. DO YOUR OWN TASK: Work on your handoff task -- prepare context in the GitHub Issue (description, acceptance criteria, relevant doc paths, implementation guidance).
+
+   IMPORTANT — Classify the feature scope for Dev's verification protocol:
+   - Does it touch UI/visual rendering? → Tag: VISUAL
+   - Does it produce output artifacts (images, PDFs, exports)? → Tag: OUTPUT_ARTIFACT
+   - Does it add new npm dependencies? → Tag: NEW_DEPS
+   - Does it change API endpoints? → Tag: API_CHANGE
+   Include these tags in the GitHub Issue so Dev knows which verification tiers apply.
 
 5. REQUEST AGENT SPAWNS: When your handoff task is done, message the orchestrator:
    - If TA is needed: 'SPAWN_REQUEST: ta-agent — [brief context]'
@@ -92,9 +99,13 @@ Follow this protocol:
 
    SKIP LLM Expert if the feature doesn't touch LLM code. Mark the task as completed with note 'Skipped -- no LLM impact'.
 
-6. MONITOR: Check TaskList periodically. When Dev creates a PR, message the orchestrator to trigger /start-review on the PR number.
+6. MONITOR: Check TaskList periodically.
+   - When Dev creates a PR, message the orchestrator: 'REVIEW_REQUEST: PR #XX is ready for /start-review'
+   - The orchestrator will run /start-review which loops until 0 FIX NOW items
+   - If review finds FIX NOW items, the orchestrator sends them to Dev. Dev fixes and pushes. Review re-runs automatically.
+   - You do NOT need to request additional review rounds — the loop is built into /start-review.
 
-7. REPORT: When review is posted, message the orchestrator: 'PR #XX for $ARGUMENTS is ready for founder review and merge.'
+7. REPORT: When review converges (0 FIX NOW items) and final summary is posted, message the orchestrator: 'PR #XX for $ARGUMENTS is ready for founder review and merge.'
 
 IMPORTANT RULES:
 - NEVER merge PRs -- founder-only
@@ -103,7 +114,7 @@ IMPORTANT RULES:
 - If you need user clarification, message the orchestrator who will ask the user
 - You can message existing teammates directly via SendMessage for routine coordination
 - Task dependencies enforce ceremony order -- don't skip steps
-- PRE-PR GATE (MANDATORY): Before any PR is created, `pnpm build` must pass from the repo root with zero errors. If it fails, dev fixes before creating the PR. GitHub Actions costs money — failed CI runs are wasted spend.",
+- PRE-PR GATE (MANDATORY): Before any PR is created, Dev must complete the full verification protocol (see Dev agent instructions). GitHub Actions costs money — failed CI runs are wasted spend.",
   mode: "bypassPermissions"
 }
 ```
@@ -144,7 +155,92 @@ Task {
   name: "dev-agent",
   subagent_type: "engineer",
   team_name: "feat-<slugified-arguments>",
-  prompt: "You are the Dev for feature team feat-<slugified-arguments>. Feature: $ARGUMENTS. Worktree: ../code-insights-<slugified-arguments>/. All code work happens in the worktree. Check TaskList for your tasks. Use SendMessage to communicate with pm-agent. Mark tasks in_progress/completed. PRE-PR GATE (MANDATORY): Before creating any PR, run `pnpm build` from the repo root and verify zero errors. If it fails, fix before creating the PR. This is non-negotiable — failed CI runs waste money.",
+  prompt: "You are the Dev for feature team feat-<slugified-arguments>. Feature: $ARGUMENTS. Worktree: ../code-insights-<slugified-arguments>/. All code work happens in the worktree. Check TaskList for your tasks. Use SendMessage to communicate with pm-agent. Mark tasks in_progress/completed.
+
+## Pre-PR Verification Protocol (MANDATORY)
+
+Before creating any PR, you MUST complete ALL applicable verification tiers. Check the GitHub Issue for scope tags (VISUAL, OUTPUT_ARTIFACT, NEW_DEPS, API_CHANGE) to know which tiers apply.
+
+### Tier 1: Build & Test (ALWAYS required)
+1. Run `pnpm build` from the worktree repo root — must pass with zero errors
+2. Run `pnpm test` from cli/ — must pass
+3. If build or tests fail, fix before proceeding. Do NOT create the PR.
+
+### Tier 2: New Dependency Audit (required if NEW_DEPS tag)
+If you added any new npm dependencies:
+1. Search the library's GitHub issues for known limitations and common gotchas
+2. Read the library's README for caveats, browser compatibility, and unsupported features
+3. Specifically check for: CSS compatibility, serialization constraints, SSR issues, bundle size impact
+4. Document findings in the PR description under '## Dependency Audit'
+5. If you find high-risk limitations, verify your code handles them correctly
+
+### Tier 3: Functional Verification (required if VISUAL or API_CHANGE tag)
+You must verify the feature works by running it:
+
+**Server access:**
+1. First, check if the dev server is already running: `curl -s -o /dev/null -w '%{http_code}' http://localhost:7890/api/health` (or just `http://localhost:7890`)
+2. If the server responds (200), use the existing server — do NOT start a new one
+3. If the server is NOT running, start one:
+   ```bash
+   cd <worktree-path> && node cli/dist/index.js dashboard --no-sync &
+   DEV_SERVER_PID=$!
+   ```
+4. CRITICAL: If you started a server, you MUST kill it when done: `kill $DEV_SERVER_PID`
+5. NEVER leave orphaned server processes running
+
+**For UI features (VISUAL tag):**
+- Navigate to the affected page using agent-browser tools
+- Take a screenshot showing the feature renders correctly
+- Attach the screenshot to the PR description under '## Verification'
+
+**For output-producing features (OUTPUT_ARTIFACT tag):**
+- Trigger the feature (e.g., click download, run export)
+- Verify the output file exists and is non-empty
+- If it's a visual artifact (image, PDF), take a screenshot of the output
+- Attach evidence to the PR description under '## Verification'
+
+**For API changes (API_CHANGE tag):**
+- curl the new/modified endpoints
+- Verify the response shape matches the TypeScript types
+- Include the curl output in the PR description under '## Verification'
+
+### Tier 4: Cleanup
+- If you started a dev server, confirm it's killed: `kill $DEV_SERVER_PID 2>/dev/null`
+- Verify no orphaned node processes on port 7890: `lsof -ti:7890` (should return nothing, or only the user's existing server)
+
+## PR Description Template
+
+Your PR description MUST include these sections:
+
+```markdown
+## Summary
+[What this PR does]
+
+## Dependency Audit (if NEW_DEPS)
+[Library name]: [Known limitations found, or 'No significant limitations found']
+
+## Verification
+- Build: PASS
+- Tests: PASS
+- [Screenshot of feature rendering] (if VISUAL)
+- [Screenshot/proof of output artifact] (if OUTPUT_ARTIFACT)
+- [curl output] (if API_CHANGE)
+
+## Test plan
+- [ ] [Checklist of what to test]
+```
+
+## During Review Rounds
+
+If the review team sends back FIX NOW items:
+1. Read each item carefully
+2. Implement the fixes in the worktree
+3. Re-run applicable verification tiers (at minimum Tier 1)
+4. If fixes are visual, re-capture screenshots
+5. Push the fix commits to the PR branch
+6. Message pm-agent that fixes are pushed
+
+This is non-negotiable — thorough pre-PR verification prevents wasted review cycles and catches bugs that static code review cannot.",
   mode: "bypassPermissions"
 }
 ```
@@ -161,12 +257,17 @@ After spawning agents, your role is active supervisor:
 3. **Intervene when**:
    - PM messages you asking for user clarification -> relay to user
    - An agent is stuck or reports a blocker -> help unblock
-   - PM requests `/start-review` -> run the review command on the PR
-4. **When PM reports "ready for merge"** -> inform the user
+   - PM sends a REVIEW_REQUEST -> run `/start-review` on the PR number
+4. **Review loop management**:
+   - `/start-review` handles the loop internally (runs rounds until 0 FIX NOW items)
+   - If review finds FIX NOW items, relay them to the dev-agent via SendMessage
+   - After dev pushes fixes, `/start-review` re-runs targeted reviewers automatically
+   - If review hits max rounds (4) without converging, escalate to user
+5. **When PM reports "ready for merge"** -> inform the user
 
 ---
 
-## Step 5: Cleanup (After PR Merge)
+## Step 6: Cleanup (After PR Merge)
 
 After the founder merges the PR:
 
@@ -189,3 +290,6 @@ git worktree remove ../code-insights-<slugified-arguments>
 - **All dev work happens in the worktree**
 - **Task dependencies enforce ceremony order** — agents can't skip steps
 - **TA is optional** for internal-only changes — PM decides based on scope
+- **Dev must complete pre-PR verification** — build, test, functional check, dependency audit (as applicable)
+- **Review loops automatically** — orchestrator runs /start-review which iterates until convergence
+- **No orphaned processes** — dev agent must kill any server it starts
