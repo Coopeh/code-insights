@@ -2,6 +2,30 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.3.0] - 2026-03-19
+
+### Added
+
+- **AI Fluency Score card** — Complete redesign of the share card (1200×630 PNG) around a single hero metric: AI Fluency Score (0-100), computed as the grand average of 5 prompt quality dimensions. Features a visual fingerprint of 5 colored bars (context, clarity, focus, timing, orchestration) without numbers — the information gap drives people to run the tool. Includes effective pattern pills, tool logos with labels, and `npx @code-insights/cli` CTA.
+- **PQ dimension scores API** — `computePQScores()` returns per-dimension averages (previously only the grand average). New `PQDimensionScores` type with `overall` + 5 individual dimension scores (each `number | null` for unmeasured dimensions).
+- **Lifetime session count** — All-time session count query alongside the scoring window data, shown as "N total sessions" on the share card.
+- **Token count in aggregation** — Sum of input + output tokens for sessions in the scoring window, displayed as abbreviated format (e.g., "794K tokens").
+- **Tool logo rendering** — Official brand marks for Claude Code (SVG), Cursor, Codex CLI, and GitHub Copilot rendered as 18×18 circles on the Canvas share card. Copilot + Copilot CLI deduplicated to one icon.
+- **Lucide icon Canvas renderer** — `share-card-icons.ts` renders Lucide icon SVG paths directly on Canvas 2D via Path2D.
+
+### Changed
+
+- **Canvas 2D rendering pipeline** — Share card now draws at 2× DPR (2400×1260 internal) and exports at 1200×630 for crisp text on all displays. Replaced the html-to-image library approach entirely.
+- **Share card color palette** — Sky blue → indigo → violet → fuchsia → warm rose progression for fingerprint bars. Designed for distinguishability at thumbnail size.
+- **Evidence lines** — "Score from N sessions · XK tokens · last 4 weeks" and "N total sessions · [tool logos with labels]" replace the old stat boxes.
+
+### Removed
+
+- **Stat boxes** — Sessions/streak/prompt clarity boxes replaced by hero score circle.
+- **Character distribution bar** — Removed from share card.
+- **#MyCodeStyle hashtag** — Replaced by `npx @code-insights/cli` command CTA.
+- **html-to-image dependency** — Removed from dashboard package.json.
+
 ## [4.2.1] - 2026-03-19
 
 ### Fixed
