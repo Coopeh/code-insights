@@ -3,8 +3,8 @@
 // V3: Score card + fingerprint — single hero score, 5 rainbow bars, evidence lines.
 //
 // Resolution: drawn at 2× physical pixels (2400×1260) for HiDPI sharpness,
-// then scaled down to 600×315 for the exported PNG. The 4× effective pixel
-// density relative to the output size ensures crisp rendering on all displays.
+// exported as 1200×630 PNG (OG image standard). The 2× internal resolution
+// ensures crisp text rendering on Retina/HiDPI displays.
 
 import type { PQDimensionScores } from '@/lib/api';
 import {
@@ -564,10 +564,9 @@ export function drawShareCard(
 
 /**
  * Create an ephemeral 2× canvas, draw the share card at HiDPI resolution,
- * then export as a 600×315 PNG. The draw canvas is 2400×1260 (2× of 1200×630
- * logical coords), which is then scaled down to 600×315 for export — this gives
- * 4× effective pixel density relative to the output size, ensuring the exported
- * image looks sharp at all display pixel densities.
+ * then export as a 1200×630 PNG (OG image standard for X, LinkedIn, Slack,
+ * Discord). The draw canvas is 2400×1260 (2× of 1200×630 logical coords)
+ * for crisp text on Retina/HiDPI displays.
  */
 export async function downloadShareCard(props: ShareCardProps): Promise<void> {
   // Pre-load tool logos before drawing (canvas drawImage requires loaded images)
@@ -582,18 +581,14 @@ export async function downloadShareCard(props: ShareCardProps): Promise<void> {
   drawCanvas.height = LOGICAL_H * DPR;  // 1260
   drawShareCard(drawCanvas, props, toolIcons);
 
-  // Export canvas: 600×315 (half the logical size) — 4× density relative to output
-  const EXPORT_W = 600;
-  const EXPORT_H = 315;
-
+  // Export at 1200×630 (OG standard) — scale from 2400×1260 internal (clean 2× downscale)
   const exportCanvas = document.createElement('canvas');
-  exportCanvas.width = EXPORT_W;
-  exportCanvas.height = EXPORT_H;
+  exportCanvas.width = LOGICAL_W;
+  exportCanvas.height = LOGICAL_H;
   const exportCtx = exportCanvas.getContext('2d');
   if (!exportCtx) throw new Error('Failed to get 2D context for export canvas');
 
-  // Scale down with high-quality bicubic resampling (browser default)
-  exportCtx.drawImage(drawCanvas, 0, 0, EXPORT_W, EXPORT_H);
+  exportCtx.drawImage(drawCanvas, 0, 0, LOGICAL_W, LOGICAL_H);
 
   const blob = await new Promise<Blob>((resolve, reject) =>
     exportCanvas.toBlob((b) => {
