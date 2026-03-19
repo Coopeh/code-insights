@@ -138,11 +138,11 @@ function scoreColors(score: number | null): { numberColor: string; arcStart: str
 
 // Fingerprint bar definitions — order matches V3 spec
 const FINGERPRINT_BARS = [
-  { label: 'CONTEXT',       field: 'context_provision',   color: '#6366f1', icon: ICON_BOOK_OPEN,   yCentre: 252 },
-  { label: 'CLARITY',       field: 'request_specificity', color: '#8b5cf6', icon: ICON_TARGET,      yCentre: 284 },
+  { label: 'CONTEXT',       field: 'context_provision',   color: '#38bdf8', icon: ICON_BOOK_OPEN,   yCentre: 252 },
+  { label: 'CLARITY',       field: 'request_specificity', color: '#818cf8', icon: ICON_TARGET,      yCentre: 284 },
   { label: 'FOCUS',         field: 'scope_management',    color: '#a855f7', icon: ICON_EYE,         yCentre: 316 },
   { label: 'TIMING',        field: 'information_timing',  color: '#d946ef', icon: ICON_CLOCK,       yCentre: 348 },
-  { label: 'ORCHESTRATION', field: 'correction_quality',  color: '#ec4899', icon: ICON_GIT_BRANCH,  yCentre: 380 },
+  { label: 'ORCHESTRATION', field: 'correction_quality',  color: '#fb7185', icon: ICON_GIT_BRANCH,  yCentre: 380 },
 ] as const;
 
 // Effective pattern pill colors — cycle through these for top 3 patterns
