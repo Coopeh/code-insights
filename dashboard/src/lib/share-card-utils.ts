@@ -3,9 +3,8 @@
 // V3: Score card + fingerprint — single hero score, 5 rainbow bars, evidence lines.
 //
 // Resolution: drawn at 2× physical pixels (2400×1260) for HiDPI sharpness,
-// exported as a 1200×630 logical PNG via canvas.toBlob. The CSS display size
-// doesn't matter for off-screen rendering; the extra resolution prevents blurriness
-// when shared on social platforms that render at higher pixel densities.
+// then scaled down to 600×315 for the exported PNG. The 4× effective pixel
+// density relative to the output size ensures crisp rendering on all displays.
 
 import type { PQDimensionScores } from '@/lib/api';
 import {
@@ -356,43 +355,54 @@ export function drawShareCard(
   }
 
   // ── Section 5: Evidence Lines (y=420, y=452) ──────────────────────────────────
-  // Expanded — larger text, tool logos with text labels, more vertical space.
+  // Line 1: scoring context — sample size + time window
+  // Line 2: total sessions + tool logos with names
 
   const EVIDENCE_CENTER_X = 600;
   const EVIDENCE_Y1 = 422;
   const EVIDENCE_Y2 = 458;
 
-  // Line 1: [BarChart3 icon] {N} sessions · [Zap icon] {tokens}
+  // Line 1: "Score from {N} sessions · {tokens} · last 4 weeks"
   if (props.totalSessions > 0 || props.dimensionScores) {
     const ICON_SMALL = 16;
+    const prefix = 'Score from ';
     const sessionLabel = `${props.totalSessions} session${props.totalSessions !== 1 ? 's' : ''}`;
     const tokenLabel = abbreviateTokens(props.totalTokens);
-    const separatorLabel = '  ·  ';
+    const windowLabel = 'last 4 weeks';
+    const SEP = '  ·  ';
 
     ctx.font = `500 17px ${FONT_STACK}`;
+    const prefixW = ctx.measureText(prefix).width;
     const sessionW = ctx.measureText(sessionLabel).width;
     const tokenW = ctx.measureText(tokenLabel).width;
-    const sepW = ctx.measureText(separatorLabel).width;
+    const windowW = ctx.measureText(windowLabel).width;
+    const sepW = ctx.measureText(SEP).width;
 
-    const line1TotalW = ICON_SMALL + 6 + sessionW + sepW + ICON_SMALL + 6 + tokenW;
+    const line1TotalW = prefixW + sessionW + sepW + tokenW + sepW + windowW;
     let x1 = EVIDENCE_CENTER_X - line1TotalW / 2;
 
-    drawIcon(ctx, ICON_BAR_CHART_3, x1, EVIDENCE_Y1 - ICON_SMALL / 2 - 1, ICON_SMALL, '#64748b');
-    x1 += ICON_SMALL + 6;
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(prefix, x1, EVIDENCE_Y1);
+    x1 += prefixW;
 
     ctx.fillStyle = '#94a3b8';
     ctx.fillText(sessionLabel, x1, EVIDENCE_Y1);
     x1 += sessionW;
 
     ctx.fillStyle = '#3a3a52';
-    ctx.fillText(separatorLabel, x1, EVIDENCE_Y1);
+    ctx.fillText(SEP, x1, EVIDENCE_Y1);
     x1 += sepW;
-
-    drawIcon(ctx, ICON_ZAP, x1, EVIDENCE_Y1 - ICON_SMALL / 2 - 1, ICON_SMALL, '#64748b');
-    x1 += ICON_SMALL + 6;
 
     ctx.fillStyle = '#94a3b8';
     ctx.fillText(tokenLabel, x1, EVIDENCE_Y1);
+    x1 += tokenW;
+
+    ctx.fillStyle = '#3a3a52';
+    ctx.fillText(SEP, x1, EVIDENCE_Y1);
+    x1 += sepW;
+
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(windowLabel, x1, EVIDENCE_Y1);
   } else {
     ctx.font = `500 17px ${FONT_STACK}`;
     ctx.fillStyle = '#475569';
@@ -401,9 +411,9 @@ export function drawShareCard(
     ctx.textAlign = 'left';
   }
 
-  // Line 2: {N} lifetime · [logo] Tool Name [logo] Tool Name ...
+  // Line 2: {N} total sessions · [logo] Tool Name [logo] Tool Name ...
   {
-    const lifetimeLabel = `${props.lifetimeSessions} lifetime`;
+    const lifetimeLabel = `${props.lifetimeSessions} total sessions`;
     const dedupedTools = deduplicateToolsForIcons(props.sourceTools).slice(0, 4);
     const LOGO_PX = 20;
     const LOGO_TEXT_GAP = 6;
@@ -411,7 +421,7 @@ export function drawShareCard(
     const SEP = '  ·  ';
 
     ctx.font = `400 15px ${FONT_STACK}`;
-    const lifetimeW = ctx.measureText(lifetimeLabel).width;
+    const totalSessionsW = ctx.measureText(lifetimeLabel).width;
     const sepW2 = ctx.measureText(SEP).width;
 
     // Pre-measure each tool entry width: logo + gap + label text
@@ -427,12 +437,12 @@ export function drawShareCard(
       ? toolEntries.reduce((s, e) => s + e.entryW, 0) + (toolEntries.length - 1) * LOGO_ENTRY_GAP
       : 0;
 
-    const line2TotalW = lifetimeW + (toolEntries.length > 0 ? sepW2 + logosW : 0);
+    const line2TotalW = totalSessionsW + (toolEntries.length > 0 ? sepW2 + logosW : 0);
     let x2 = EVIDENCE_CENTER_X - line2TotalW / 2;
 
     ctx.fillStyle = '#64748b';
     ctx.fillText(lifetimeLabel, x2, EVIDENCE_Y2);
-    x2 += lifetimeW;
+    x2 += totalSessionsW;
 
     if (toolEntries.length > 0) {
       ctx.fillStyle = '#3a3a52';
@@ -554,25 +564,39 @@ export function drawShareCard(
 
 /**
  * Create an ephemeral 2× canvas, draw the share card at HiDPI resolution,
- * then export as a 1200×630 PNG. The 2× internal resolution ensures the
- * exported image looks sharp when rendered at social-media pixel densities.
+ * then export as a 600×315 PNG. The draw canvas is 2400×1260 (2× of 1200×630
+ * logical coords), which is then scaled down to 600×315 for export — this gives
+ * 4× effective pixel density relative to the output size, ensuring the exported
+ * image looks sharp at all display pixel densities.
  */
 export async function downloadShareCard(props: ShareCardProps): Promise<void> {
   // Pre-load tool logos before drawing (canvas drawImage requires loaded images)
   const toolIcons = await loadToolIcons(props.sourceTools);
 
+  // Internal draw canvas: 1200×630 logical, 2400×1260 physical (DPR=2)
   const LOGICAL_W = 1200;
   const LOGICAL_H = 630;
 
-  const canvas = document.createElement('canvas');
-  // Physical pixel dimensions at 2× — gives HiDPI sharpness in exported PNG
-  canvas.width = LOGICAL_W * DPR;
-  canvas.height = LOGICAL_H * DPR;
-  drawShareCard(canvas, props, toolIcons);
+  const drawCanvas = document.createElement('canvas');
+  drawCanvas.width = LOGICAL_W * DPR;   // 2400
+  drawCanvas.height = LOGICAL_H * DPR;  // 1260
+  drawShareCard(drawCanvas, props, toolIcons);
 
-  // Export at the physical (2400×1260) size — social platforms downsample cleanly
+  // Export canvas: 600×315 (half the logical size) — 4× density relative to output
+  const EXPORT_W = 600;
+  const EXPORT_H = 315;
+
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = EXPORT_W;
+  exportCanvas.height = EXPORT_H;
+  const exportCtx = exportCanvas.getContext('2d');
+  if (!exportCtx) throw new Error('Failed to get 2D context for export canvas');
+
+  // Scale down with high-quality bicubic resampling (browser default)
+  exportCtx.drawImage(drawCanvas, 0, 0, EXPORT_W, EXPORT_H);
+
   const blob = await new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => {
+    exportCanvas.toBlob((b) => {
       if (b) resolve(b);
       else reject(new Error('canvas.toBlob returned null'));
     }, 'image/png')
