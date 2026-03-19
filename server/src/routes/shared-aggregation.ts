@@ -150,6 +150,7 @@ export interface AggregatedData {
   sourceTools: string[];     // distinct AI tool identifiers used within the scope
   pqDeficits: AggregatedPQCategory[];
   pqStrengths: AggregatedPQCategory[];
+  pqAverageScore: number | null;  // grand average of 5 PQ dimension scores (0-100), null if no PQ data
 }
 
 /**
@@ -410,6 +411,7 @@ export function getAggregatedData(
   }
 
   const { pqDeficits, pqStrengths } = aggregatePQFindings(db, where, params);
+  const pqAverageScore = computePQAverageScore(db, where, params);
 
   return {
     frictionCategories: mergedFriction,
@@ -426,6 +428,7 @@ export function getAggregatedData(
     sourceTools: sourceToolRows.map(r => r.source_tool),
     pqDeficits,
     pqStrengths,
+    pqAverageScore,
   };
 }
 
@@ -481,4 +484,69 @@ export function aggregatePQFindings(
       .sort((a, b) => b.count - a.count);
 
   return { pqDeficits: toSorted(deficitCounts), pqStrengths: toSorted(strengthCounts) };
+}
+
+/**
+ * Compute the grand average of PQ dimension scores across all prompt_quality insights in scope.
+ * Parses metadata.dimension_scores from each insight row and averages the 5 standard dimensions.
+ * Returns null if no PQ insights exist in scope or none have dimension_scores.
+ */
+export function computePQAverageScore(
+  db: ReturnType<typeof getDb>,
+  where: string,
+  params: (string | number)[]
+): number | null {
+  const hasWhere = where.length > 0;
+  const extraPrefix = hasWhere ? 'AND' : 'WHERE';
+
+  const rows = db.prepare(`
+    SELECT i.metadata
+    FROM insights i
+    JOIN sessions s ON i.session_id = s.id
+    ${where}
+    ${extraPrefix} i.type = 'prompt_quality'
+  `).all(...params) as Array<{ metadata: string }>;
+
+  const DIMENSION_KEYS = [
+    'context_provision',
+    'request_specificity',
+    'scope_management',
+    'information_timing',
+    'correction_quality',
+  ] as const;
+
+  const sums: Record<string, number> = {};
+  const counts: Record<string, number> = {};
+  for (const key of DIMENSION_KEYS) {
+    sums[key] = 0;
+    counts[key] = 0;
+  }
+
+  for (const row of rows) {
+    let metadata: Record<string, unknown>;
+    try { metadata = JSON.parse(row.metadata); } catch { continue; }
+    const scores = metadata.dimension_scores;
+    if (typeof scores !== 'object' || scores === null || Array.isArray(scores)) continue;
+    const scoresObj = scores as Record<string, unknown>;
+    for (const key of DIMENSION_KEYS) {
+      const val = scoresObj[key];
+      if (typeof val === 'number' && val >= 0 && val <= 100) {
+        sums[key] += val;
+        counts[key]++;
+      }
+    }
+  }
+
+  // Compute per-dimension averages for dimensions that have at least one data point
+  const dimAverages: number[] = [];
+  for (const key of DIMENSION_KEYS) {
+    if (counts[key] > 0) {
+      dimAverages.push(sums[key] / counts[key]);
+    }
+  }
+
+  if (dimAverages.length === 0) return null;
+
+  const grand = dimAverages.reduce((s, v) => s + v, 0) / dimAverages.length;
+  return Math.round(grand);
 }

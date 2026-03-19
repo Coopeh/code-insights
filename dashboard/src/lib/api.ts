@@ -261,6 +261,7 @@ export interface FacetAggregation {
   streak: number;
   sourceToolCount: number;
   sourceTools: string[];
+  pqAverageScore: number | null;
 }
 
 export function fetchFacetAggregation(params?: {
