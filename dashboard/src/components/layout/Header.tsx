@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Github,
   Sparkles,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,7 +38,11 @@ const NAV_ITEMS = [
 // Bottom tab bar shows the first 4 primary nav items
 const BOTTOM_TABS = NAV_ITEMS.slice(0, 4);
 
-export function Header() {
+interface HeaderProps {
+  onOpenSearch?: () => void;
+}
+
+export function Header({ onOpenSearch }: HeaderProps) {
   const { pathname } = useLocation();
 
   const isActive = (href: string, exact: boolean) =>
@@ -122,6 +127,22 @@ export function Header() {
 
           {/* Right section */}
           <div className="ml-auto flex items-center gap-1">
+            {/* Search hint — desktop only (lg+), teaches Cmd+K shortcut */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden lg:flex items-center gap-2 h-8 w-48 text-xs text-muted-foreground justify-between px-3"
+              onClick={onOpenSearch}
+            >
+              <span className="flex items-center gap-1.5">
+                <Search className="h-3.5 w-3.5" />
+                Search...
+              </span>
+              <kbd className="text-[10px] bg-muted px-1.5 py-0.5 rounded border font-mono">
+                ⌘K
+              </kbd>
+            </Button>
+
             <ThemeToggle />
 
             <Button

@@ -2,11 +2,16 @@ import { Hono } from 'hono';
 import { getDb } from '@code-insights/cli/db/client';
 import { parseIntParam } from '../utils.js';
 
+/** Escape SQLite LIKE wildcard characters so user input is treated as literal text. */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, '\\$&');
+}
+
 const app = new Hono();
 
 app.get('/', (c) => {
   const db = getDb();
-  const { projectId, sourceTool, limit, offset } = c.req.query();
+  const { projectId, sourceTool, limit, offset, q, from, to } = c.req.query();
 
   const conditions: string[] = [];
   const params: (string | number)[] = [];
@@ -19,7 +24,19 @@ app.get('/', (c) => {
     conditions.push('source_tool = ?');
     params.push(sourceTool);
   }
-
+  if (q) {
+    const likeParam = `%${escapeLike(q)}%`;
+    conditions.push("(custom_title LIKE ? ESCAPE '\\' OR generated_title LIKE ? ESCAPE '\\' OR summary LIKE ? ESCAPE '\\' OR project_name LIKE ? ESCAPE '\\')");
+    params.push(likeParam, likeParam, likeParam, likeParam);
+  }
+  if (from) {
+    conditions.push('started_at >= ?');
+    params.push(from);
+  }
+  if (to) {
+    conditions.push('started_at <= ?');
+    params.push(to);
+  }
   conditions.push('deleted_at IS NULL');
   const where = `WHERE ${conditions.join(' AND ')}`;
   const sessions = db.prepare(`
