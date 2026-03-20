@@ -7,9 +7,14 @@ set -euo pipefail
 branch=$(git branch --show-current 2>/dev/null || echo "")
 
 if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
-  echo "BLOCKED: You are on '$branch'. Agents must not commit directly to the main branch."
-  echo "Create a feature branch first: git checkout -b feature/<description>"
-  exit 2
+  jq -n --arg branch "$branch" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: "You are on \($branch). Agents must not commit directly to the main branch. Create a feature branch first: git checkout -b feature/<description>"
+    }
+  }'
+  exit 0
 fi
 
 exit 0

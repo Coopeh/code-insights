@@ -6,6 +6,10 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+if [ ! -f "$REPO_ROOT/package.json" ]; then
+  echo "ERROR: Could not determine repo root from $REPO_ROOT" >&2
+  exit 1
+fi
 cd "$REPO_ROOT"
 
 echo "Running build..." >&2
