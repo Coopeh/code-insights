@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "25a0928becb5",
+  "session_id": "873e822f-4271-44c3-a58d-b095ed7590ee",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-20T10:54:50.250299Z",
+  "branch": "fix/hook-enforcement",
+  "checkpoints_count": 13,
+  "files_touched": [
+    ".claude/hookify.tdd-domain-check.local.md",
+    ".claude/hookify.use-git-rm-for-tracked-files.local.md",
+    ".claude/hooks/block-local-merge.sh",
+    ".claude/hooks/block-pr-merge.sh",
+    ".claude/hooks/check-branch-before-commit.sh",
+    ".claude/hooks/check-rm-tracked.sh",
+    ".claude/hooks/ci-gate.sh",
+    ".gitignore"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "97d398215950",
+  "token_usage": {
+    "input_tokens": 1062,
+    "cache_creation_tokens": 330294,
+    "cache_read_tokens": 7559824,
+    "output_tokens": 26108,
+    "api_call_count": 89
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-20T10:54:50.144915Z",
+    "agent_lines": 114,
+    "human_added": 4,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 118,
+    "agent_percentage": 96.61016949152543
+  }
+}
