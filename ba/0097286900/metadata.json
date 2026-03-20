@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "ba0097286900",
+  "strategy": "manual-commit",
+  "branch": "fix/hook-enforcement",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/hooks/block-local-merge.sh",
+    ".claude/hooks/block-pr-merge.sh",
+    ".claude/hooks/check-branch-before-commit.sh",
+    ".claude/hooks/check-rm-tracked.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ba/0097286900/0/metadata.json",
+      "transcript": "/ba/0097286900/0/full.jsonl",
+      "context": "/ba/0097286900/0/context.md",
+      "content_hash": "/ba/0097286900/0/content_hash.txt",
+      "prompt": "/ba/0097286900/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1094,
+    "cache_creation_tokens": 348869,
+    "cache_read_tokens": 10463777,
+    "output_tokens": 34417,
+    "api_call_count": 113
+  }
+}

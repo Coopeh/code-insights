@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "ba0097286900",
+  "session_id": "873e822f-4271-44c3-a58d-b095ed7590ee",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-20T11:47:12.495561Z",
+  "branch": "fix/hook-enforcement",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".claude/hooks/block-local-merge.sh",
+    ".claude/hooks/block-pr-merge.sh",
+    ".claude/hooks/check-branch-before-commit.sh",
+    ".claude/hooks/check-rm-tracked.sh"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "657bd109d2f9",
+  "token_usage": {
+    "input_tokens": 1094,
+    "cache_creation_tokens": 348869,
+    "cache_read_tokens": 10463777,
+    "output_tokens": 34417,
+    "api_call_count": 113
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-20T11:47:12.326119Z",
+    "agent_lines": 49,
+    "human_added": 4,
+    "human_modified": 8,
+    "human_removed": 0,
+    "total_committed": 61,
+    "agent_percentage": 80.32786885245902
+  }
+}
