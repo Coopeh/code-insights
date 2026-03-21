@@ -70,11 +70,21 @@ export function parseAnalysisResponse(response: string): ParseResult<AnalysisRes
     if (!Array.isArray(parsed.facets.effective_patterns)) parsed.facets.effective_patterns = [];
   }
 
-  // Observability: warn when LLM still uses "tooling-limitation".
-  // Monitors whether FRICTION_CLASSIFICATION_GUIDANCE is working.
-  // Remove after confirming classification quality over ~20 new sessions.
+  // Observability: two-tier tooling-limitation monitor.
+  // Tier 1: _reasoning contains signals that suggest misclassification → likely wrong category.
+  // Tier 2: no conflicting signals → generic reminder to verify.
+  // Re-evaluate after ~30 sessions with improved FRICTION_CLASSIFICATION_GUIDANCE.
   if (parsed.facets?.friction_points?.some(fp => fp.category === 'tooling-limitation')) {
-    console.warn('[friction-monitor] LLM classified friction as "tooling-limitation" — verify this is a genuine tool limitation, not an agent/rate-limit/approach issue');
+    const MISCLASS_SIGNALS = /rate.?limit|throttl|crash|lost state|wrong tool|didn.t know|older version|used to work/i;
+    const toolingFps = parsed.facets.friction_points.filter(fp => fp.category === 'tooling-limitation');
+    for (const fp of toolingFps) {
+      const match = fp._reasoning ? fp._reasoning.match(MISCLASS_SIGNALS)?.[0] : null;
+      if (match) {
+        console.warn(`[friction-monitor] Likely misclassification: "tooling-limitation" with reasoning mentioning "${match}" — review category`);
+      } else {
+        console.warn('[friction-monitor] LLM classified friction as "tooling-limitation" — verify genuine tool limitation');
+      }
+    }
   }
 
   // Observability: warn when LLM returns effective_pattern without category or driver field,

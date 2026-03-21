@@ -10,15 +10,22 @@ FRICTION CLASSIFICATION GUIDANCE:
 Each friction point captures WHAT went wrong (category + description), WHO contributed (attribution), and WHY you classified it that way (_reasoning).
 
 CATEGORIES — classify the TYPE of gap or obstacle:
-- "wrong-approach": A strategy was pursued that didn't fit the task — wrong architecture, wrong tool, wrong pattern
-- "knowledge-gap": Incorrect knowledge was applied about a library, API, framework, or language feature
-- "stale-assumptions": Work proceeded from assumptions about current state that were incorrect (stale files, changed config, different environment)
-- "incomplete-requirements": Instructions were missing critical context, constraints, or acceptance criteria
-- "context-loss": Prior decisions or constraints established earlier in the session were lost or forgotten
-- "scope-creep": Work expanded beyond the boundaries of the stated task
-- "repeated-mistakes": The same or similar error occurred multiple times despite earlier correction
-- "documentation-gap": Relevant docs existed but were inaccessible or unfindable during the session
-- "tooling-limitation": The tool genuinely lacked a needed capability
+- "wrong-approach": A strategy was pursued that didn't fit the task — wrong architecture, wrong tool, wrong pattern. Includes choosing a suboptimal tool when a better one was available.
+- "knowledge-gap": Incorrect knowledge was applied about a library, API, framework, or language feature. The capability existed but was used wrong.
+- "stale-assumptions": Work proceeded from assumptions about current state that were incorrect (stale files, changed config, different environment, tool behavior changed between versions).
+- "incomplete-requirements": Instructions were missing critical context, constraints, or acceptance criteria needed to proceed correctly.
+- "context-loss": Prior decisions or constraints established earlier in the session were lost or forgotten.
+- "scope-creep": Work expanded beyond the boundaries of the stated task.
+- "repeated-mistakes": The same or similar error occurred multiple times despite earlier correction.
+- "documentation-gap": Relevant docs existed but were inaccessible or unfindable during the session.
+- "tooling-limitation": The AI coding tool or its underlying model genuinely could not perform a needed action — missing file system access, unsupported language feature, context window overflow, inability to run a specific command type. Diagnostic: Could ANY user prompt or approach have worked around this? If yes → it is NOT tooling-limitation. NOT this category if: the tool was rate-limited (create "rate-limit-hit"), an agent crashed or lost state (use wrong-approach or create "agent-orchestration-failure"), the wrong tool was chosen (wrong-approach), the user didn't know the tool could do something (knowledge-gap), or the tool worked differently than expected (stale-assumptions).
+
+DISAMBIGUATION — categories frequently confused:
+- tooling-limitation vs wrong-approach: Limitation = the tool CANNOT do it (no workaround exists). Wrong-approach = the tool CAN do it but a suboptimal method was chosen.
+- tooling-limitation vs knowledge-gap: Limitation = the capability genuinely does not exist. Knowledge-gap = the capability exists but was applied incorrectly.
+- tooling-limitation vs stale-assumptions: Limitation = permanent gap in the tool. Stale-assumptions = the tool USED TO work differently or the assumption about current behavior was wrong.
+- wrong-approach vs knowledge-gap: Wrong-approach = strategic choice (chose library X over Y). Knowledge-gap = factual error (used library X's API incorrectly).
+- incomplete-requirements vs context-loss: Incomplete = the information was NEVER provided. Context-loss = it WAS provided earlier but was forgotten or dropped.
 
 When no category fits, create a specific kebab-case category. A precise novel category is better than a vague canonical one.
 
