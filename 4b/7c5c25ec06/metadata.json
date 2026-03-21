@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "4b7c5c25ec06",
+  "strategy": "manual-commit",
+  "branch": "improve/dynamic-review-specialists",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".claude/agents/technical-architect.md",
+    ".claude/commands/start-review.md",
+    "docs/AGENTS.md",
+    "docs/QA.md",
+    "docs/REVIEW-SPECIALISTS.md",
+    "docs/postmortems/2026-03-21-search-escape-bug.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4b/7c5c25ec06/0/metadata.json",
+      "transcript": "/4b/7c5c25ec06/0/full.jsonl",
+      "context": "/4b/7c5c25ec06/0/context.md",
+      "content_hash": "/4b/7c5c25ec06/0/content_hash.txt",
+      "prompt": "/4b/7c5c25ec06/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3880,
+    "cache_creation_tokens": 304125,
+    "cache_read_tokens": 3013622,
+    "output_tokens": 25819,
+    "api_call_count": 31
+  }
+}
