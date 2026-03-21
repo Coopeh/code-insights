@@ -21,7 +21,7 @@ The strategy is **surgical, not universal**. Dashboard components and CLI comman
 | **MUST TDD** | Normalizers | `server/src/llm/*-normalize.ts` | 85%+ |
 | **MUST TDD** | Migrations | `cli/src/db/migrate.ts`, `schema.ts` | 90%+ |
 | **MUST TDD** | Shared utilities | `server/src/utils.ts`, `cli/src/utils/` | 85%+ |
-| **SHOULD TDD** | API routes | `server/src/routes/` | 70%+ |
+| **SHOULD TDD** | API routes | `server/src/routes/` | 70%+ (smoke test required for complex SQL routes) |
 | **SKIP TDD** | Dashboard components | `dashboard/src/` | — |
 | **SKIP TDD** | CLI command wiring | `cli/src/commands/`, `cli/src/index.ts` | — |
 
@@ -46,6 +46,8 @@ Pure functions with deterministic input/output. The cost of testing is minimal; 
 **SHOULD TDD: API Routes**
 
 High-value but harder to test due to SQLite coupling and Hono server setup. Worth testing for critical business logic (pagination, filtering, date ranges), but not required for every route.
+
+**Complex SQL Routes — Smoke Test Required:** Routes with non-trivial SQL must have at least a smoke test that runs the prepared statement against an in-memory SQLite database. A route qualifies as "complex SQL" if its queries use ANY of: `ESCAPE`, `CASE`, multi-table `JOIN` (beyond simple FK lookup), `GROUP BY` with `HAVING`, subqueries, or CTEs. These constructs interact with the JS runtime in ways that static code review cannot reliably verify (e.g., template literal escaping of SQL strings). A smoke test catches these at test time instead of in production.
 
 **SKIP TDD: Dashboard Components**
 
