@@ -2,6 +2,31 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.4.0] - 2026-03-21
+
+### Added
+
+- **Global search & command palette** — `Cmd+K` opens a full-text search across sessions, insights, and patterns. Results show highlighted matches with context and link directly to the relevant page. New `/api/search` endpoint with `q`, date range, and outcome filter params.
+- **Advanced session filtering** — Sessions page gains date range picker, outcome filter (success/mixed/failure), and saved filter presets that persist in localStorage.
+- **Insight type multi-select pills** — Replaced the single-select dropdown on Insights page with multi-select pill chips for filtering by insight type, with saved filter support.
+- **React ErrorBoundary** — Dashboard-wide error boundary prevents white-screen crashes, showing a recovery UI instead.
+
+### Fixed
+
+- **Tooling-limitation friction classification** — Improved LLM prompt accuracy for distinguishing `tooling-limitation` from other friction categories across all providers.
+- **SQLite BUSY/LOCKED handling** — `write.ts` now handles `SQLITE_BUSY` and `SQLITE_CONSTRAINT` errors gracefully instead of crashing.
+- **Cursor provider JSON.parse guard** — Unguarded `JSON.parse()` calls in the Cursor provider no longer crash on malformed data.
+- **TOCTOU race in Claude Code provider** — `fs.statSync()` guarded against `ENOENT` race conditions during file discovery.
+- **Graceful LLM provider errors** — Provider initialization failures now show user-friendly messages instead of stack traces.
+- **File discovery warning** — CLI warns when total discovered files across providers exceeds 500, helping users diagnose slow syncs.
+
+### Improved
+
+- **Type safety hardening** — API validation with `Array.isArray` guards, shared `safeParseJson` helper, union exhaustiveness checks, and metadata narrowing across server routes.
+- **Standardized error responses** — `requireLLM()` helper returns consistent `{ error }` JSON shape across all LLM-dependent routes.
+- **Removed deprecated code** — Deleted legacy prompt exports from `prompts.ts`, removed `[cot-monitor]` and `[pq-monitor]` console.warn calls.
+- **Ollama provider resilience** — Improved error handling and response parsing for the Ollama LLM provider.
+
 ## [4.3.0] - 2026-03-19
 
 ### Added

@@ -72,7 +72,7 @@ code-insights dashboard
 
 Opens the built-in React dashboard at `http://localhost:7890`. The dashboard provides:
 
-- **Session Browser** — search, filter, soft-delete, and view full session details with chat view
+- **Session Browser** — global search (`Cmd+K`), advanced filters (date range, outcome, saved presets), soft-delete, and full session details with chat view
 - **Analytics** — usage patterns, cost trends, activity charts
 - **LLM Insights** — AI-generated summaries, decisions, learnings, and prompt quality analysis (7 deficit + 3 strength categories with dimension scores)
 - **Patterns** — weekly cross-session synthesis: friction points (with attribution), effective patterns (with driver classification), working style rules, and shareable AI Fluency Score card (downloadable 1200×630 PNG with score circle, fingerprint bars, and effective patterns)

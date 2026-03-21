@@ -18,7 +18,7 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
 | **6. Distribution** ✅ | npm publish + docs | `@code-insights/cli` on npm, landing page at code-insights.app |
 
 ### Pending from earlier phases
-- **2.3 Enhanced Filtering** — Full-text search, saved filters/bookmarks
+- ~~**2.3 Enhanced Filtering** — Full-text search, saved filters/bookmarks~~ → Delivered in Phase 11 (v4.4.0)
 - **3.4 Learning Journal** — Auto-generated "lessons learned" from sessions
 - **5.2 Slash Commands** — `/insights`, `/insights today`, `/insights decisions`
 - **6.3 Plugin Architecture** — Custom insight extractors, dashboard widget API (deferred)
@@ -225,6 +225,31 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
 | 4.1.0 | 10 | Zero-config first-run experience, dashboard auto-sync, guided empty states | ✅ Done |
 | 4.2.0 | 10 | Shareable working style card (1200×630 PNG export), computed milestones, streak fix | ✅ Done |
 | 4.3.0 | 10 | AI Fluency Score card V3, PQ dimension scores, conservative palette, tool logos | ✅ Done |
+| 4.4.0 | 11 | Global search & command palette, advanced filtering, reliability hardening | ✅ Done |
+
+---
+
+## Phase 11: Search, Filtering & Reliability ✅
+
+**Goal:** Full-text search, advanced filtering, and crash-proofing the entire stack
+
+### Milestones
+
+- [x] **11.1 Global Search & Command Palette** (v4.4.0, PRs #214–#216) ✅
+  - `Cmd+K` command palette with full-text search across sessions, insights, and patterns
+  - `/api/search` endpoint with `q`, date range, and outcome filter params
+  - Advanced session filtering: date range, outcome, saved filter presets (localStorage)
+  - Insight type multi-select pills replacing single-select dropdown
+
+- [x] **11.2 Reliability Hardening** (v4.4.0, PRs #217–#226) ✅
+  - React ErrorBoundary for dashboard crash prevention
+  - SQLite BUSY/LOCKED/CONSTRAINT error handling
+  - JSON.parse guards across Cursor provider and server response parsers
+  - TOCTOU race fix in Claude Code provider file discovery
+  - Type safety: `Array.isArray` guards, `safeParseJson`, union exhaustiveness
+  - Graceful LLM provider error messages, file discovery warning (>500 files)
+  - Removed deprecated prompt exports and monitoring console.warns
+  - Improved tooling-limitation friction classification accuracy
 
 ---
 
