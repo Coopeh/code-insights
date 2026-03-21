@@ -100,9 +100,12 @@ Add to the TA review checklist: *"If SQL queries are inside template literals, v
 |---|--------|--------|
 | 1 | Fix `ESCAPE` clauses in `search.ts` | Done |
 | 2 | Release patch version | Pending |
-| 3 | Add post-fix verification to review template | Pending |
-| 4 | Revise QA policy for server routes with complex SQL | Pending |
-| 5 | Create hookify rule for template literal ESCAPE detection | Pending |
-| 6 | Add template literal SQL check to TA review checklist | Pending |
+| 3 | Add post-fix verification to review template | Done (PR #227) |
+| 4 | Revise QA policy for server routes with complex SQL | Done (PR #227) |
+| 5 | ~~Create hookify rule for template literal ESCAPE detection~~ | Superseded — replaced by dynamic domain specialists with Runtime Verification Rule (PR #227) |
+| 6 | ~~Add template literal SQL check to TA review checklist~~ | Superseded — SQL/Database Specialist covers this domain (PR #227) |
+| 7 | Replace static Outsider/Wild Card with dynamic domain specialists | Done (PR #227) |
+| 8 | Add Runtime Verification Rule to all specialist prompts | Done (PR #227) |
+| 9 | Update TA synthesis to enforce VERIFY AT RUNTIME items | Done (PR #227) |
 
-Items 3-6 to be addressed in a dedicated review process improvement session.
+Items 5-6 were superseded by a systemic approach: dynamic domain specialists with a shared Runtime Verification Rule that catches the general class of "static reasoning about runtime behavior" bugs, rather than specific pattern checks.

@@ -176,13 +176,14 @@ If any gate fails, the review is blocked — PR goes back to dev for the missing
 | Role | Reviewer | Focus |
 |------|----------|-------|
 | **INSIDER** | `technical-architect` | Type alignment, schema contract, architecture patterns, dep audit review |
-| **OUTSIDER** | `code-review:code-review` skill | Security, best practices, logic bugs, fresh perspective |
-| **WILD CARD** | `code-review:code-review` skill *(conditional)* | Edge cases, assumptions, hidden complexity |
+| **DOMAIN SPECIALIST(S)** | 1-2 dynamic specialists via `code-review:code-review` | Domain-deep review + general engineering baseline (see `REVIEW-SPECIALISTS.md`) |
 | **LLM EXPERT** | `llm-expert` *(conditional)* | Prompt quality, token efficiency, model selection, output consistency |
+
+**Domain specialists** are selected dynamically based on PR content. See `docs/REVIEW-SPECIALISTS.md` for the full registry (SQL/Database, React/Frontend, Node/CLI, Parser/Provider) and selection algorithm.
 
 **LLM Expert invoked when PR touches:** `server/src/llm/`, LLM API calls, structured output schemas, SSE streaming, token budgets, or model selection logic.
 
-**Wild Card invoked when:** New feature with multiple files, complex business logic, schema impact, 200+ lines changed.
+**All specialists include the Runtime Verification Rule:** when runtime behavior isn't self-evident from reading (escaping, encoding, regex, serialization, type coercion, async timing), flag as VERIFY AT RUNTIME instead of reasoning about correctness.
 
 **CRITICAL:** Phase 1 reviews run in parallel. No reviewer reads another's comments during initial review.
 
@@ -193,22 +194,29 @@ TA reads all review comments, does 2nd pass, creates consolidated list:
 ```markdown
 ## TA Synthesis: [PR Title] — Round N
 **FIX NOW:** 1. [blocking issue and fix]
+**VERIFY AT RUNTIME:** 1. [item] - Required evidence: [what dev must run and paste]
 **NOT APPLICABLE:** 1. [comment] - Reason: [justification]
 **SUGGESTIONS:** 1. [non-blocking recommendation]
 **Final Verdict:** PASS (ready for merge) / CHANGES REQUIRED (Round N+1 needed)
 ```
 
-### Phase 3: Dev Implements Fixes
+**VERIFY AT RUNTIME items cannot be dismissed.** TA synthesis MUST NOT mark these as NOT APPLICABLE — they require runtime evidence from the dev.
 
-Dev receives consolidated list, implements fixes, re-runs verification protocol, updates PR.
+### Phase 3: Dev Implements Fixes + Post-Fix Re-Verification
+
+Dev receives consolidated list, implements fixes, then:
+1. Re-runs ALL functional verification commands from the original PR body
+2. Pastes updated verification output as a PR comment
+3. For VERIFY AT RUNTIME items, pastes the specific runtime output requested
+4. Fixes without re-verification evidence are not considered complete
 
 ### Phase 4: Review Loop (Rounds 2+)
 
-If FIX NOW items exist after synthesis:
-1. Dev fixes and pushes
-2. Targeted re-review: only reviewers whose areas had FIX NOW items
+If FIX NOW or VERIFY AT RUNTIME items exist after synthesis:
+1. Dev fixes, re-verifies, and pushes
+2. Targeted re-review: only reviewers whose areas had actionable items
 3. TA re-synthesizes
-4. Repeat until 0 FIX NOW items or max 4 rounds (then escalate to founder)
+4. Repeat until 0 FIX NOW and 0 VERIFY AT RUNTIME items, or max 4 rounds (then escalate to founder)
 
 **Round 2+ is targeted** — don't re-run all reviewers for a one-line fix.
 

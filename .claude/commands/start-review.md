@@ -19,28 +19,41 @@ Use `gh pr view $ARGUMENTS` to get PR title, description, and diff stats.
 Use `gh pr diff $ARGUMENTS` to get the diff.
 
 Determine the PR scope:
-- Count files changed and lines changed
+- Count files changed and lines changed per file
 - Identify if it touches schema concerns (types.ts, SQLite schema, server API)
-- Decide if Wild Card reviewer is needed (see criteria below)
+- Classify changed files into domains for specialist selection (Step 2)
 
 ---
 
-## Step 2: Determine Review Scope
+## Step 2: Select Domain Specialists
 
-**Invoke Wild Card (3rd reviewer) if ANY of these apply:**
-- New feature with multiple files changed
-- Complex business logic
-- Schema impact (types.ts, SQLite migrations, server API changes)
-- Architectural changes
-- 200+ lines of changes
+Instead of fixed generalist reviewers, select 1-2 **domain specialists** based on what the PR actually changes. Each specialist combines deep domain expertise with general engineering awareness. See `docs/REVIEW-SPECIALISTS.md` for the full specialist registry and prompt templates.
 
-**Skip Wild Card if ALL of these apply:**
-- Simple bug fix (< 50 lines)
-- Single file change
-- Straightforward UI/component change
-- Config/CI changes only
+### Domain Classification
 
-**Invoke LLM Expert (4th reviewer) if ANY of these apply:**
+Classify each changed file into a domain based on file patterns:
+
+| Domain | File Pattern Triggers |
+|--------|----------------------|
+| **SQL/Database** | `server/src/routes/*.ts` (when containing SQL keywords), `cli/src/db/*.ts` |
+| **React/Frontend** | `dashboard/src/**/*.tsx`, `dashboard/src/**/*.ts` |
+| **Node/CLI** | `cli/src/commands/*.ts`, `cli/src/utils/*.ts`, `server/src/*.ts` (non-route, non-LLM) |
+| **Parser/Provider** | `cli/src/providers/**/*.ts`, `cli/src/parser/*.ts` |
+| **LLM** | `server/src/llm/**/*.ts` — handled by LLM Expert (separate, unchanged) |
+
+Files that don't match any domain (e.g., `package.json`, `tsconfig.json`, `.gitignore`, `CLAUDE.md`) are ignored during classification.
+
+### Selection Algorithm
+
+1. For each domain, sum the lines changed across all files in that domain
+2. **Primary specialist** = domain with the most lines changed
+3. **Secondary specialist** = next domain IF it has >= 30% of total changed lines AND is a different domain
+4. Cap at **2 domain specialists** (LLM Expert is a separate conditional reviewer)
+5. If a PR changes ONLY non-domain files, use the **Node/CLI Specialist** as general-purpose
+
+### LLM Expert (Conditional — Unchanged)
+
+**Invoke LLM Expert if ANY of these apply:**
 - PR touches `server/src/llm/` (prompts, providers, export-prompts)
 - PR adds or modifies LLM API calls
 - PR changes structured output schemas or SSE streaming
@@ -119,10 +132,11 @@ If the PR produces visual output (images, PDFs, charts, OG cards, share cards, e
 
 Track the current round number. Round 1 is the initial review. Round 2+ are follow-up reviews after fixes.
 
-**For Round 1**: Launch all applicable reviewers (TA, Outsider, Wild Card, LLM Expert).
-**For Round 2+**: Launch only targeted reviewers — those whose prior findings had FIX NOW items that were addressed. Skip reviewers whose prior findings were all resolved or NOT APPLICABLE.
+**For Round 1**: Launch all applicable reviewers (TA Insider, Domain Specialist(s), LLM Expert if applicable).
+**For Round 2+**: Launch only targeted reviewers — those whose prior findings had FIX NOW or VERIFY AT RUNTIME items that were addressed. Skip reviewers whose prior findings were all resolved or NOT APPLICABLE.
 
-**Launch TA Insider Review:**
+### Launch TA Insider Review (Always)
+
 ```
 Task {
   name: "ta-reviewer",
@@ -158,34 +172,34 @@ Task {
 }
 ```
 
-**Launch Outsider Review:**
+### Launch Domain Specialist Reviews (1-2, Dynamic)
+
+For each selected specialist from Step 2, launch a review agent using the prompt template from `docs/REVIEW-SPECIALISTS.md`. Use the `superpowers:code-reviewer` subagent type for all domain specialists.
+
+**Important:** Copy the full prompt template from the specialist registry, including:
+- The domain-specific checks (80% focus)
+- The general engineering checks (20% focus)
+- The **Runtime Verification Rule** (shared instruction — include verbatim)
+- The Round 2+ fix verification instructions (if applicable)
+
 ```
 Task {
-  name: "outsider-reviewer",
+  name: "[domain]-specialist",          // e.g., "sql-specialist", "react-specialist"
   subagent_type: "superpowers:code-reviewer",
-  prompt: "You are performing an independent OUTSIDER review of PR #$ARGUMENTS in the code-insights repo. This is review ROUND [N].
-
-  Fetch the PR diff using: gh pr diff $ARGUMENTS
-
-  Review for:
-  - Security issues (XSS, injection, auth bypass)
-  - Best practices (React, TypeScript, Node.js)
-  - Logic bugs and edge cases
-  - Performance concerns
-  - Accessibility issues
-  - Third-party library misuse (check if APIs are used correctly per their docs)
-
-  [FOR ROUND 2+: Focus on verifying the fixes for these specific items from Round [N-1]: [LIST PRIOR FIX NOW ITEMS]. Also check that fixes didn't introduce new issues.]
-
-  Output a structured review with findings categorized as:
-  - 🔴 FIX NOW (blocking — must fix before merge)
-  - 🟡 SUGGESTION (recommended but not blocking)
-  - 🔵 NOTE (informational)",
+  prompt: "[FULL PROMPT FROM docs/REVIEW-SPECIALISTS.md FOR THE SELECTED DOMAIN]",
   mode: "bypassPermissions"
 }
 ```
 
-**Launch LLM Expert Review (if applicable):**
+**Example:** If Step 2 selected SQL/Database (primary) and React/Frontend (secondary), launch:
+
+```
+Task { name: "sql-specialist", subagent_type: "superpowers:code-reviewer", prompt: "[SQL/Database prompt]", mode: "bypassPermissions" }
+Task { name: "react-specialist", subagent_type: "superpowers:code-reviewer", prompt: "[React/Frontend prompt]", mode: "bypassPermissions" }
+```
+
+### Launch LLM Expert Review (If Applicable — Unchanged)
+
 ```
 Task {
   name: "llm-expert-reviewer",
@@ -207,6 +221,13 @@ Task {
 
   Rate each prompt on: clarity (1-5), token efficiency (1-5), output consistency (1-5), resilience (1-5).
 
+  RUNTIME VERIFICATION RULE:
+  When you encounter code where the runtime behavior is NOT self-evident from
+  reading — flag it as 🟠 VERIFY AT RUNTIME instead of reasoning about correctness.
+  1. State what you THINK the behavior is
+  2. State what the RISK is if you're wrong
+  3. Require the dev to paste actual runtime output proving correctness
+
   [FOR ROUND 2+: Focus on verifying the fixes for these specific items from Round [N-1]: [LIST PRIOR FIX NOW ITEMS]. Also check that fixes didn't introduce new issues.]
 
   Output your review in the structured format:
@@ -214,37 +235,10 @@ Task {
   ### Prompt Quality Assessment
   ### Token Efficiency
   ### Model Selection
-  ### Issues Found (with priority markers: 🔴 FIX NOW, 🟡 SUGGESTION, 🔵 NOTE)
+  ### Issues Found (with priority markers: 🔴 FIX NOW, 🟠 VERIFY AT RUNTIME, 🟡 SUGGESTION, 🔵 NOTE)
   ### Recommendations
 
   DO NOT look at any other review comments. Your review must be independent.",
-  mode: "bypassPermissions"
-}
-```
-
-**Launch Wild Card Review (if applicable):**
-```
-Task {
-  name: "wildcard-reviewer",
-  subagent_type: "superpowers:code-reviewer",
-  prompt: "You are performing an independent WILD CARD review of PR #$ARGUMENTS in the code-insights repo. This is review ROUND [N].
-
-  Fetch the PR diff using: gh pr diff $ARGUMENTS
-
-  Your role is to provide a fresh perspective with NO constraints:
-  - Challenge assumptions in the implementation
-  - Look for edge cases others might miss
-  - Question whether the approach is the simplest that could work
-  - Check for hidden complexity or tech debt being introduced
-  - Look at error handling from a user's perspective
-  - If new dependencies were added, think about what could go wrong at runtime (not just in code review)
-
-  [FOR ROUND 2+: Focus on verifying the fixes for these specific items from Round [N-1]: [LIST PRIOR FIX NOW ITEMS]. Also check that fixes didn't introduce new issues.]
-
-  Output a structured review with findings categorized as:
-  - 🔴 FIX NOW (blocking — must fix before merge)
-  - 🟡 SUGGESTION (recommended but not blocking)
-  - 🔵 NOTE (informational)",
   mode: "bypassPermissions"
 }
 ```
@@ -301,14 +295,21 @@ After synthesis is complete, check the Final Verdict:
 2. **If part of /start-feature**: Message the PM agent that review is complete and PR is ready for founder merge.
 3. **If standalone**: Inform the user the PR is approved.
 
-### If CHANGES REQUIRED (1+ FIX NOW items):
+### If CHANGES REQUIRED (1+ FIX NOW or VERIFY AT RUNTIME items):
 
 1. **Post round summary to GitHub PR** (see template below)
-2. **Send FIX NOW items to dev agent** (or user if standalone):
+2. **Send actionable items to dev agent** (or user if standalone):
    - List each FIX NOW item with clear description of what needs to change
+   - List each VERIFY AT RUNTIME item with the specific runtime output needed
    - Reference specific files and line numbers where possible
 3. **Wait for fixes to be pushed** — dev agent pushes fix commits to the PR branch
-4. **After fixes are pushed**: Dev must re-verify (build passes, and if visual: re-attach updated artifact)
+4. **Post-fix re-verification gate (MANDATORY):**
+   - Dev MUST re-run ALL functional verification commands from the original PR body
+   - Dev MUST paste updated verification output as a PR comment
+   - If the PR had curl examples, re-run them and paste the responses
+   - If the PR had screenshot evidence, re-capture after fixes
+   - For VERIFY AT RUNTIME items, dev MUST paste the specific runtime output requested
+   - **Fixes without re-verification evidence are not considered complete**
 5. **Go back to Step 3** with Round N+1, targeting only the reviewers whose areas were affected
 
 ### Loop Safety
@@ -324,12 +325,12 @@ gh pr comment $ARGUMENTS --body "$(cat <<'EOF'
 ## Triple-Layer Code Review — Round [N] of [TOTAL]
 
 ### Reviewers
-| Role | Focus | This Round |
-|------|-------|------------|
-| TA (Insider) | Pattern compliance, schema impact, architecture | [Active/Skipped] |
-| Outsider | Security, best practices, logic bugs | [Active/Skipped] |
-| LLM Expert | Prompt quality, token efficiency, model selection | [Active/Skipped/N/A] |
-| Wild Card | Edge cases, fresh perspective | [Active/Skipped/N/A] |
+| Role | Domain | This Round |
+|------|--------|------------|
+| TA (Insider) | Architecture, types, schema | [Active/Skipped] |
+| [Specialist 1 name] | [Domain] | [Active/Skipped] |
+| [Specialist 2 name] | [Domain] | [Active/Skipped/N/A] |
+| LLM Expert | Prompt quality, token efficiency | [Active/Skipped/N/A] |
 
 ### Pre-Review Gates
 - [ ] New dependency audit: [PASS/N/A]
@@ -340,16 +341,19 @@ gh pr comment $ARGUMENTS --body "$(cat <<'EOF'
 #### 🔴 FIX NOW
 [List from synthesis — empty if PASS]
 
+#### 🟠 VERIFY AT RUNTIME
+[Items requiring runtime evidence — empty if none]
+
 #### ❌ NOT APPLICABLE
 [List with technical rationale]
 
 #### 🟡 SUGGESTIONS
 [Non-blocking items]
 
-### Verification
-[Status of fixes if any were applied]
+### Post-Fix Verification
+[For Round 2+: paste re-run of original functional verification commands + VERIFY AT RUNTIME evidence]
 
-**Round [N] verdict: [PASS — Ready for merge | CHANGES REQUIRED — see FIX NOW items]**
+**Round [N] verdict: [PASS — Ready for merge | CHANGES REQUIRED — see FIX NOW / VERIFY AT RUNTIME items]**
 EOF
 )"
 ```
@@ -360,9 +364,12 @@ EOF
 
 - **NEVER merge the PR** — founder-only
 - **Reviews MUST be independent** — no reviewer sees another's output during Phase 1
-- **TA synthesis is authoritative** — TA can mark outsider comments as "NOT APPLICABLE" with technical justification
+- **TA synthesis is authoritative** — TA can mark specialist comments as "NOT APPLICABLE" with technical justification, EXCEPT for VERIFY AT RUNTIME items (see below)
+- **VERIFY AT RUNTIME items cannot be dismissed** — TA synthesis MUST NOT mark these as NOT APPLICABLE. They require runtime evidence from the dev before they can be resolved
+- **Domain specialists are selected dynamically** — see Step 2 and `docs/REVIEW-SPECIALISTS.md` for the registry
 - **Always post summary to GitHub PR** — this creates the audit trail
-- **Review loops until 0 FIX NOW items** — a single pass is not sufficient if blocking issues exist
+- **Review loops until 0 FIX NOW and 0 VERIFY AT RUNTIME items** — a single pass is not sufficient if blocking issues exist
+- **Post-fix re-verification is mandatory** — after Round N fixes, dev must re-run ALL functional verification from the PR body and paste updated output
 - **Pre-review gates are mandatory** — missing verification evidence blocks the review from starting
 - **Max 4 rounds** — escalate to founder if review doesn't converge
 - **Round 2+ is targeted** — don't waste reviewer cycles re-reviewing areas with no changes
