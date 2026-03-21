@@ -1,0 +1,21 @@
+We recently introduced Cmd+K search.. but that is not searching for session text/insights? What was the point?
+
+---
+
+it doesn't work for title as well.. look at the screenshot - i have a session with title policy enforcement and still the search says it couldn't find anything
+
+---
+
+why was this not identified in the code review process. this is exactly what should have been identified in the triple layer review we run. What should we change in the review process to make such issues surface during the development and not late after release
+
+---
+
+[Request interrupted by user]
+
+---
+
+why was this not identified in the code review process. this is exactly what should have been identified in the triple layer review we run. What should we change in the review process to make such issues surface during the development and not late after release
+
+---
+
+capture this in detail in a doc and for now, fix the issue and release patch - we will look at fine tuning our review process and ceremony steps in a detailed session later
