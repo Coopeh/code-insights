@@ -37,19 +37,19 @@ app.get('/', (c) => {
       summary,
       git_branch,
       CASE
-        WHEN custom_title LIKE ? ESCAPE '\' THEN 'title'
-        WHEN generated_title LIKE ? ESCAPE '\' THEN 'title'
-        WHEN summary LIKE ? ESCAPE '\' THEN 'summary'
+        WHEN custom_title LIKE ? ESCAPE '\\' THEN 'title'
+        WHEN generated_title LIKE ? ESCAPE '\\' THEN 'title'
+        WHEN summary LIKE ? ESCAPE '\\' THEN 'summary'
         ELSE 'title'
       END AS match_field
     FROM sessions
     WHERE deleted_at IS NULL
       AND (
-        custom_title LIKE ? ESCAPE '\'
-        OR generated_title LIKE ? ESCAPE '\'
-        OR summary LIKE ? ESCAPE '\'
-        OR project_name LIKE ? ESCAPE '\'
-        OR git_branch LIKE ? ESCAPE '\'
+        custom_title LIKE ? ESCAPE '\\'
+        OR generated_title LIKE ? ESCAPE '\\'
+        OR summary LIKE ? ESCAPE '\\'
+        OR project_name LIKE ? ESCAPE '\\'
+        OR git_branch LIKE ? ESCAPE '\\'
       )
     ORDER BY started_at DESC
     LIMIT ?
@@ -85,9 +85,9 @@ app.get('/', (c) => {
     JOIN sessions s ON i.session_id = s.id
     WHERE s.deleted_at IS NULL
       AND (
-        i.title LIKE ? ESCAPE '\'
-        OR i.content LIKE ? ESCAPE '\'
-        OR i.summary LIKE ? ESCAPE '\'
+        i.title LIKE ? ESCAPE '\\'
+        OR i.content LIKE ? ESCAPE '\\'
+        OR i.summary LIKE ? ESCAPE '\\'
       )
     ORDER BY i.created_at DESC
     LIMIT ?
