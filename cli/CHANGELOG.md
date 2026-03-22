@@ -2,6 +2,16 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.6.1] - 2026-03-22
+
+### Added
+
+- **User profile for share cards** — New localStorage-based profile (name + GitHub username) that personalizes the AI Fluency Score card footer with a circular avatar and name. Profile section on Settings page with live avatar preview. Profile prompt dialog shown before download if profile is incomplete.
+
+### Fixed
+
+- **Avatar CORS on share card** — GitHub's avatar redirect (`github.com/{user}.png` → `avatars.githubusercontent.com`) strips CORS headers, breaking Canvas export. Avatars are now fetched from `avatars.githubusercontent.com` directly and cached as base64 data URLs in localStorage — works offline, no CORS issues.
+
 ## [4.6.0] - 2026-03-22
 
 ### Changed
