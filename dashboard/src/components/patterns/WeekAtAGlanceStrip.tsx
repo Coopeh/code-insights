@@ -13,6 +13,7 @@ import { SESSION_CHARACTER_COLORS, SESSION_CHARACTER_LABELS } from '@/lib/consta
 import { downloadShareCard } from '@/lib/share-card-utils';
 import { ProfilePromptDialog } from '@/components/ProfilePromptDialog';
 import { useUserProfile, isProfileComplete } from '@/hooks/useUserProfile';
+import type { UserProfile } from '@/hooks/useUserProfile';
 import type { PQDimensionScores } from '@/lib/api';
 
 interface WeekAtAGlanceStripProps {
@@ -105,12 +106,16 @@ export function WeekAtAGlanceStrip({
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const { profile } = useUserProfile();
 
-  const triggerDownload = useCallback(async () => {
-    if (!displayTagline) return;
+  // profileOverride: pass the just-saved profile from the dialog's onSave callback to avoid
+  // a stale closure — React hasn't re-rendered yet when onSave fires, so the hook value
+  // still holds the old (incomplete) profile. The override bypasses the stale value.
+  const triggerDownload = useCallback(async (profileOverride?: UserProfile) => {
+    if (isDownloading || !displayTagline) return;
     setIsDownloading(true);
     try {
-      const userProfile = isProfileComplete(profile) && profile
-        ? { name: profile.name, avatarUrl: `https://github.com/${profile.githubUsername}.png` }
+      const activeProfile = profileOverride ?? profile;
+      const userProfile = activeProfile && isProfileComplete(activeProfile)
+        ? { name: activeProfile.name, avatarUrl: `https://github.com/${activeProfile.githubUsername}.png` }
         : undefined;
       await downloadShareCard({
         tagline: displayTagline,
@@ -129,7 +134,7 @@ export function WeekAtAGlanceStrip({
     } finally {
       setIsDownloading(false);
     }
-  }, [displayTagline, pqScores, totalSessions, totalTokens, lifetimeSessions, sourceTools, currentWeek, effectivePatterns, profile]);
+  }, [isDownloading, displayTagline, pqScores, totalSessions, totalTokens, lifetimeSessions, sourceTools, currentWeek, effectivePatterns, profile]);
 
   const handleDownload = useCallback(() => {
     if (isDownloading || !displayTagline) return;
@@ -145,9 +150,11 @@ export function WeekAtAGlanceStrip({
       <ProfilePromptDialog
         open={profileDialogOpen}
         onOpenChange={setProfileDialogOpen}
-        onSave={() => {
+        onSave={(savedProfile) => {
           setProfileDialogOpen(false);
-          triggerDownload();
+          // Pass savedProfile directly — React hasn't re-rendered yet so the hook
+          // value is still stale. The override ensures the card includes the profile.
+          triggerDownload(savedProfile);
         }}
         onSkip={() => {
           setProfileDialogOpen(false);

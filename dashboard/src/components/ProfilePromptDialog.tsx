@@ -10,11 +10,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUserProfile, normalizeGithubUsername } from '@/hooks/useUserProfile';
+import type { UserProfile } from '@/hooks/useUserProfile';
 
 interface ProfilePromptDialogProps {
   open: boolean;
-  /** Called when the user saves the profile — the download should proceed after this. */
-  onSave: () => void;
+  /**
+   * Called when the user saves the profile.
+   * Receives the just-saved profile so the caller can use it immediately
+   * without waiting for a React re-render (avoids stale closure on triggerDownload).
+   */
+  onSave: (profile: UserProfile) => void;
   /** Called when the user skips — the download should proceed without profile. */
   onSkip: () => void;
   onOpenChange: (open: boolean) => void;
@@ -54,7 +59,9 @@ export function ProfilePromptDialog({
   function handleSave() {
     if (!canSave) return;
     saveProfile(name, githubUsername);
-    onSave();
+    // Pass the saved profile directly so the caller can use it immediately
+    // without waiting for a React re-render (avoids stale closure on triggerDownload)
+    onSave({ name: name.trim(), githubUsername: normalizeGithubUsername(githubUsername) });
   }
 
   function handleSkip() {
