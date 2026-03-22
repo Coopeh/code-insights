@@ -3,7 +3,7 @@
   "checkpoint_id": "2cb7af912872",
   "strategy": "manual-commit",
   "branch": "improve/readme-rewrite",
-  "checkpoints_count": 2,
+  "checkpoints_count": 5,
   "files_touched": [
     "README.md",
     "cli/README.md"
@@ -22,13 +22,20 @@
       "context": "/2c/b7af912872/1/context.md",
       "content_hash": "/2c/b7af912872/1/content_hash.txt",
       "prompt": "/2c/b7af912872/1/prompt.txt"
+    },
+    {
+      "metadata": "/2c/b7af912872/2/metadata.json",
+      "transcript": "/2c/b7af912872/2/full.jsonl",
+      "context": "/2c/b7af912872/2/context.md",
+      "content_hash": "/2c/b7af912872/2/content_hash.txt",
+      "prompt": "/2c/b7af912872/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 2838,
-    "cache_creation_tokens": 413784,
-    "cache_read_tokens": 2690511,
-    "output_tokens": 16626,
-    "api_call_count": 41
+    "input_tokens": 2918,
+    "cache_creation_tokens": 620452,
+    "cache_read_tokens": 6506983,
+    "output_tokens": 34356,
+    "api_call_count": 89
   }
 }

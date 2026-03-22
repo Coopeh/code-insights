@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "2cb7af912872",
+  "session_id": "e1c9d4f0-f6a5-4719-9857-1d47e8565066",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-22T08:54:37.88417Z",
+  "branch": "improve/readme-rewrite",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "README.md",
+    "cli/README.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "aec470a6cadb",
+  "token_usage": {
+    "input_tokens": 80,
+    "cache_creation_tokens": 206668,
+    "cache_read_tokens": 3816472,
+    "output_tokens": 17730,
+    "api_call_count": 48
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-22T08:54:37.687347Z",
+    "agent_lines": 82,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 82,
+    "agent_percentage": 100
+  }
+}
