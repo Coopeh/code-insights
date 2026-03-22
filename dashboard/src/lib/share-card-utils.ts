@@ -29,6 +29,7 @@ export interface ShareCardProps {
   sourceTools: string[];
   currentWeek: string;         // for month/year in header
   effectivePatterns?: Array<{ label: string; frequency: number }>; // top 3 by frequency
+  userProfile?: { name: string; avatarUrl: string }; // footer identity — optional, graceful fallback
 }
 
 /** Truncate text to fit within maxWidth, appending ellipsis if needed. */
@@ -153,6 +154,22 @@ const PATTERN_PILL_COLORS = [
 ];
 
 /**
+ * Load the user's GitHub avatar for use in the share card footer.
+ * Returns null if the URL is empty or the image fails to load (CORS or 404).
+ * crossOrigin must be set before src to avoid canvas taint.
+ */
+async function loadAvatarImage(avatarUrl: string): Promise<HTMLImageElement | null> {
+  if (!avatarUrl) return null;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // must be set before src
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = avatarUrl;
+  });
+}
+
+/**
  * Draw the full share card onto the given canvas.
  * The canvas must be set to LOGICAL_W * DPR × LOGICAL_H * DPR before calling.
  * ctx.scale(DPR, DPR) is applied internally — all coordinates use logical pixels.
@@ -162,7 +179,8 @@ const PATTERN_PILL_COLORS = [
 export function drawShareCard(
   canvas: HTMLCanvasElement,
   props: ShareCardProps,
-  toolIcons: Map<string, HTMLImageElement>
+  toolIcons: Map<string, HTMLImageElement>,
+  avatarImage?: HTMLImageElement | null
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -529,11 +547,31 @@ export function drawShareCard(
   ctx.stroke();
 
   const FOOTER_LOGO_SIZE = 22;
-  drawLogo(ctx, PAD, FOOTER_Y - FOOTER_LOGO_SIZE + 4, FOOTER_LOGO_SIZE);
 
-  ctx.font = `400 15px ${FONT_STACK}`;
-  ctx.fillStyle = '#475569';
-  ctx.fillText('code-insights.app', PAD + FOOTER_LOGO_SIZE + 10, FOOTER_Y);
+  if (props.userProfile && avatarImage) {
+    // Draw circular avatar clipped to circle
+    const AVATAR_R = FOOTER_LOGO_SIZE / 2; // 11px radius
+    const avatarCX = PAD + AVATAR_R;
+    const avatarCY = FOOTER_Y - AVATAR_R + 4;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(avatarCX, avatarCY, AVATAR_R, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(avatarImage, avatarCX - AVATAR_R, avatarCY - AVATAR_R, FOOTER_LOGO_SIZE, FOOTER_LOGO_SIZE);
+    ctx.restore();
+
+    ctx.font = `400 15px ${FONT_STACK}`;
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(props.userProfile.name, PAD + FOOTER_LOGO_SIZE + 10, FOOTER_Y);
+  } else {
+    // Fallback: current layout (logo + site URL)
+    drawLogo(ctx, PAD, FOOTER_Y - FOOTER_LOGO_SIZE + 4, FOOTER_LOGO_SIZE);
+
+    ctx.font = `400 15px ${FONT_STACK}`;
+    ctx.fillStyle = '#475569';
+    ctx.fillText('code-insights.app', PAD + FOOTER_LOGO_SIZE + 10, FOOTER_Y);
+  }
 
   // CLI CTA: `npx @code-insights/cli` — monospace, terminal-style with subtle bg
   const CLI_CMD = 'npx @code-insights/cli';
@@ -569,8 +607,11 @@ export function drawShareCard(
  * for crisp text on Retina/HiDPI displays.
  */
 export async function downloadShareCard(props: ShareCardProps): Promise<void> {
-  // Pre-load tool logos before drawing (canvas drawImage requires loaded images)
-  const toolIcons = await loadToolIcons(props.sourceTools);
+  // Pre-load tool logos and avatar before drawing (canvas drawImage requires loaded images)
+  const [toolIcons, avatarImage] = await Promise.all([
+    loadToolIcons(props.sourceTools),
+    props.userProfile ? loadAvatarImage(props.userProfile.avatarUrl) : Promise.resolve(null),
+  ]);
 
   // Internal draw canvas: 1200×630 logical, 2400×1260 physical (DPR=2)
   const LOGICAL_W = 1200;
@@ -579,7 +620,7 @@ export async function downloadShareCard(props: ShareCardProps): Promise<void> {
   const drawCanvas = document.createElement('canvas');
   drawCanvas.width = LOGICAL_W * DPR;   // 2400
   drawCanvas.height = LOGICAL_H * DPR;  // 1260
-  drawShareCard(drawCanvas, props, toolIcons);
+  drawShareCard(drawCanvas, props, toolIcons, avatarImage);
 
   // Export at 1200×630 (OG standard) — scale from 2400×1260 internal (clean 2× downscale)
   const exportCanvas = document.createElement('canvas');
