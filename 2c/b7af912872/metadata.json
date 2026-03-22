@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "2cb7af912872",
+  "strategy": "manual-commit",
+  "branch": "improve/readme-rewrite",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "cli/README.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/2c/b7af912872/0/metadata.json",
+      "transcript": "/2c/b7af912872/0/full.jsonl",
+      "context": "/2c/b7af912872/0/context.md",
+      "content_hash": "/2c/b7af912872/0/content_hash.txt",
+      "prompt": "/2c/b7af912872/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 153643,
+    "cache_read_tokens": 794987,
+    "output_tokens": 8792,
+    "api_call_count": 14
+  }
+}

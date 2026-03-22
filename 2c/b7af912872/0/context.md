@@ -1,0 +1,20 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+What next for the app? Ask @"devtools-cofounder (agent)"
+
+### Prompt 2
+
+I think we should build the content around this.. What sort of blog posts can we write and then start publishing.. List down 5 next post ideas and ask me which one to create a draft for. recommend the posts sequence as well
+
+### Prompt 3
+
+create this plan into a markdown file in the web repo @../code-insights-web/docs/content/ folder. And then draft the first blog in @../code-insights-web/src/content/blog folder
+
+### Prompt 4
+
+create a PR with publish date as today. i will preview on vercel and comment any changes
+
