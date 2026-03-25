@@ -9,7 +9,7 @@
  */
 
 import chalk from 'chalk';
-import { loadConfig, saveConfig, ensureConfigDir } from './config.js';
+import { loadConfig, saveConfig } from './config.js';
 import type { ClaudeInsightConfig } from '../types.js';
 
 const OLLAMA_URL = 'http://localhost:11434';
@@ -82,7 +82,6 @@ export async function autoDetectOllama(): Promise<void> {
     },
   };
 
-  ensureConfigDir();
   saveConfig(updatedConfig);
 
   console.log(
