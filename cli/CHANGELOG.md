@@ -2,6 +2,22 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.7.0] - 2026-03-25
+
+### Added
+
+- **Ollama auto-detection** — On `code-insights sync` or `code-insights dashboard`, if no LLM is configured, the CLI probes localhost:11434 for a running Ollama instance. If found, auto-configures the best available model (preferring llama3.3 → qwen3:14b → mistral → qwen2.5-coder) and persists to config. Zero manual setup required.
+
+- **Dashboard LLM nudge banner** — Insights and Patterns pages now show a dismissible info banner when no LLM provider is configured, guiding users to set up Ollama (free & local) or any other provider. Dismissal persists via localStorage. Uses existing `useLlmConfig()` hook — no extra network requests.
+
+- **README Ollama callout** — Prominent "Free & Local" section near the top of the README highlighting zero-config Ollama support.
+
+### Changed
+
+- **Unified Ollama model list** — CLI and dashboard now recommend the same modern models: llama3.3, qwen3:14b, mistral, qwen2.5-coder. Previously the CLI suggested older models (llama3.2, codellama).
+
+- **Improved auto-detect confirmation message** — Changed from "using" to "configured" with a next-step hint pointing users to the dashboard Analyze button.
+
 ## [4.6.1] - 2026-03-22
 
 ### Added
