@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "cfbcd8703ac9",
+  "session_id": "adaee4a7-36bc-4972-8e33-6dc31f082422",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-28T11:21:37.017609Z",
+  "branch": "docs/native-analysis-plan",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "docs/plans/2026-03-28-native-analysis-hooks.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "d7d079d869d2",
+  "token_usage": {
+    "input_tokens": 453,
+    "cache_creation_tokens": 212196,
+    "cache_read_tokens": 5618506,
+    "output_tokens": 39816,
+    "api_call_count": 50
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-28T11:21:36.806462Z",
+    "agent_lines": 597,
+    "human_added": 38,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 635,
+    "agent_percentage": 94.01574803149606
+  }
+}
