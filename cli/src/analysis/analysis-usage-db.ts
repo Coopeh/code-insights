@@ -70,7 +70,9 @@ export function saveAnalysisUsage(data: SaveAnalysisUsageData): void {
       estimated_cost_usd = excluded.estimated_cost_usd,
       duration_ms = excluded.duration_ms,
       chunk_count = excluded.chunk_count,
-      session_message_count = excluded.session_message_count
+      -- Preserve existing value when caller doesn't provide session_message_count (server re-analysis).
+      -- Without COALESCE, a NULL from excluded would overwrite a CLI-written value, breaking resume detection.
+      session_message_count = COALESCE(excluded.session_message_count, analysis_usage.session_message_count)
   `).run(
     data.session_id,
     data.analysis_type,

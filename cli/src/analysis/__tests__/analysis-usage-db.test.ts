@@ -145,6 +145,41 @@ describe('saveAnalysisUsage SQL logic', () => {
     expect(row.input_tokens).toBe(200);
     expect(row.session_message_count).toBe(15);
   });
+
+  it('preserves existing session_message_count when upsert omits it (COALESCE guard)', () => {
+    // Regression: server-side re-analysis calls don't provide session_message_count.
+    // Without COALESCE, the NULL from excluded would clobber the CLI-written value,
+    // breaking resume detection on the next hook invocation.
+    const db = createTestDb();
+
+    // CLI writes the row with session_message_count = 42
+    db.prepare(`
+      INSERT INTO analysis_usage
+        (session_id, analysis_type, provider, model,
+         input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
+         estimated_cost_usd, duration_ms, chunk_count, session_message_count)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(session_id, analysis_type) DO UPDATE SET
+        input_tokens = excluded.input_tokens,
+        session_message_count = COALESCE(excluded.session_message_count, analysis_usage.session_message_count)
+    `).run('sess-1', 'session', 'anthropic', 'model-a', 100, 50, 0, 0, 0.001, null, 1, 42);
+
+    // Server re-analyzes — does NOT provide session_message_count (null)
+    db.prepare(`
+      INSERT INTO analysis_usage
+        (session_id, analysis_type, provider, model,
+         input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
+         estimated_cost_usd, duration_ms, chunk_count, session_message_count)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(session_id, analysis_type) DO UPDATE SET
+        input_tokens = excluded.input_tokens,
+        session_message_count = COALESCE(excluded.session_message_count, analysis_usage.session_message_count)
+    `).run('sess-1', 'session', 'openai', 'gpt-4o', 200, 80, 0, 0, 0.005, null, 1, null);
+
+    const row = db.prepare('SELECT * FROM analysis_usage WHERE session_id = ?').get('sess-1') as AnalysisUsageRow & { session_message_count: number | null };
+    expect(row.input_tokens).toBe(200);       // updated by server re-analysis
+    expect(row.session_message_count).toBe(42); // preserved — NOT clobbered by NULL
+  });
 });
 
 // ── getSessionAnalysisUsage SQL logic ─────────────────────────────────────────
