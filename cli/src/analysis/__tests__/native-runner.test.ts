@@ -1,6 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock child_process and fs before importing the module under test.
 vi.mock('child_process', () => ({
@@ -19,10 +17,29 @@ const mockExecFileSync = vi.mocked(execFileSync);
 const mockWriteFileSync = vi.mocked(writeFileSync);
 const mockUnlinkSync = vi.mocked(unlinkSync);
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Build the JSON envelope that `claude -p --output-format json` actually returns.
+ * The LLM text lives in the result event's `result` field.
+ */
+function makeEnvelope(llmText: string, isError = false): string {
+  return JSON.stringify([
+    { type: 'system', subtype: 'init', session_id: 'test-session' },
+    { type: 'assistant', message: { content: [{ type: 'text', text: llmText }] } },
+    {
+      type: 'result',
+      subtype: isError ? 'error_during_execution' : 'success',
+      result: llmText,
+      is_error: isError,
+    },
+  ]);
+}
+
+// ── validate() ────────────────────────────────────────────────────────────────
+
 describe('ClaudeNativeRunner.validate()', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('does not throw when claude is in PATH', () => {
     mockExecFileSync.mockReturnValueOnce(Buffer.from('claude 1.0.0'));
@@ -36,16 +53,17 @@ describe('ClaudeNativeRunner.validate()', () => {
   });
 });
 
+// ── runAnalysis() ─────────────────────────────────────────────────────────────
+
 describe('ClaudeNativeRunner.runAnalysis()', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('calls execFileSync with correct args (no schema)', async () => {
-    mockExecFileSync.mockReturnValueOnce('{"summary": {"title": "test", "content": "c", "bullets": []}}' as unknown as Buffer);
+    const llmJson = '{"summary": {"title": "test", "content": "c", "bullets": []}}';
+    mockExecFileSync.mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer);
     const runner = new ClaudeNativeRunner();
 
-    const result = await runner.runAnalysis({
+    await runner.runAnalysis({
       systemPrompt: 'You are an analyst.',
       userPrompt: 'Analyze this session.',
     });
@@ -67,7 +85,8 @@ describe('ClaudeNativeRunner.runAnalysis()', () => {
   });
 
   it('includes --json-schema arg when jsonSchema is provided', async () => {
-    mockExecFileSync.mockReturnValueOnce('{"summary": {"title": "t", "content": "c", "bullets": []}}' as unknown as Buffer);
+    const llmJson = '{"summary": {"title": "t", "content": "c", "bullets": []}}';
+    mockExecFileSync.mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer);
     const runner = new ClaudeNativeRunner();
 
     await runner.runAnalysis({
@@ -79,19 +98,30 @@ describe('ClaudeNativeRunner.runAnalysis()', () => {
     const callArgs = mockExecFileSync.mock.calls[0][1] as string[];
     expect(callArgs).toContain('--json-schema');
 
-    // Schema file path should be in args
     const schemaIndex = callArgs.indexOf('--json-schema');
     expect(callArgs[schemaIndex + 1]).toContain('ci-schema-');
   });
 
-  it('returns correct result shape with zero tokens', async () => {
-    const rawJson = '{"summary": {"title": "T", "content": "C", "bullets": []}}';
-    mockExecFileSync.mockReturnValueOnce(rawJson as unknown as Buffer);
+  it('extracts rawJson from the result event (not the full envelope)', async () => {
+    const llmJson = '{"summary": {"title": "T", "content": "C", "bullets": []}}';
+    mockExecFileSync.mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer);
     const runner = new ClaudeNativeRunner();
 
     const result = await runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' });
 
-    expect(result.rawJson).toBe(rawJson);
+    // Must be the extracted LLM text, not the raw event array
+    expect(result.rawJson).toBe(llmJson);
+    expect(result.rawJson).not.toContain('"type":"result"');
+  });
+
+  it('returns correct result shape with zero tokens', async () => {
+    const llmJson = '{"summary": {"title": "T", "content": "C", "bullets": []}}';
+    mockExecFileSync.mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer);
+    const runner = new ClaudeNativeRunner();
+
+    const result = await runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' });
+
+    expect(result.rawJson).toBe(llmJson);
     expect(result.inputTokens).toBe(0);
     expect(result.outputTokens).toBe(0);
     expect(result.model).toBe('claude-native');
@@ -99,11 +129,41 @@ describe('ClaudeNativeRunner.runAnalysis()', () => {
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
   });
 
-  it('writes system prompt to a temp file', async () => {
-    mockExecFileSync.mockReturnValueOnce('' as unknown as Buffer);
+  it('throws when is_error is true on the result event', async () => {
+    const errorMsg = 'Context window exceeded';
+    mockExecFileSync.mockReturnValueOnce(makeEnvelope(errorMsg, true) as unknown as Buffer);
     const runner = new ClaudeNativeRunner();
 
-    await runner.runAnalysis({ systemPrompt: 'SYSTEM_CONTENT', userPrompt: 'u' }).catch(() => {});
+    await expect(runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' }))
+      .rejects.toThrow(/claude -p reported an error/);
+  });
+
+  it('throws when output is not a JSON array', async () => {
+    mockExecFileSync.mockReturnValueOnce('not json at all' as unknown as Buffer);
+    const runner = new ClaudeNativeRunner();
+
+    await expect(runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' }))
+      .rejects.toThrow(/non-JSON output/);
+  });
+
+  it('throws when JSON array has no result event', async () => {
+    const noResultEnvelope = JSON.stringify([
+      { type: 'system', subtype: 'init' },
+      { type: 'assistant', message: {} },
+    ]);
+    mockExecFileSync.mockReturnValueOnce(noResultEnvelope as unknown as Buffer);
+    const runner = new ClaudeNativeRunner();
+
+    await expect(runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' }))
+      .rejects.toThrow(/no result event/);
+  });
+
+  it('writes system prompt to a temp file', async () => {
+    const llmJson = '{"summary": {"title": "T", "content": "C", "bullets": []}}';
+    mockExecFileSync.mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer);
+    const runner = new ClaudeNativeRunner();
+
+    await runner.runAnalysis({ systemPrompt: 'SYSTEM_CONTENT', userPrompt: 'u' });
 
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       expect.stringContaining('ci-prompt-'),
@@ -112,8 +172,29 @@ describe('ClaudeNativeRunner.runAnalysis()', () => {
     );
   });
 
+  it('temp file names include a random suffix to prevent collisions', async () => {
+    // Run twice and verify the file IDs differ
+    const llmJson = '{}';
+    mockExecFileSync
+      .mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer)
+      .mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer);
+
+    const runner = new ClaudeNativeRunner();
+    await runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' });
+    await runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' });
+
+    const promptFiles = (mockWriteFileSync.mock.calls as unknown as [string, string, string][])
+      .filter(([path]) => path.includes('ci-prompt-'))
+      .map(([path]) => path);
+
+    expect(promptFiles).toHaveLength(2);
+    // The two file paths must differ (random suffix)
+    expect(promptFiles[0]).not.toBe(promptFiles[1]);
+  });
+
   it('cleans up temp files when execFileSync succeeds', async () => {
-    mockExecFileSync.mockReturnValueOnce('{}' as unknown as Buffer);
+    const llmJson = '{"summary": {"title": "T", "content": "C", "bullets": []}}';
+    mockExecFileSync.mockReturnValueOnce(makeEnvelope(llmJson) as unknown as Buffer);
     const runner = new ClaudeNativeRunner();
 
     await runner.runAnalysis({ systemPrompt: 's', userPrompt: 'u' });
