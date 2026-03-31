@@ -31,6 +31,14 @@ Analyzes your sessions from **Claude Code, Cursor, Codex CLI, Copilot CLI, and V
 
 ---
 
+> **Claude Code users: zero-config analysis, zero cost.**
+> Install the hook once. Every session gets analyzed automatically using your Claude subscription.
+> ```bash
+> code-insights install-hook
+> ```
+
+---
+
 > **Works with Ollama — free, local, zero API keys.**
 > If you have [Ollama](https://ollama.com) installed, `code-insights` will detect it automatically and use it for AI analysis. No account, no cost, no data leaves your machine.
 >
@@ -108,6 +116,7 @@ npx @code-insights/cli
 # Or install globally
 npm install -g @code-insights/cli
 code-insights                          # sync sessions + open dashboard
+code-insights install-hook             # auto-sync + auto-analyze on session end
 ```
 
 ### Common Commands
@@ -123,7 +132,7 @@ code-insights sync --source cursor     # sync from a specific tool
 code-insights reflect                  # cross-session pattern synthesis
 code-insights reflect --week 2026-W11  # reflect on a specific week
 code-insights config llm               # configure LLM provider
-code-insights install-hook             # auto-sync when sessions end
+code-insights install-hook             # auto-sync + auto-analyze when sessions end
 ```
 
 See [`cli/README.md`](cli/README.md) for the full CLI reference.
