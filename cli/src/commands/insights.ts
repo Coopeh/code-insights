@@ -16,7 +16,12 @@
  */
 
 import chalk from 'chalk';
+import { spawn } from 'child_process';
+import { openSync, mkdirSync, existsSync } from 'fs';
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { getDb } from '../db/client.js';
+import { getConfigDir } from '../utils/config.js';
 import { ClaudeNativeRunner } from '../analysis/native-runner.js';
 import { ProviderRunner } from '../analysis/provider-runner.js';
 import {
@@ -262,6 +267,12 @@ export async function runInsightsCommand(options: InsightsCommandOptions): Promi
 
 // ── CLI command entry point ───────────────────────────────────────────────────
 
+/** Resolve the CLI entry point for spawning child processes. */
+const CLI_ENTRY = resolve(fileURLToPath(import.meta.url), '../../index.js');
+
+/** Log file for background hook analysis. */
+const HOOK_LOG_PATH = join(getConfigDir(), 'hook-analysis.log');
+
 export async function insightsCommand(
   sessionId: string | undefined,
   opts: {
@@ -279,7 +290,16 @@ export async function insightsCommand(
     let resolvedSessionId: string;
 
     if (opts.hook) {
-      // Hook mode: read { session_id, transcript_path, cwd } from stdin
+      // Hook mode: two-phase execution.
+      //
+      // Phase 1 (foreground): Read stdin, sync the session file to SQLite.
+      //   Must complete before the hook returns so data is in the DB.
+      //
+      // Phase 2 (detached): Spawn a background process to run analysis.
+      //   Detached from Claude Code's hook process tree so it survives
+      //   hook cleanup. Uses `insights <id> --native -q` (no --hook),
+      //   so no stdin dependency.
+
       const stdinData = await readStdin();
       let parsed: { session_id?: string; transcript_path?: string; cwd?: string };
       try {
@@ -294,11 +314,33 @@ export async function insightsCommand(
 
       resolvedSessionId = parsed.session_id;
 
-      // Sync the single file before analysis
+      // Phase 1: Sync the single file before analysis
       if (parsed.transcript_path) {
         const { syncSingleFile } = await import('./sync.js');
         await syncSingleFile({ filePath: parsed.transcript_path, sourceTool: opts.source, quiet });
       }
+
+      // Phase 2: Detach the analysis into a background process.
+      // claude -p spawned inside a hook subprocess gets cancelled by
+      // Claude Code's hook manager. Spawning a detached process with
+      // its own process group escapes that process tree.
+      const configDir = getConfigDir();
+      if (!existsSync(configDir)) {
+        mkdirSync(configDir, { recursive: true, mode: 0o700 });
+      }
+      const logFd = openSync(HOOK_LOG_PATH, 'a');
+
+      const args = [CLI_ENTRY, 'insights', resolvedSessionId, '--native', '-q'];
+      if (opts.force) args.push('--force');
+
+      const child = spawn(process.execPath, args, {
+        detached: true,
+        stdio: ['ignore', logFd, logFd],
+      });
+      child.unref();
+
+      // Hook returns immediately — analysis continues in background.
+      return;
     } else {
       if (!sessionId) {
         throw new Error('Session ID is required (or use --hook to read from stdin)');
