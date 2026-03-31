@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "40d9cd9a6b54",
+  "strategy": "manual-commit",
+  "branch": "fix/native-runner-auth-timeout",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "cli/src/analysis/native-runner.ts",
+    "cli/src/commands/install-hook.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/40/d9cd9a6b54/0/metadata.json",
+      "transcript": "/40/d9cd9a6b54/0/full.jsonl",
+      "context": "/40/d9cd9a6b54/0/context.md",
+      "content_hash": "/40/d9cd9a6b54/0/content_hash.txt",
+      "prompt": "/40/d9cd9a6b54/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3,
+    "cache_creation_tokens": 127986,
+    "cache_read_tokens": 14331,
+    "output_tokens": 2709,
+    "api_call_count": 1
+  }
+}
