@@ -53,6 +53,7 @@ export function AnalysisCostLine({ sessionId, isAnalyzing }: AnalysisCostLinePro
   }
 
   const { usage, totalCostUsd, cacheSavingsUsd } = data;
+  const allNative = usage.every(row => row.provider === 'claude-code-native');
   const allOllama = usage.every(row => row.provider === 'ollama');
 
   // Use the model and provider from the first usage row for the sublabel
@@ -63,6 +64,9 @@ export function AnalysisCostLine({ sessionId, isAnalyzing }: AnalysisCostLinePro
   const totalInput = usage.reduce((s, r) => s + r.input_tokens, 0);
   const totalOutput = usage.reduce((s, r) => s + r.output_tokens, 0);
 
+  // Total duration across all rows (for native provider display)
+  const totalDurationMs = usage.reduce((s, r) => s + (r.duration_ms ?? 0), 0);
+
   // Build sublabel
   const sublabelParts: string[] = [modelLabel];
   if (totalInput > 0) sublabelParts.push(`${formatTokens(totalInput)} in`);
@@ -70,9 +74,26 @@ export function AnalysisCostLine({ sessionId, isAnalyzing }: AnalysisCostLinePro
   if (cacheSavingsUsd > 0.005) sublabelParts.push(`saved ${formatCost(cacheSavingsUsd)}`);
   const sublabel = sublabelParts.join(' · ');
 
-  // Legacy sessions: usage row exists but cost is 0 and provider is not Ollama
+  // Legacy sessions: usage row exists but cost is 0 and provider is not Ollama or native
   // This shouldn't happen post-V7, but guard against it gracefully.
-  const isLegacy = totalCostUsd === 0 && !allOllama;
+  const isLegacy = totalCostUsd === 0 && !allOllama && !allNative;
+
+  // Native analysis via Claude Code — billed to Claude subscription, not a tracked cost
+  if (allNative) {
+    const durationSec = totalDurationMs > 0 ? Math.round(totalDurationMs / 1000) : null;
+    const nativeLabel = durationSec != null
+      ? `Analyzed via Claude Code · ${durationSec}s`
+      : 'Analyzed via Claude Code';
+    return (
+      <div className="flex flex-col gap-0.5 px-1 py-1 select-none">
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Sparkles className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+          <span>{nativeLabel}</span>
+        </div>
+        <div className="text-[10px] text-muted-foreground/60 pl-5">{modelLabel}</div>
+      </div>
+    );
+  }
 
   const primaryText = allOllama
     ? 'Analysis: local (free)'
@@ -124,7 +145,7 @@ export function AnalysisCostLine({ sessionId, isAnalyzing }: AnalysisCostLinePro
                     {analysisTypeLabel(row.analysis_type)}
                   </span>
                   <span className="text-xs font-medium text-foreground shrink-0">
-                    {row.provider === 'ollama' ? 'free' : formatCost(row.estimated_cost_usd)}
+                    {row.provider === 'ollama' || row.provider === 'claude-code-native' ? 'free' : formatCost(row.estimated_cost_usd)}
                   </span>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -145,7 +166,7 @@ export function AnalysisCostLine({ sessionId, isAnalyzing }: AnalysisCostLinePro
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-foreground">Total</span>
                 <span className="text-xs font-semibold text-foreground">
-                  {allOllama ? 'free' : formatCost(totalCostUsd)}
+                  {allOllama || allNative ? 'free' : formatCost(totalCostUsd)}
                 </span>
               </div>
             </>

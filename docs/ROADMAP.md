@@ -229,7 +229,7 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
 | 4.5.0 | — | Parallel LLM analysis, search ESCAPE fix, dynamic review specialists | ✅ Done |
 | 4.6.1 | — | User profile on share cards, GitHub avatar CORS fix | ✅ Done |
 | 4.7.0 | — | Ollama auto-detection, LlmNudgeBanner for unconfigured LLM | ✅ Done |
-| 4.8.0 | 12 | Native analysis via Claude Code hooks, unified `insights` command, runner interface | Planned |
+| 4.8.0 | 12 | Native analysis via Claude Code hooks, unified `insights` command, runner interface, V8 schema | ✅ Done |
 
 ---
 
@@ -265,12 +265,12 @@ This roadmap outlines the development phases for Code Insights. Timelines are fl
 
 ### Milestones
 
-- [ ] **12.1 Prompt Module Migration** (#238) — Move prompt builders from server to CLI for shared access
-- [ ] **12.2 Runner Interface** (#239) — AnalysisRunner abstraction with ClaudeNativeRunner + ProviderRunner
-- [ ] **12.3 `insights` CLI Command** (#240) — Unified command with `--native` and `--hook` modes, V8 schema migration
-- [ ] **12.4 Hook Installation** (#241) — `install-hook` adds SessionEnd analysis hook alongside existing sync hook
-- [ ] **12.5 Backfill Recovery** (#242) — `insights check` for unanalyzed sessions (7-day lookback)
-- [ ] **12.6 Dashboard + Docs** (#243) — Updated LlmNudgeBanner, analysis provenance, documentation
+- [x] **12.1 Prompt Module Migration** (#238) — Move prompt builders from server to CLI for shared access
+- [x] **12.2 Runner Interface** (#239) — AnalysisRunner abstraction with ClaudeNativeRunner + ProviderRunner
+- [x] **12.3 `insights` CLI Command** (#240) — Unified command with `--native` and `--hook` modes, V8 schema migration
+- [x] **12.4 Hook Installation** (#241) — `install-hook` adds SessionEnd analysis hook alongside existing sync hook
+- [x] **12.5 Backfill Recovery** (#242) — `insights check` for unanalyzed sessions (7-day lookback)
+- [x] **12.6 Dashboard + Docs** (#243) — Updated LlmNudgeBanner, analysis provenance, documentation
 
 ---
 
