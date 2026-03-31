@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "40d9cd9a6b54",
+  "session_id": "3f8faeb6-1f1e-4061-82b6-d96fa58f54ba",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-31T02:31:23.336487Z",
+  "branch": "fix/native-runner-auth-timeout",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "cli/src/analysis/native-runner.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "8c77cafb8e5e",
+  "token_usage": {
+    "input_tokens": 3,
+    "cache_creation_tokens": 40791,
+    "cache_read_tokens": 14331,
+    "output_tokens": 1526,
+    "api_call_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-31T02:31:23.320979Z",
+    "agent_lines": 1,
+    "human_added": 1,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 2,
+    "agent_percentage": 50
+  }
+}
