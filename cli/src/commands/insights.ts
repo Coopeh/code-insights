@@ -5,11 +5,7 @@
  *   --native   Use claude -p (user's Claude subscription, zero config)
  *   (default)  Use configured LLM provider (OpenAI, Anthropic, Gemini, Ollama)
  *
- * Hook mode (--hook):
- *   DEPRECATED. Delegates to the new session-end command.
- *   Kept for backward compatibility with existing hook installations.
- *
- * Resume detection (hook mode only):
+ * Resume detection:
  *   Skips analysis if analysis_usage.session_message_count matches current
  *   sessions.message_count — the session has not changed since last analysis.
  *   Bypassed with --force.
@@ -94,7 +90,6 @@ function isAlreadyAnalyzed(sessionId: string, currentMessageCount: number): bool
 export interface InsightsCommandOptions {
   sessionId: string;
   native: boolean;
-  hookMode?: boolean;
   force?: boolean;
   quiet?: boolean;
   source?: string;
@@ -138,8 +133,8 @@ export async function runInsightsCommand(options: InsightsCommandOptions): Promi
     slash_commands: session.slash_commands ?? undefined,
   };
 
-  // 3. Resume detection — hook mode only (skipped when --force)
-  if (options.hookMode && !options.force) {
+  // 3. Resume detection (skipped when --force)
+  if (!options.force) {
     if (isAlreadyAnalyzed(options.sessionId, session.message_count)) {
       return; // already analyzed at this session length
     }
@@ -277,30 +272,21 @@ export async function insightsCommand(
   const quiet = opts.quiet ?? false;
 
   try {
-    let resolvedSessionId: string;
-
     if (opts.hook) {
-      // --hook is deprecated: the new `session-end` command handles this path.
-      // We keep --hook working so existing ~/.claude/settings.json installations
-      // continue to work until the user runs `install-hook` again.
-      // Print a deprecation warning to stderr (not stdout, so JSON consumers aren't broken).
-      process.stderr.write(
-        '[Code Insights] DEPRECATED: --hook flag is deprecated. Run `code-insights install-hook` to upgrade to the new session-end hook.\n'
-      );
-      const { sessionEndCommand } = await import('./session-end.js');
-      await sessionEndCommand({ native: opts.native ?? true, quiet, source: opts.source });
-      return;
-    } else {
-      if (!sessionId) {
-        throw new Error('Session ID is required');
-      }
-      resolvedSessionId = sessionId;
+      // --hook was removed in v4.9. Show a clear error so users know what to do.
+      console.error(chalk.red(
+        'The --hook flag has been removed. Run `code-insights install-hook` to install the updated hook.'
+      ));
+      process.exit(1);
+    }
+
+    if (!sessionId) {
+      throw new Error('Session ID is required');
     }
 
     await runInsightsCommand({
-      sessionId: resolvedSessionId,
+      sessionId,
       native: opts.native ?? false,
-      hookMode: opts.hook ?? false,
       force: opts.force ?? false,
       quiet,
       source: opts.source,

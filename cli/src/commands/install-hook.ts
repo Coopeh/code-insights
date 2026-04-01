@@ -59,25 +59,11 @@ function removeStopHooks(settings: ClaudeSettings): boolean {
 }
 
 /**
- * Remove any existing Code Insights SessionEnd hooks (old insights --hook format).
- * Used during install to replace the old hook command with the new session-end command.
- */
-function removeSessionEndHooks(settings: ClaudeSettings): void {
-  if (!settings.hooks?.SessionEnd) return;
-  settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(
-    (h) => !h.hooks.some((hook) => getHookCommand(hook).includes('code-insights'))
-  );
-  if (settings.hooks.SessionEnd.length === 0) {
-    delete settings.hooks.SessionEnd;
-  }
-}
-
-/**
  * Install the single Code Insights SessionEnd hook.
  *
  * v4.9+ uses one SessionEnd hook that does sync + enqueue + worker spawn.
- * This replaces the v4.8.x two-hook system (Stop sync + SessionEnd analysis).
- * Running install-hook again removes old hooks and installs the new one.
+ * Running install-hook again removes the old Stop hook (v4.8.x hygiene) and
+ * installs a fresh session-end hook.
  */
 export async function installHookCommand(): Promise<void> {
   console.log(chalk.cyan('\nInstall Code Insights Hook\n'));
@@ -104,11 +90,8 @@ export async function installHookCommand(): Promise<void> {
       settings.hooks = {};
     }
 
-    // Migration: remove v4.8.x Stop hook (sync) and old insights --hook SessionEnd hook.
-    // This handles both fresh install and upgrade from v4.8.x.
+    // Clean up v4.8.x Stop hook if present (sync hook from old two-hook system).
     const removedStop = removeStopHooks(settings);
-    removeSessionEndHooks(settings);
-
     if (removedStop) {
       console.log(chalk.dim('  Removed legacy Stop hook from v4.8.x'));
     }

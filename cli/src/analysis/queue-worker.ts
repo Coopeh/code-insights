@@ -56,7 +56,6 @@ export async function processQueue(options: ProcessQueueOptions = {}): Promise<n
       await runInsightsCommand({
         sessionId: item.session_id,
         native: item.runner_type === 'native',
-        hookMode: true,  // Enables resume detection (skip if already analyzed at this length)
         quiet,
         _runner: item.runner_type === 'native' ? runner : undefined,
       });

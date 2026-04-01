@@ -310,7 +310,7 @@ describe('runInsightsCommand — --force flag', () => {
   });
 });
 
-describe('runInsightsCommand — resume detection (hookMode)', () => {
+describe('runInsightsCommand — resume detection', () => {
   beforeEach(() => {
     mockDb = new Database(':memory:');
     runMigrations(mockDb);
@@ -333,7 +333,6 @@ describe('runInsightsCommand — resume detection (hookMode)', () => {
     await runInsightsCommand({
       sessionId: 'sess1',
       native: false,
-      hookMode: true,
       quiet: true,
     });
 
@@ -356,7 +355,6 @@ describe('runInsightsCommand — resume detection (hookMode)', () => {
     await runInsightsCommand({
       sessionId: 'sess1',
       native: false,
-      hookMode: true,
       quiet: true,
     });
 
@@ -374,7 +372,6 @@ describe('runInsightsCommand — resume detection (hookMode)', () => {
     await runInsightsCommand({
       sessionId: 'sess1',
       native: false,
-      hookMode: true,
       quiet: true,
     });
 

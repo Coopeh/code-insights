@@ -137,25 +137,6 @@ describe('installHookCommand', () => {
       expect(hooks.SessionEnd).toHaveLength(1);
     });
 
-    it('replaces old insights --hook SessionEnd with session-end command', async () => {
-      writeSettings({
-        hooks: {
-          Stop: [{ hooks: [{ type: 'command', command: 'node /path/code-insights sync -q' }] }],
-          SessionEnd: [{ hooks: [{ type: 'command', command: 'node /path/code-insights insights --hook --native -q', timeout: 300000 }] }],
-        },
-      });
-
-      const { installHookCommand } = await import('../install-hook.js');
-      await installHookCommand();
-
-      const settings = readSettings();
-      const hooks = settings.hooks as Record<string, Array<{ hooks: Array<{ type: string; command: string; timeout?: number }> }>>;
-      // Old Stop + old insights --hook replaced by single session-end hook
-      expect(hooks.Stop).toBeUndefined();
-      expect(hooks.SessionEnd).toHaveLength(1);
-      expect(hooks.SessionEnd[0].hooks[0].command).toContain('session-end');
-    });
-
     it('preserves non-code-insights Stop hooks during migration', async () => {
       writeSettings({
         hooks: {
