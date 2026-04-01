@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "0b933d426a58",
+  "session_id": "e0d8d9a3-9dd7-4599-aeb2-bfac3a4c8424",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T17:24:31.788865Z",
+  "branch": "fix/preserve-llm-generated-title",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "cli/src/db/write.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "87cd4c5a4405",
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 65780,
+    "cache_read_tokens": 988124,
+    "output_tokens": 8255,
+    "api_call_count": 20
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T17:24:31.736818Z",
+    "agent_lines": 1,
+    "human_added": 1,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 2,
+    "agent_percentage": 50
+  }
+}
