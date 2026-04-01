@@ -3,7 +3,7 @@
   "checkpoint_id": "2d677ebe1bdd",
   "strategy": "manual-commit",
   "branch": "fix/sync-trivial-filter",
-  "checkpoints_count": 0,
+  "checkpoints_count": 1,
   "files_touched": [
     "cli/src/analysis/native-runner.ts"
   ],
@@ -14,13 +14,20 @@
       "context": "/2d/677ebe1bdd/0/context.md",
       "content_hash": "/2d/677ebe1bdd/0/content_hash.txt",
       "prompt": "/2d/677ebe1bdd/0/prompt.txt"
+    },
+    {
+      "metadata": "/2d/677ebe1bdd/1/metadata.json",
+      "transcript": "/2d/677ebe1bdd/1/full.jsonl",
+      "context": "/2d/677ebe1bdd/1/context.md",
+      "content_hash": "/2d/677ebe1bdd/1/content_hash.txt",
+      "prompt": "/2d/677ebe1bdd/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 0,
-    "cache_creation_tokens": 0,
-    "cache_read_tokens": 0,
-    "output_tokens": 0,
-    "api_call_count": 0
+    "input_tokens": 4009,
+    "cache_creation_tokens": 3510324,
+    "cache_read_tokens": 91009466,
+    "output_tokens": 126109,
+    "api_call_count": 521
   }
 }
