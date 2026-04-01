@@ -113,6 +113,7 @@ export class ClaudeNativeRunner implements AnalysisRunner {
         encoding: 'utf-8',
         timeout: 300_000,    // 5-minute hard limit per analysis call
         maxBuffer: 10 * 1024 * 1024,  // 10 MB
+        cwd: tmpdir(),       // Isolate claude -p session files from user's project
       });
 
       // claude -p --output-format json wraps the response in an event array.
