@@ -2,6 +2,30 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.8.2] - 2026-04-01
+
+### Added
+
+- **Analysis queue system** — New `analysis_queue` SQLite table (Schema V9) provides durable, retry-aware job queue for hook-triggered analysis. Supports pending/processing/completed/failed states with atomic claim (`RETURNING *`), 3-retry max, and stale item reset.
+
+- **`session-end` command** — New hook entry point replaces the old `insights --hook` flow. Reads Claude Code's stdin JSON, syncs the session file, enqueues for analysis, and spawns a detached worker — all in under 1 second.
+
+- **`queue` command suite** — `code-insights queue status` (view queue), `queue process` (run pending items), `queue retry` (reset failed items), `queue prune` (clean old completed items).
+
+- **Dashboard analysis badges** — Sessions actively being analyzed via hook show "Analyzing..." indicators in both the session list and detail panel. Auto-refreshes insights when analysis completes.
+
+### Changed
+
+- **Single SessionEnd hook** — `install-hook` now installs one `SessionEnd` hook (was Stop + SessionEnd). The noisy `Stop` hook that fired on every Claude response is removed. Old Stop hooks are cleaned up on reinstall.
+
+- **`--hook` flag removed from `insights`** — Replaced by the `session-end` command. Passing `--hook` now shows a clear error message directing users to `install-hook`.
+
+### Fixed
+
+- **`CODE_INSIGHTS_HOOK_ACTIVE` propagation** — The recursion guard env var is now set in `ClaudeNativeRunner.execFileSync` (was only set in the detached spawn), preventing infinite hook loops regardless of how analysis is triggered.
+
+- **LLM-generated title from CLI path** — `applyGeneratedTitle()` moved to shared `analysis-db.ts` so both CLI hook analysis and dashboard-triggered analysis update the session title from the summary insight.
+
 ## [4.8.1] - 2026-04-01
 
 ### Fixed
