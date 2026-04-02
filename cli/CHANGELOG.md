@@ -2,6 +2,22 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.8.3] - 2026-04-02
+
+### Added
+
+- **`--model` flag for native analysis** — All native analysis paths (`insights`, `insights check`, `session-end`, `queue process`) now accept `--model <name>` to select the Claude model. Defaults to `sonnet` — cost-effective for structured JSON extraction tasks. Supports any model alias (`sonnet`, `opus`, `haiku`) or full model ID.
+
+- **Batch native analysis script** — New `batch-native-analysis.sh` at repo root for analyzing all unanalyzed sessions via `claude -p`. Features rate-limit detection (stops immediately on 429), resume-safe design, configurable delay between calls, and `--retry-failed` mode.
+
+### Changed
+
+- **`analysis_usage.model` now stores actual model name** — Previously hardcoded `'claude-native'` for all native analysis. Now stores the model alias used (e.g., `'sonnet'`, `'opus'`), enabling cost and quality analysis per model.
+
+### Fixed
+
+- **LLM-generated title preservation** — Sync no longer overwrites LLM-generated session titles with parser-derived titles. Sessions that already have a `generated_title` from analysis retain it across re-syncs.
+
 ## [4.8.2] - 2026-04-01
 
 ### Added
