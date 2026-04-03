@@ -14,7 +14,7 @@ import {
   deleteSessionInsights,
   type SessionData,
 } from './analysis-db.js';
-import { MAX_INPUT_TOKENS, buildSessionMeta, type AnalysisOptions, type AnalysisResult } from './analysis-internal.js';
+import { getMaxInputTokens, buildSessionMeta, type AnalysisOptions, type AnalysisResult } from './analysis-internal.js';
 
 /**
  * Analyze prompt quality for a session.
@@ -57,12 +57,13 @@ export async function analyzePromptQuality(
   try {
     const startTime = Date.now();
     const client = createLLMClient();
+    const maxInputTokens = getMaxInputTokens(client.provider);
     const formattedMessages = formatMessagesForAnalysis(messages);
 
     let analysisInput = formattedMessages;
     const estimatedTokens = client.estimateTokens(formattedMessages);
-    if (estimatedTokens > MAX_INPUT_TOKENS) {
-      const targetLength = Math.floor((MAX_INPUT_TOKENS / estimatedTokens) * formattedMessages.length * 0.8);
+    if (estimatedTokens > maxInputTokens) {
+      const targetLength = Math.floor((maxInputTokens / estimatedTokens) * formattedMessages.length * 0.8);
       analysisInput = formattedMessages.slice(0, targetLength) + '\n\n[... conversation truncated for analysis ...]';
     }
 

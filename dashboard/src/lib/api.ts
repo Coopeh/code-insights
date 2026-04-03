@@ -188,6 +188,13 @@ export function fetchOllamaModels(baseUrl?: string) {
   );
 }
 
+export function fetchLlamaCppModels(baseUrl?: string) {
+  const qs = baseUrl ? `?baseUrl=${encodeURIComponent(baseUrl)}` : '';
+  return request<{ models: Array<{ id: string; object: string }> }>(
+    `/config/llm/llamacpp-models${qs}`
+  );
+}
+
 export function analyzePromptQuality(sessionId: string) {
   return request<AnalysisApiResult>('/analysis/prompt-quality', {
     method: 'POST',

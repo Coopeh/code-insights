@@ -44,7 +44,9 @@ export function AnalyzeDropdown({
   const { data: costData } = useAnalysisCost(session.id);
 
   const configured = !!(llmConfig?.provider && llmConfig?.model);
-  const isOllama = llmConfig?.provider === 'ollama';
+  // Local providers with no per-token cost
+  const isLocalFreeProvider = llmConfig?.provider === 'ollama' || llmConfig?.provider === 'llamacpp';
+  const isOllama = isLocalFreeProvider;
 
   // Client-side cost estimates (shown in dropdown sublabels)
   const sessionCostEstimate =
