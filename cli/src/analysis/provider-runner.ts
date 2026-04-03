@@ -173,12 +173,57 @@ function makeOllamaChat(model: string, baseUrl?: string): LLMChatFn {
   };
 }
 
+function makeLlamaCppChat(model: string, baseUrl?: string): LLMChatFn {
+  // Use 0.3 temperature — small quantized models produce more consistent structured JSON
+  // output at lower temperatures (LLM Expert requirement).
+  const url = baseUrl || 'http://localhost:8080';
+  return async (messages) => {
+    let response: Response;
+    try {
+      response = await fetch(`${url}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.3,
+          max_tokens: 8192,
+          response_format: { type: 'json_object' },
+        }),
+      });
+    } catch (err) {
+      const cause = (err as { cause?: { code?: string } })?.cause;
+      if (cause?.code === 'ECONNREFUSED' || (err instanceof TypeError && (err as TypeError).message.includes('fetch'))) {
+        throw new Error(
+          `Cannot connect to llama-server at ${url} — is it running? Start it with: llama-server -m <model.gguf>`
+        );
+      }
+      throw err;
+    }
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`llama-server API error (HTTP ${response.status})${detail ? ` - ${detail}` : ''}`);
+    }
+    const data = await response.json() as {
+      choices: Array<{ message: { content: string } }>;
+      usage?: { prompt_tokens: number; completion_tokens: number };
+    };
+    return {
+      content: data.choices[0]?.message?.content || '',
+      usage: data.usage
+        ? { inputTokens: data.usage.prompt_tokens, outputTokens: data.usage.completion_tokens }
+        : undefined,
+    };
+  };
+}
+
 function makeChatFn(config: LLMProviderConfig): LLMChatFn {
   switch (config.provider) {
     case 'openai':    return makeOpenAIChat(config.apiKey ?? '', config.model);
     case 'anthropic': return makeAnthropicChat(config.apiKey ?? '', config.model);
     case 'gemini':    return makeGeminiChat(config.apiKey ?? '', config.model);
     case 'ollama':    return makeOllamaChat(config.model, config.baseUrl);
+    case 'llamacpp':  return makeLlamaCppChat(config.model, config.baseUrl);
     default:          throw new Error(`Unknown LLM provider: ${(config as LLMProviderConfig).provider}`);
   }
 }
@@ -208,7 +253,8 @@ export class ProviderRunner implements AnalysisRunner {
     if (!llm) {
       throw new Error('LLM not configured. Run `code-insights config llm` to configure a provider.');
     }
-    if (llm.provider !== 'ollama' && !llm.apiKey) {
+    // Local providers (ollama, llamacpp) do not require an API key
+    if (llm.provider !== 'ollama' && llm.provider !== 'llamacpp' && !llm.apiKey) {
       throw new Error(
         `LLM provider '${llm.provider}' requires an API key. Run \`code-insights config llm\` to set it.`
       );

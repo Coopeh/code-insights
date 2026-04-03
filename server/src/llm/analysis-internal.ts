@@ -37,8 +37,21 @@ export interface AnalysisResult {
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
 
-/** Maximum input tokens to send to the LLM (leaves room for the response). */
+/**
+ * Maximum input tokens to send to the LLM (leaves room for the response).
+ *
+ * Provider-aware: llamacpp targets small quantized models (12B-27B GGUF) with limited
+ * context windows. Sending 80K tokens to these models causes OOM or severely degraded
+ * structured JSON output. 24K is a safe upper bound for Gemma 4 Q4_K_M configs.
+ *
+ * All other providers (hosted APIs with large context windows) use the 80K default.
+ */
 export const MAX_INPUT_TOKENS = 80000;
+
+export function getMaxInputTokens(provider: string): number {
+  if (provider === 'llamacpp') return 24576;
+  return MAX_INPUT_TOKENS;
+}
 
 // ─── Shared helper ────────────────────────────────────────────────────────────
 

@@ -54,7 +54,7 @@ export function AnalysisCostLine({ sessionId, isAnalyzing }: AnalysisCostLinePro
 
   const { usage, totalCostUsd, cacheSavingsUsd } = data;
   const allNative = usage.every(row => row.provider === 'claude-code-native');
-  const allOllama = usage.every(row => row.provider === 'ollama');
+  const allOllama = usage.every(row => row.provider === 'ollama' || row.provider === 'llamacpp');
 
   // Use the model and provider from the first usage row for the sublabel
   const firstRow = usage[0];
@@ -145,7 +145,7 @@ export function AnalysisCostLine({ sessionId, isAnalyzing }: AnalysisCostLinePro
                     {analysisTypeLabel(row.analysis_type)}
                   </span>
                   <span className="text-xs font-medium text-foreground shrink-0">
-                    {row.provider === 'ollama' || row.provider === 'claude-code-native' ? 'free' : formatCost(row.estimated_cost_usd)}
+                    {row.provider === 'ollama' || row.provider === 'llamacpp' || row.provider === 'claude-code-native' ? 'free' : formatCost(row.estimated_cost_usd)}
                   </span>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">

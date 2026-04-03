@@ -34,6 +34,7 @@ import {
 } from './analysis-db.js';
 import {
   MAX_INPUT_TOKENS,
+  getMaxInputTokens,
   buildSessionMeta,
   type AnalysisProgress,
   type AnalysisOptions,
@@ -79,6 +80,9 @@ export async function analyzeSession(
   try {
     const startTime = Date.now();
     const client = createLLMClient();
+    // Resolve the token limit for this provider — llamacpp uses a smaller budget (24K)
+    // because small quantized models have limited context windows; all others use 80K.
+    const maxInputTokens = getMaxInputTokens(client.provider);
     const formattedMessages = formatMessagesForAnalysis(messages);
     const estimatedTokens = client.estimateTokens(formattedMessages);
     const sessionMeta = buildSessionMeta(session);
@@ -90,9 +94,9 @@ export async function analyzeSession(
     let totalCacheReadTokens = 0;
     let chunkCount = 1;
 
-    if (estimatedTokens > MAX_INPUT_TOKENS) {
+    if (estimatedTokens > maxInputTokens) {
       // Chunk the messages and analyze separately
-      const chunks = chunkMessages(messages, client.estimateTokens.bind(client));
+      const chunks = chunkMessages(messages, client.estimateTokens.bind(client), maxInputTokens);
       const chunkResponses: AnalysisResponse[] = [];
       const totalChunks = chunks.length;
       chunkCount = totalChunks;
@@ -140,8 +144,8 @@ export async function analyzeSession(
           // Use full conversation for best quality; truncate here if exceeding token limits
           let facetMessages = formatMessagesForAnalysis(messages);
           const facetTokens = client.estimateTokens(facetMessages);
-          if (facetTokens > MAX_INPUT_TOKENS) {
-            const targetLength = Math.floor((MAX_INPUT_TOKENS / facetTokens) * facetMessages.length * 0.8);
+          if (facetTokens > maxInputTokens) {
+            const targetLength = Math.floor((maxInputTokens / facetTokens) * facetMessages.length * 0.8);
             facetMessages = facetMessages.slice(0, targetLength) + '\n\n[... conversation truncated for analysis ...]';
           }
           const facetResponse = await client.chat([
@@ -277,12 +281,13 @@ export async function analyzeSession(
 
 function chunkMessages(
   messages: SQLiteMessageRow[],
-  estimateTokens: (text: string) => number
+  estimateTokens: (text: string) => number,
+  maxInputTokens: number = MAX_INPUT_TOKENS
 ): SQLiteMessageRow[][] {
   const chunks: SQLiteMessageRow[][] = [];
   let currentChunk: SQLiteMessageRow[] = [];
   let currentTokens = 0;
-  const chunkLimit = MAX_INPUT_TOKENS * 0.8;
+  const chunkLimit = maxInputTokens * 0.8;
 
   for (const message of messages) {
     let toolResults: Array<{ output?: string }> = [];

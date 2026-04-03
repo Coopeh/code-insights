@@ -36,6 +36,7 @@ export const PROVIDERS: ProviderInfo[] = [
       { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Fast & capable', inputCostPer1M: 0.1, outputCostPer1M: 0.4 },
       { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: '2M context', inputCostPer1M: 1.25, outputCostPer1M: 5 },
       { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Fast', inputCostPer1M: 0.075, outputCostPer1M: 0.3 },
+      { id: 'gemma-3-27b-it', name: 'Gemma 4 27B IT', description: 'Local via Gemini API', inputCostPer1M: 0, outputCostPer1M: 0 },
     ],
   },
   {
@@ -47,6 +48,18 @@ export const PROVIDERS: ProviderInfo[] = [
       { id: 'qwen3:14b', name: 'Qwen3 14B', description: 'Code-focused, free' },
       { id: 'mistral', name: 'Mistral', description: 'Local, free' },
       { id: 'qwen2.5-coder', name: 'Qwen 2.5 Coder', description: 'Code-focused, free' },
+      { id: 'gemma4', name: 'Gemma 4 12B', description: 'Google Gemma 4, free' },
+      { id: 'gemma4:27b', name: 'Gemma 4 27B', description: 'Google Gemma 4 large, free' },
+    ],
+  },
+  {
+    id: 'llamacpp',
+    name: 'llama.cpp (Local)',
+    requiresApiKey: false,
+    models: [
+      { id: 'gemma-4-12b', name: 'Gemma 4 12B (Q4_K_M)', description: 'Flagship local model, free' },
+      { id: 'gemma-4-27b', name: 'Gemma 4 27B (Q4_K_M)', description: 'Large local model, free' },
+      { id: 'custom', name: 'Custom model', description: 'Any GGUF model loaded in llama-server' },
     ],
   },
 ];

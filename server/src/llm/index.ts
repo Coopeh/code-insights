@@ -7,3 +7,4 @@ export { analyzeSession, analyzePromptQuality, findRecurringInsights, extractFac
 export type { AnalysisResult, RecurringInsightResult } from './analysis.js';
 export type { InsightRow, SessionData } from './analysis-db.js';
 export { discoverOllamaModels } from './providers/ollama.js';
+export { discoverLlamaCppModels } from './providers/llamacpp.js';

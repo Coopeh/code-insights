@@ -43,7 +43,7 @@ const PROVIDER_PRICING: Record<string, Record<string, { input: number; output: n
  * Returns null for Ollama or unknown providers/models.
  */
 function lookupPricing(provider: string, model: string): { input: number; output: number } | null {
-  if (provider === 'ollama') return null;
+  if (provider === 'ollama' || provider === 'llamacpp') return null;
   const providerPricing = PROVIDER_PRICING[provider];
   if (!providerPricing) return null;
 
@@ -76,7 +76,7 @@ export function estimateAnalysisCost(
   model: string,
   analysisType: keyof typeof ESTIMATED_OUTPUT_TOKENS,
 ): number {
-  if (provider === 'ollama') return 0;
+  if (provider === 'ollama' || provider === 'llamacpp') return 0;
 
   const pricing = lookupPricing(provider, model);
   if (!pricing) return 0;

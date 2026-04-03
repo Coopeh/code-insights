@@ -14,7 +14,7 @@ import {
   saveFacetsToDb,
   type SessionData,
 } from './analysis-db.js';
-import { MAX_INPUT_TOKENS, buildSessionMeta } from './analysis-internal.js';
+import { getMaxInputTokens, buildSessionMeta } from './analysis-internal.js';
 
 /**
  * Extract facets only for a session that already has insights (backfill).
@@ -37,12 +37,13 @@ export async function extractFacetsOnly(
   try {
     const startTime = Date.now();
     const client = createLLMClient();
+    const maxInputTokens = getMaxInputTokens(client.provider);
     let formattedMessages = formatMessagesForAnalysis(messages);
 
     // Truncate if conversation exceeds token limits (same pattern as PQ analysis)
     const estimatedTokens = client.estimateTokens(formattedMessages);
-    if (estimatedTokens > MAX_INPUT_TOKENS) {
-      const targetLength = Math.floor((MAX_INPUT_TOKENS / estimatedTokens) * formattedMessages.length * 0.8);
+    if (estimatedTokens > maxInputTokens) {
+      const targetLength = Math.floor((maxInputTokens / estimatedTokens) * formattedMessages.length * 0.8);
       formattedMessages = formattedMessages.slice(0, targetLength) + '\n\n[... conversation truncated for analysis ...]';
     }
 

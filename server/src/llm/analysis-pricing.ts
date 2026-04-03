@@ -41,7 +41,7 @@ export function calculateAnalysisCost(
   model: string,
   usage: AnalysisCostUsage,
 ): number {
-  if (provider === 'ollama') {
+  if (provider === 'ollama' || provider === 'llamacpp') {
     return 0;
   }
 

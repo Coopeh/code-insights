@@ -9,6 +9,7 @@ import { createOpenAIClient } from './providers/openai.js';
 import { createAnthropicClient } from './providers/anthropic.js';
 import { createGeminiClient } from './providers/gemini.js';
 import { createOllamaClient } from './providers/ollama.js';
+import { createLlamaCppClient } from './providers/llamacpp.js';
 
 /**
  * Load LLM config from the CLI config file.
@@ -24,7 +25,8 @@ export function loadLLMConfig(): LLMProviderConfig | null {
 export function isLLMConfigured(): boolean {
   const llm = loadLLMConfig();
   if (!llm) return false;
-  if (llm.provider === 'ollama') return !!llm.model;
+  // Local providers: no API key required — configured if a model is set
+  if (llm.provider === 'ollama' || llm.provider === 'llamacpp') return !!llm.model;
   return !!llm.apiKey && !!llm.model;
 }
 
@@ -53,6 +55,8 @@ export function createClientFromConfig(config: LLMProviderConfig): LLMClient {
       return createGeminiClient(config.apiKey ?? '', config.model);
     case 'ollama':
       return createOllamaClient(config.model, config.baseUrl);
+    case 'llamacpp':
+      return createLlamaCppClient(config.model, config.baseUrl);
     default:
       throw new Error(`Unknown LLM provider: ${config.provider}`);
   }
