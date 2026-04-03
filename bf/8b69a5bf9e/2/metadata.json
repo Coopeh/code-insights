@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "bf8b69a5bf9e",
+  "session_id": "f1d62e94-2153-4efe-8b95-b8726d5a766c",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-03T09:00:34.427218Z",
+  "branch": "claude/plan-gemma-ollama-integration-03V9H",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "server/src/llm/analysis-internal.ts",
+    "cli/src/types.ts",
+    "dashboard/src/lib/cost-utils.ts",
+    "server/src/routes/config.ts",
+    "dashboard/src/components/analysis/AnalyzeDropdown.tsx",
+    "server/src/llm/analysis-pricing.ts",
+    "server/src/llm/client.ts",
+    "server/src/llm/prompt-quality-analysis.ts",
+    "server/src/llm/analysis.ts",
+    "cli/src/analysis/__tests__/provider-runner.test.ts",
+    "cli/src/analysis/provider-runner.ts",
+    "cli/src/commands/config.ts",
+    "dashboard/src/components/sessions/AnalysisCostLine.tsx",
+    "dashboard/src/lib/api.ts",
+    "dashboard/src/lib/types.ts",
+    "cli/src/constants/llm-providers.ts",
+    "dashboard/src/pages/SettingsPage.tsx",
+    "server/src/llm/facet-extraction.ts",
+    "server/src/llm/index.ts",
+    "server/src/llm/providers/llamacpp.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "c26bda53c4fd",
+  "token_usage": {
+    "input_tokens": 95,
+    "cache_creation_tokens": 201393,
+    "cache_read_tokens": 1057588,
+    "output_tokens": 2212,
+    "api_call_count": 29
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-03T09:00:34.341891Z",
+    "agent_lines": 464,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 464,
+    "agent_percentage": 100
+  }
+}
