@@ -2,6 +2,12 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.9.1] - 2026-04-04
+
+### Fixed
+
+- **llama.cpp dashboard test connection** — The "Test Connection" button on the Settings page returned a 422 error for llama.cpp providers. The test prompt requested plain text `"ok"`, but the llamacpp provider enforces JSON mode on all responses — small local models replied with literal `ok`, failing JSON validation. Changed test prompt to request JSON output, fixing compatibility with both llama.cpp and Gemini (which also uses JSON mode).
+
 ## [4.9.0] - 2026-04-03
 
 ### Added
