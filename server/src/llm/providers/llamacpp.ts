@@ -66,6 +66,23 @@ export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient
               `llama-server returned HTTP ${res.status} — check your server configuration.${detail ? ` (${detail})` : ''}`
             );
           }
+          // Detect exceed_context_size_error: llama-server returns this when the request's
+          // prompt + max_tokens exceeds the server's context window (-c flag at startup).
+          if (res.status >= 400) {
+            let errorBody: { error?: { type?: string; n_prompt_tokens?: number; n_ctx?: number } } = {};
+            try { errorBody = JSON.parse(detail); } catch { /* not JSON */ }
+            if (errorBody?.error?.type === 'exceed_context_size_error') {
+              const nPrompt = errorBody.error.n_prompt_tokens;
+              const nCtx = errorBody.error.n_ctx;
+              const tokenInfo = (nPrompt !== undefined && nCtx !== undefined)
+                ? ` (${nPrompt} tokens requested, server context is ${nCtx})`
+                : '';
+              throw new Error(
+                `Session too large for llama-server context window${tokenInfo}. ` +
+                `Start llama-server with a larger context: llama-server -m <model.gguf> -c 32768`
+              );
+            }
+          }
           if (res.status >= 500) {
             throw new Error(
               `llama-server error (HTTP ${res.status}). Is the model loaded?${detail ? ` (${detail})` : ''}`
@@ -149,9 +166,11 @@ export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient
     },
 
     estimateTokens(text: string): number {
-      // Rough approximation: 4 chars per token (same heuristic as Ollama).
-      // llama-server uses its own tokenizer; this is good enough for chunking decisions.
-      return Math.ceil(text.length / 4);
+      // More conservative approximation: 3 chars per token.
+      // chars/4 underestimates for code-heavy or multilingual content, which triggers
+      // chunking too late and can still exceed the context window. chars/3 errs on the
+      // side of earlier chunking, which is safer for quantized local models.
+      return Math.ceil(text.length / 3);
     },
   };
 }
