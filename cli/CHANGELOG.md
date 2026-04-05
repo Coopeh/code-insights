@@ -2,6 +2,20 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.9.2] - 2026-04-05
+
+### Fixed
+
+- **llama.cpp token budget overflow** — Session analysis against local `llama-server` failed with `exceed_context_size_error` (HTTP 400) because the token budget didn't account for ~3K tokens of prompt overhead and 4K tokens reserved for output. Reduced the effective conversation budget from 24K to 12K tokens and changed the token estimation heuristic from `chars/4` to `chars/3` (more conservative for code-heavy content). Sessions that still exceed the context window now get a clear error message with the exact token counts and a suggested `-c` flag value.
+
+- **`<json>` tag wrapping in llama.cpp responses** — Small local models (e.g., Gemma 4) sometimes wrap valid JSON in `<json>...</json>` tags despite `response_format: json_object` being set. This caused the JSON validation retry to fail on both attempts, wasting inference time. Added provider-level tag stripping before JSON validation.
+
+### Improved
+
+- **llama.cpp inference timeout** — Increased default timeout from 2 minutes to 10 minutes. Local CPU inference at ~6-10 tok/s can take 3-5 minutes for a full session analysis; the old timeout was too aggressive.
+
+- **llama.cpp output budget** — Reduced `max_tokens` from 8192 to 4096 to halve inference time on CPU and better fit within typical context windows.
+
 ## [4.9.1] - 2026-04-04
 
 ### Fixed
