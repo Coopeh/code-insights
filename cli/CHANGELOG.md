@@ -2,6 +2,18 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.9.4] - 2026-04-05
+
+### Improved
+
+- **Cleaner sync output** — Removed redundant discovery messages ("[claude-code] Discovered 598 JSONL files" and "total session files discovered"). The spinner is sufficient feedback during discovery.
+
+- **Session counts in "up to date" status** — Providers with nothing to sync now show `✔ Up to date (170 sessions)` instead of just the provider name.
+
+- **Condensed telemetry notice** — Replaced the 7-line telemetry disclosure banner with a single dim line: `Telemetry enabled · Disable: code-insights telemetry disable`.
+
+- **Suppressed internal housekeeping messages** — The "Usage stats reconciled" message no longer appears after sync.
+
 ## [4.9.3] - 2026-04-05
 
 ### Fixed
