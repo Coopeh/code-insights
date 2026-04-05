@@ -2,6 +2,18 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.9.3] - 2026-04-05
+
+### Fixed
+
+- **Empty files re-parsed on every sync** — When `provider.parse()` returned `null` (empty or unsupported files), the file was not tracked in sync state. This caused those files to be re-discovered, re-stat'd, and re-parsed on every `code-insights sync` run. Now tracked with an `'__empty__'` sentinel in sync state, eliminating ~117 wasted file operations per sync for typical setups.
+
+- **Telemetry banner shown on `--version`** — Running `code-insights --version` displayed the verbose telemetry disclosure notice. Now skipped for `--version`, `-V`, `--help`, and `-h` flags.
+
+### Improved
+
+- **Cleaner sync output** — Replaced verbose per-provider file counts ("Found 379 files / 69 need syncing / 310 already synced / 69 empty") with concise status lines: "up to date" or "Synced 1 new, 1 updated (583 messages)".
+
 ## [4.9.2] - 2026-04-05
 
 ### Fixed
