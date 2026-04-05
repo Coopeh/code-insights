@@ -12,10 +12,16 @@ import { flattenContent } from '../types.js';
 
 const DEFAULT_LLAMACPP_URL = 'http://localhost:8080';
 
-// Default timeout for chat requests (2 minutes).
-// Local inference with quantized models can be slow (especially first request while model loads
-// into GPU memory), but anything beyond 2 minutes likely indicates a hang.
-const DEFAULT_CHAT_TIMEOUT_MS = 120_000;
+/** Strip <json>...</json> wrapper that some models emit despite response_format: json_object. */
+function stripJsonTags(content: string): string {
+  const match = content.match(/<json>\s*([\s\S]*?)\s*<\/json>/i);
+  return match?.[1]?.trim() ?? content;
+}
+
+// Default timeout for chat requests (10 minutes).
+// Local inference with quantized models on CPU can be very slow — a 2000-token response
+// at 10 tok/s takes ~3.5 minutes. Allow generous headroom for large sessions and slow hardware.
+const DEFAULT_CHAT_TIMEOUT_MS = 600_000;
 
 export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient {
   const url = baseUrl || DEFAULT_LLAMACPP_URL;
@@ -43,7 +49,7 @@ export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient
               // flattenContent converts ContentBlock[] to string; strings pass through unchanged.
               messages: messages.map(m => ({ role: m.role, content: flattenContent(m.content) })),
               temperature: 0.3,
-              max_tokens: 8192,
+              max_tokens: 4096,
               // Grammar-constrained JSON output — llama-server honours OpenAI's response_format.
               response_format: { type: 'json_object' },
             }),
@@ -117,10 +123,14 @@ export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient
       // genuine capability failures (which would fail again anyway).
       const first = await attempt();
 
+      // Strip <json>...</json> wrapper if present — some models follow the system prompt instruction
+      // to wrap output in <json> tags even when response_format: json_object is set.
+      const stripped = stripJsonTags(first.content);
+
       // Validate JSON structure — if content is not parseable, try once more.
       let jsonValid = false;
       try {
-        JSON.parse(first.content);
+        JSON.parse(stripped);
         jsonValid = true;
       } catch {
         // not valid JSON
@@ -131,9 +141,10 @@ export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient
         // Validate the retry result too — if both attempts fail, surface the error
         // instead of silently returning malformed content.
         const retry = await attempt();
+        const retryStripped = stripJsonTags(retry.content);
         let retryValid = false;
         try {
-          JSON.parse(retry.content);
+          JSON.parse(retryStripped);
           retryValid = true;
         } catch {
           // still not valid JSON
@@ -147,7 +158,7 @@ export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient
         }
 
         return {
-          content: retry.content,
+          content: retryStripped,
           usage: {
             inputTokens: first.inputTokens + retry.inputTokens,
             outputTokens: first.outputTokens + retry.outputTokens,
@@ -156,7 +167,7 @@ export function createLlamaCppClient(model: string, baseUrl?: string): LLMClient
       }
 
       return {
-        content: first.content,
+        content: stripped,
         usage: {
           inputTokens: first.inputTokens,
           outputTokens: first.outputTokens,

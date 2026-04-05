@@ -187,7 +187,7 @@ function makeLlamaCppChat(model: string, baseUrl?: string): LLMChatFn {
           model,
           messages,
           temperature: 0.3,
-          max_tokens: 8192,
+          max_tokens: 4096,
           response_format: { type: 'json_object' },
         }),
       });
