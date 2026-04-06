@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "ab4673ddbe11",
+  "session_id": "936d39f7-962b-430f-878a-1b8a4a8593f9",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T15:11:37.97083Z",
+  "branch": "docs/cleanup-stale-plans-and-schema-refs",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "CLAUDE.md",
+    "docs/ARCHITECTURE.md",
+    "docs/PRODUCT.md",
+    "docs/ROADMAP.md",
+    "docs/plans/2026-03-28-native-analysis-hooks.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "07fc5152a938",
+  "token_usage": {
+    "input_tokens": 144,
+    "cache_creation_tokens": 90320,
+    "cache_read_tokens": 2032731,
+    "output_tokens": 11330,
+    "api_call_count": 29
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T15:11:37.788951Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 7,
+    "human_removed": 598,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
