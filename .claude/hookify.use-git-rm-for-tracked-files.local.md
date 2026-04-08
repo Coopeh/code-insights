@@ -17,4 +17,4 @@ git rm --cached path/to/file  # untrack without deleting from disk
 
 **Why:** `rm` removes from disk but leaves git tracking dirty — you then need a separate `git add` to stage the deletion. `git rm` does both atomically. Using plain `rm` on tracked files leads to inconsistent staging and easy mistakes.
 
-**Exception:** If the file is genuinely untracked (not in git), plain `rm` is fine. Check with `git ls-files <path>` if unsure.
+**Exception:** If the file is genuinely untracked (not in git), do NOT use alternative tools (python, node, etc.) to delete it. Instead, list the files you were going to delete and ask the user to confirm before proceeding.
