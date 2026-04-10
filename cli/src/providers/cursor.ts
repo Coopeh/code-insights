@@ -538,6 +538,12 @@ function parseCursorSession(dbPath: string, composerId: string): ParsedSession |
       };
     }
 
+    // Check if Cursor tagged this session as an agentic session.
+    // unifiedMode === 'agent' (vs 'ask') or isAgentic === true marks agent-mode sessions.
+    const isAgentic =
+      composerData.unifiedMode === 'agent' ||
+      composerData.isAgentic === true;
+
     const session: ParsedSession = {
       id: `cursor:${composerId}`,
       projectPath,
@@ -567,8 +573,11 @@ function parseCursorSession(dbPath: string, composerId: string): ParsedSession |
     session.generatedTitle = titleResult.title;
     session.titleSource = titleResult.source;
 
-    // Detect session character
-    session.sessionCharacter = titleResult.character || detectSessionCharacter(session);
+    // Detect session character. If detection returns null and Cursor marked the session
+    // as agentic (unifiedMode === 'agent' / isAgentic === true), default to 'feature_build'
+    // as the closest character for autonomous multi-step agent sessions.
+    const detectedCharacter = titleResult.character || detectSessionCharacter(session);
+    session.sessionCharacter = detectedCharacter ?? (isAgentic ? 'feature_build' : null);
 
     return session;
   } catch {
