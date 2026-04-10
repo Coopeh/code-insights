@@ -2,6 +2,20 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.9.5] - 2026-04-10
+
+### Fixed
+
+- **Cursor timestamps** — All Cursor sessions previously showed epoch timestamps because `bubble.createdAt` does not exist in Cursor's storage format. Timestamps are now extracted from `timingInfo.clientRpcSendTime` on assistant bubbles (the actual Unix-ms wall clock). Sessions missing timing data fall back to `composerData.createdAt/lastUpdatedAt`, then epoch.
+
+- **Cursor cost tracking** — Cursor sessions were showing $0 in the cost dashboard. Session cost is now populated from `composerData.usageData.default.costInCents`.
+
+- **Cursor token counts** — Token usage is now aggregated from `tokenCount.inputTokens` / `tokenCount.outputTokens` across all assistant bubbles per session. Previously always `null`.
+
+- **Cursor git branch** — `gitBranch` is now extracted from the `gitStatusRaw` field present on user bubbles (`/^On branch (.+)/m`). Previously hardcoded `null`.
+
+- **`messageCount` consistency** — All non-Claude-Code providers (Cursor, Codex, Copilot CLI, VS Code Copilot Chat) now compute `messageCount` as `userMessageCount + assistantMessageCount`, consistent with the Claude Code provider. System messages are excluded from the semantic count.
+
 ## [4.9.4] - 2026-04-05
 
 ### Improved
