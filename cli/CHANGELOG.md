@@ -2,6 +2,12 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.9.6] - 2026-04-10
+
+### Fixed
+
+- **Cursor raw JSON in messages** — User messages in Cursor sessions were displaying raw Lexical editor JSON (`{"root":{"children":[...`) instead of the actual message text. Newer Cursor versions store the Lexical editor state in the `text` bubble field rather than `richText`. The parser now detects and unwraps Lexical JSON from either field.
+
 ## [4.9.5] - 2026-04-10
 
 ### Fixed
