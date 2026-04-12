@@ -195,7 +195,8 @@ export function SessionListPanel({
     filters.status !== 'all' ||
     !!filters.q ||
     (!!filters.dateRange && filters.dateRange !== 'all') ||
-    (!!filters.outcome && filters.outcome !== 'all');
+    (!!filters.outcome && filters.outcome !== 'all') ||
+    filters.source !== 'all';
 
   const allFiltersForSave = { ...filters } as Record<string, string>;
   const defaultFilterValues: Record<string, string> = {
