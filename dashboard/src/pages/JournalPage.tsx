@@ -37,7 +37,8 @@ function getWeekLabel(weekKey: string): string {
 export default function JournalPage() {
   const [source, setSource] = useState<string>('all');
   const { data: insights = [], isLoading, isError, refetch } = useInsights();
-  const { data: allSessions = [] } = useSessions();
+  // limit: 500 matches Analytics page pattern; server default is 50 which would silently miss sessions
+  const { data: allSessions = [] } = useSessions({ limit: 500 });
   const { data: llmConfig } = useLlmConfig();
 
   const llmConfigured = !!(llmConfig?.provider && llmConfig?.model);

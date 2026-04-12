@@ -87,8 +87,9 @@ export default function InsightsPage() {
   const { data: insights = [], isLoading, isError, refetch } = useInsights(
     filters.project !== 'all' ? { projectId: filters.project } : undefined
   );
-  // Fetch sessions for source tool mapping — Insight type lacks source_tool, so we join client-side
-  const { data: allSessions = [] } = useSessions();
+  // Fetch sessions for source tool mapping — Insight type lacks source_tool, so we join client-side.
+  // limit: 500 matches Analytics page pattern; server default is 50 which would silently miss sessions.
+  const { data: allSessions = [] } = useSessions({ limit: 500 });
 
   const allInsightIds = useMemo(() => new Set(insights.map((i) => i.id)), [insights]);
 
