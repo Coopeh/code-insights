@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { useSearchParams, Link } from 'react-router';
 import { useInsights } from '@/hooks/useInsights';
+import { useSessions } from '@/hooks/useSessions';
 import { useFilterParams } from '@/hooks/useFilterParams';
 import { useProjects } from '@/hooks/useProjects';
 import { buildPatternGroups } from '@/lib/pattern-grouping';
@@ -29,6 +30,7 @@ import type { Insight, InsightType } from '@/lib/types';
 import { InsightTypePills } from '@/components/filters/InsightTypePills';
 import { SaveFilterPopover } from '@/components/filters/SaveFilterPopover';
 import { SavedFiltersDropdown } from '@/components/filters/SavedFiltersDropdown';
+import { SourceToolSelect } from '@/components/filters/SourceToolSelect';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { LlmNudgeBanner } from '@/components/LlmNudgeBanner';
 
@@ -63,6 +65,7 @@ export default function InsightsPage() {
     type: 'all',
     view: 'timeline',
     pattern: '',
+    source: 'all',
   });
 
   const { savedFilters, saveFilter, deleteFilter } = useSavedFilters('insights');
@@ -84,8 +87,20 @@ export default function InsightsPage() {
   const { data: insights = [], isLoading, isError, refetch } = useInsights(
     filters.project !== 'all' ? { projectId: filters.project } : undefined
   );
+  // Fetch sessions for source tool mapping — Insight type lacks source_tool, so we join client-side.
+  // limit: 500 matches Analytics page pattern; server default is 50 which would silently miss sessions.
+  const { data: allSessions = [] } = useSessions({ limit: 500 });
 
   const allInsightIds = useMemo(() => new Set(insights.map((i) => i.id)), [insights]);
+
+  // Map session_id → source_tool for client-side source filtering on Insights
+  const sessionSourceMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const s of allSessions) {
+      map.set(s.id, s.source_tool);
+    }
+    return map;
+  }, [allSessions]);
 
   const patternGroups = useMemo(() => buildPatternGroups(insights), [insights]);
 
@@ -105,11 +120,15 @@ export default function InsightsPage() {
           return false;
         }
       }
+      if (filters.source !== 'all') {
+        const sourceTool = sessionSourceMap.get(i.session_id);
+        if (sourceTool !== filters.source) return false;
+      }
       return true;
     });
-  }, [insights, activeTypes, filters.q, patternInsightIds]);
+  }, [insights, activeTypes, filters.q, filters.source, patternInsightIds, sessionSourceMap]);
 
-  const hasFilters = !!filters.q || filters.type !== 'all' || filters.project !== 'all' || !!filters.pattern;
+  const hasFilters = !!filters.q || filters.type !== 'all' || filters.project !== 'all' || !!filters.pattern || filters.source !== 'all';
 
   const grouped = useMemo((): InsightGroup[] => {
     const view = filters.view;
@@ -243,6 +262,12 @@ export default function InsightsPage() {
             </SelectContent>
           </Select>
 
+          <SourceToolSelect
+            value={filters.source}
+            onValueChange={(v) => setFilter('source', v)}
+            className="w-[140px]"
+          />
+
           <Tabs
             value={filters.view}
             onValueChange={(v) => setFilter('view', v)}
@@ -262,8 +287,8 @@ export default function InsightsPage() {
         <div className="flex flex-wrap items-center gap-2">
           <InsightTypePills activeTypes={activeTypes} onChange={handleTypePillChange} />
           <SaveFilterPopover
-            activeFilters={{ q: filters.q, project: filters.project, type: filters.type }}
-            defaultFilterValues={{ q: '', project: 'all', type: 'all' }}
+            activeFilters={{ q: filters.q, project: filters.project, type: filters.type, source: filters.source }}
+            defaultFilterValues={{ q: '', project: 'all', type: 'all', source: 'all' }}
             onSave={saveFilter}
           />
         </div>
