@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "defc024e3c4a",
+  "session_id": "741f19d5-f05a-42a9-be72-72f688876c2b",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-15T02:16:53.860319Z",
+  "branch": "chore/github-hygiene",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/FUNDING.yml"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "7a9547f4f107",
+  "checkpoint_transcript_start": 4,
+  "transcript_lines_at_start": 4,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-15T02:16:53.809907Z",
+    "agent_lines": 175,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 175,
+    "agent_percentage": 100
+  }
+}
