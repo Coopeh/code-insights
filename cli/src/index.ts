@@ -16,6 +16,7 @@ import { reflectCommand } from './commands/reflect.js';
 import { insightsCommand, insightsCheckCommand } from './commands/insights.js';
 import { sessionEndCommand } from './commands/session-end.js';
 import { buildQueueCommand } from './commands/queue.js';
+import { doctorCommand } from './commands/doctor/index.js';
 import { showTelemetryNoticeIfNeeded } from './utils/telemetry.js';
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
@@ -98,6 +99,16 @@ program
   .command('uninstall-hook')
   .description('Remove Claude Code hooks (sync and analysis)')
   .action(uninstallHookCommand);
+
+program
+  .command('doctor')
+  .description('Check your Code Insights installation')
+  .option('--fix', 'Apply safe idempotent fixes automatically')
+  .option('--verbose', 'Show probed paths for skipped items')
+  .option('--json', 'Machine-readable JSON output')
+  .action(async (opts) => {
+    await doctorCommand({ fix: opts.fix, verbose: opts.verbose, json: opts.json });
+  });
 
 program
   .command('open')
