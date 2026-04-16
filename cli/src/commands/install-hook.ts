@@ -1,43 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { trackEvent, captureError, classifyError } from '../utils/telemetry.js';
+import {
+  HOOKS_FILE,
+  CLI_ENTRY,
+  type ClaudeSettings,
+  type HookConfig,
+  getHookCommand,
+  hookAlreadyInstalled,
+} from '../utils/hooks-utils.js';
 
 const CLAUDE_SETTINGS_DIR = path.join(os.homedir(), '.claude');
-const HOOKS_FILE = path.join(CLAUDE_SETTINGS_DIR, 'settings.json');
-
-// Stable path to the CLI entry point — works across npm link, global install, and npx.
-// process.argv[1] is unstable (npx uses a cache path that changes per invocation).
-const CLI_ENTRY = path.resolve(fileURLToPath(import.meta.url), '../../index.js');
-
-interface ClaudeSettings {
-  hooks?: {
-    PostToolUse?: HookConfig[];
-    Stop?: HookConfig[];
-    SessionEnd?: HookConfig[];
-    [key: string]: HookConfig[] | undefined;
-  };
-  [key: string]: unknown;
-}
-
-interface HookConfig {
-  matcher?: string;
-  hooks: Array<string | { type: string; command: string; timeout?: number }>;
-}
-
-/** Extract command string from both old (string) and new ({type, command}) hook formats */
-function getHookCommand(hook: string | { type: string; command: string }): string {
-  return typeof hook === 'string' ? hook : hook.command;
-}
-
-/** Check if a hook array already contains a code-insights hook */
-function hookAlreadyInstalled(hookList: HookConfig[]): boolean {
-  return hookList.some(
-    (h) => h.hooks.some((hook) => getHookCommand(hook).includes('code-insights'))
-  );
-}
 
 /**
  * Remove any existing Code Insights Stop hooks (v4.8.x migration).
