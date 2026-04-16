@@ -103,13 +103,6 @@ function renderCheck(result: CheckResult, opts: RunOptions): void {
       console.log(chalk.dim(`     ${line}`));
     }
   }
-
-  // Show verbose lines for skip items when --verbose
-  if (opts.verbose && result.status === 'skip' && result.verboseLines) {
-    for (const line of result.verboseLines) {
-      console.log(chalk.dim(`     ${line}`));
-    }
-  }
 }
 
 function renderSummary(results: CheckResult[]): void {
