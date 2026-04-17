@@ -2,6 +2,16 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.10.1] - 2026-04-16
+
+### Added
+
+- **`code-insights doctor` command** — A Flutter/Homebrew-style diagnostic command that checks your installation across 8 areas: environment, database, config, session sources, AI analysis, hooks, sync state, and dashboard. ~30 individual checks with actionable fix hints. Supports `--fix` (applies safe idempotent fixes automatically), `--verbose` (shows probed paths for skipped items), and `--json` (machine-readable output for sharing in bug reports). First-run mode shows a step-by-step setup guide when nothing is configured yet.
+
+### Improved
+
+- **Hook utility extraction** — Shared hook logic (`HOOKS_FILE`, `CLI_ENTRY`, `hookAlreadyInstalled()`) extracted from `install-hook.ts` into `utils/hooks-utils.ts`, making it reusable across commands.
+
 ## [4.10.0] - 2026-04-13
 
 ### Added
