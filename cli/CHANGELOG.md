@@ -2,6 +2,12 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.10.2] - 2026-04-16
+
+### Improved
+
+- **README: document `doctor` command** — Added a dedicated Diagnostics section to `cli/README.md` covering all four flags (`--fix`, `--verbose`, `--json`) with usage guidance. Also added `doctor` to the quick-start individual commands list.
+
 ## [4.10.1] - 2026-04-16
 
 ### Added

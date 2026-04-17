@@ -46,6 +46,7 @@ code-insights dashboard                # start dashboard server (auto-syncs firs
 code-insights dashboard --no-sync      # start dashboard without syncing
 code-insights sync                     # sync sessions only
 code-insights init                     # customize settings (optional)
+code-insights doctor                   # diagnose your installation (start here if something's wrong)
 ```
 
 <p align="center">
@@ -216,6 +217,24 @@ The Reflect feature analyzes your sessions to surface:
 - **Effective patterns** — working strategies across 8 categories with driver classification (user-driven, AI-driven, collaborative)
 - **Prompt quality** — how well you communicate with AI tools (7 deficit + 3 strength categories)
 - **Working style** — rules and skills derived from your sessions
+
+### Diagnostics
+
+```bash
+# Check your installation — environment, database, providers, hooks, LLM, sync state
+code-insights doctor
+
+# Show what's wrong and fix it automatically (safe, idempotent fixes only)
+code-insights doctor --fix
+
+# Show probed paths for skipped/not-installed items
+code-insights doctor --verbose
+
+# Machine-readable output for bug reports
+code-insights doctor --json
+```
+
+`doctor` checks ~30 things across 8 sections and tells you exactly what to run to fix each issue. If something isn't working, run this first. On a fresh install with no config, it shows a step-by-step setup guide instead of a check list.
 
 ### Status & Maintenance
 
