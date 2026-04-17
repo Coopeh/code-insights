@@ -199,7 +199,7 @@ export function getAggregatedData(
     ${where}
     GROUP BY category
     ORDER BY count DESC, avg_severity DESC
-  `).all(...params) as Array<{ category: string; count: number; avg_severity: number; examples: string; session_ids: string }>;
+  `).all(...params) as Array<{ category: string | null; count: number; avg_severity: number; examples: string; session_ids: string }>;
 
   // Fetch effective patterns with confidence >= 50.
   // Category-based grouping happens in code (post-query) after normalizePatternCategory()
@@ -259,6 +259,8 @@ export function getAggregatedData(
 
   const normalizedFriction = new Map<string, { count: number; total_severity: number; examples: string[]; session_ids: string[] }>();
   for (const fc of parsedFriction) {
+    // Skip entries with null category (malformed friction_points from some LLM providers)
+    if (!fc.category) continue;
     const normalized = normalizeFrictionCategory(fc.category);
     const existing = normalizedFriction.get(normalized);
     if (existing) {
