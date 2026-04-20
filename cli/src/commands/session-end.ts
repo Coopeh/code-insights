@@ -23,6 +23,7 @@ import { fileURLToPath } from 'url';
 import { getConfigDir } from '../utils/config.js';
 import { syncSingleFile } from './sync.js';
 import { enqueue } from '../db/queue.js';
+import { sessionExists } from '../db/read.js';
 
 /** Resolve the CLI entry point for spawning child processes. */
 const CLI_ENTRY = resolve(fileURLToPath(import.meta.url), '../../index.js');
@@ -83,10 +84,15 @@ export async function sessionEndCommand(options: SessionEndOptions = {}): Promis
   }
 
   // Phase 2: Enqueue for async analysis
-  enqueue(sessionId, native ? 'native' : 'provider');
+  if (sessionExists(sessionId)) {
+    enqueue(sessionId, native ? 'native' : 'provider');
 
-  // Phase 3: Spawn detached worker to process the queue
-  spawnWorker(quiet, options.model);
+    // Phase 3: Spawn detached worker to process the queue
+    spawnWorker(quiet, options.model);
+  } else {
+    // Session was trivial (<= 2 messages) and thus skipped by syncSingleFile,
+    // or didn't sync for some other reason. Do not enqueue to avoid foreign key errors.
+  }
 }
 
 function spawnWorker(quiet: boolean, model?: string): void {
