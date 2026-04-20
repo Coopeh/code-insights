@@ -136,6 +136,7 @@ program
   .command('session-end')
   .description('SessionEnd hook: sync session, enqueue for analysis, spawn background worker')
   .option('--native', 'Use claude -p for analysis worker (default: true)')
+  .option('--no-native', 'Disable native analysis worker')
   .option('-s, --source <tool>', 'Source tool identifier (default: claude-code)')
   .option('-q, --quiet', 'Suppress output')
   .option('--model <model>', 'Model for native analysis (default: sonnet)')
