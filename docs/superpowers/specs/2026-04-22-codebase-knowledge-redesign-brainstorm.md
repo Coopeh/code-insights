@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-22  
 **Branch:** feature/codebase-knowledge-redesign  
-**Status:** Brainstorming complete — pending TA + UX review, then implementation plan  
+**Status:** TA + UX review complete — ready for implementation plan (Phase 1 first)  
 **Context:** Continuation of the 2026-04-20 spec (`docs/superpowers/specs/2026-04-20-codebase-knowledge-design.md`)
 
 ---
@@ -291,10 +291,157 @@ The original spec's implementation sequence is no longer sufficient given the te
 
 ---
 
+## TA Review Findings (2026-04-22)
+
+Reviewer: technical-architect agent. Full review in conversation history.
+
+### Schema revisions required before implementation
+
+- **Project identity**: Must be a stable UUID stored in `.code-insights/team-config.yml` (committed to repo). Never trust `project_name` across machines.
+- **`topic_tags TEXT[]`**: Correct. Use GIN index for `&&` overlap queries. No junction table in V1.
+- **`team_decision_links` table**: New — for "complements" relationship (many-to-many). `superseded_by_id` on main table handles "supersedes" (one-to-one linear).
+- **Missing fields** on every team table: `updated_at TIMESTAMPTZ`, `source_session_hash TEXT` (SHA-256 of local session_id — idempotency without leaking local IDs), `local_insight_id TEXT` (dedup on re-push), `deleted_at TIMESTAMPTZ` (soft delete).
+- **Drop `team_` prefix**: Supabase schema is the boundary. Tables named `decisions`, `learnings`, `patterns`, `friction`.
+- **RLS is mandatory**: Must ship with policies, not as a follow-up. Template policies specified by TA.
+- **Auth anchor table**: `team_members (user_id UUID, project_id UUID, role TEXT)` — RLS checks against this.
+
+### Conflict detection: topic-tag overlap + pg_trgm (no embeddings in V1)
+
+```sql
+-- GIN on topic_tags + pg_trgm on choice_text
+candidates = decisions
+  WHERE project_id = ?
+  AND topic_tags && new.topic_tags        -- GIN overlap (fast)
+  AND superseded_by_id IS NULL            -- current decisions only
+  AND similarity(choice_text, new.choice_text) > 0.25  -- pg_trgm gate
+ORDER BY cardinality(topic_tags & new.topic_tags) DESC,
+         similarity(choice_text, new.choice_text) DESC
+LIMIT 3
+```
+
+Pre-flight runs against **local SQLite first** (so offline conflict detection works for your own history), then remote call on push. Defer embeddings/pgvector to V2.
+
+### Auth: Supabase Auth + anon key + user JWT — NOT connection strings or service role keys
+
+- Service role keys bypass RLS — never used in CLI tools
+- `code-insights team login` → PKCE browser flow → tokens in `~/.code-insights/auth.json` (chmod 0600)
+- Team config (supabase URL + anon key) in `~/.code-insights/config.json` (safe to share)
+- `author_user_id UUID` is the RLS identity — `author_git_user` is display-only
+
+### Topic extraction: LLM tagging at analysis time — mandatory, not optional
+
+Keyword-search-at-query-time breaks conflict detection, the `--topics` index, and cross-author merging. LLM must extract `topic_tags: ["database/sqlite", "migrations"]` during session analysis. A `topic-normalize.ts` (mirrors `friction-normalize.ts`) prevents tag drift. Backfill via `reflect backfill --topics`.
+
+New schema change: `applyV10` adds `topic_tags TEXT` (JSON array) to local `insights` table.
+
+### Local `knowledge_sync` table (new — V10)
+
+Required for idempotent re-push:
+
+```sql
+CREATE TABLE IF NOT EXISTS knowledge_sync (
+  insight_id    TEXT PRIMARY KEY REFERENCES insights(id),
+  remote_id     TEXT NOT NULL,    -- UUID from team DB
+  pushed_at     TEXT NOT NULL,
+  last_status   TEXT NOT NULL     -- 'pushed' | 'conflict-pending' | 'ignored'
+);
+```
+
+### Offline mode: 2-second timeout, fail-fast, no local caching
+
+Team DB is augmentation — never required. `context <topic>` timeout = 2s. Fail to local-only with inline notice. No background sync, no local mirror of team data in V1.
+
+### Revised phase sequence (6 phases, not 4)
+
+| Phase | Scope |
+|-------|-------|
+| 1 | Original 2026-04-20 spec + 3 fixes + topic tag extraction (schema V10, normalizer, backfill) |
+| 2 | Local `code-insights context --topics` and `context <topic>` (no network) |
+| 3 | Team DB foundation — schema, RLS, `team login`, `team status`, Settings UI section |
+| 4 | Push + conflict detection (sync mechanism, idempotency, conflict alerts terminal) |
+| 5 | Team reads + `/knowledge` dashboard page + `attach` generates from team DB |
+| 6 | Polish, `team invite`, docs, `delete-my-data` for GDPR |
+
+### Critical escalation items (TA)
+
+1. **VISION.md update required before Phase 3** — current vision says "No team/org features. No cloud sync. No monetization." Founder must make this decision explicitly.
+2. **Scrubbing on push path** — reuse `scrub.ts` on every record before Supabase write. Must be in same commit as push endpoint.
+3. **Telemetry events** — `team_login_success`, `team_sync_push`, `team_conflict_detected`, `context_query` need adding.
+4. **GDPR** — `code-insights team delete-my-data` must be designed before first real team uses Phase 3.
+5. **`.code-insights/team-config.yml`** — needs its own mini-spec in Phase 3 (format, schema validation, git blame behavior).
+
+---
+
+## UX Review Findings (2026-04-22)
+
+Reviewer: ux-engineer agent. Full wireframes and component specs in conversation history.
+
+### `/knowledge` page: two-pane master/detail
+
+Not a flat list, not a tree. Two panels:
+- **Panel A (280px)**: topic index — searchable, contributor dot clusters on hover, type filter tabs (All / Decisions / Learnings), contributors section at bottom
+- **Panel B**: topic detail — decisions as evolution timeline with `●` (current, filled blue) and `◌` (superseded, outlined, collapsed by default, strikethrough title)
+
+URL: `/knowledge?topic=database/sqlite` — Panel A selection drives URL.
+
+Mobile: Panel A becomes `<Sheet side="left">` triggered by "Topics (N)" button in sticky header.
+
+**shadcn/ui components**: `<ScrollArea>`, `<Input>`, `<Tabs>`, `<Avatar>`, `<HoverCard>`, `<Collapsible>`, `<DropdownMenu>`, extend `InsightCard` conventions, reuse `InsightsPage` three-pane layout instinct.
+
+**Visual treatment for superseded**:
+1. Dot marker: filled `●` (current) vs outlined `◌` (superseded)
+2. `opacity-60` + `line-through` on title
+3. `<Collapsible>` closed by default — one-click expand
+
+### Conflict alert: non-blocking by default
+
+**Terminal**: Push always completes. Post-sync summary lists conflicts with `code-insights knowledge resolve` follow-up. Interactive mode via `--resolve-conflicts` flag.
+
+**Dashboard**: Three layers:
+- Page: amber `<Alert>` banner ("3 unresolved conflicts — [Review all]")
+- Topic row: amber dot in Panel A topic list
+- Entry card: inline `<Card>` resolution box (not modal/popover) with keyword overlap % + matched token chips + [Mark as supersedes] [Mark as complements] [Dismiss] buttons
+
+Resolution options: Supersedes (primary, `<Button variant="default">`), Complements (`<Button variant="outline">`), Dismiss (`<Button variant="ghost">`).
+
+**Threshold note**: Start conflict detection at ≥60% overlap OR (same topic tag + ≥40%). False positives kill trust faster than missed conflicts.
+
+### `code-insights context` terminal output design
+
+Unified marker system across both commands:
+- `●` filled green = decision
+- `◆` cyan diamond = learning
+- `⚠` yellow/red = friction (by severity)
+- `✓` green check = effective pattern
+
+Attribution: `@handle · Jan 14, 2026` in `chalk.dim()` — absolute date, not relative (output is often copy-pasted).
+
+Box header (`╭─╮`) shows topic + project + `[team sync]` / `[local only]` status tag.
+
+Superseded shown with inline arrow: `↑ supersedes @alice's Jan 14 decision on ORM migrations`.
+
+**Key flags**: `--all` (include superseded), `--type decisions/learnings`, `--since 30d`, `--author alice`, `--format md/json`, `--local` (skip team DB).
+
+**Pipe safety**: Auto-detect `!process.stdout.isTTY` and drop color (chalk handles this). Wrap at `min(process.stdout.columns, 100)` chars.
+
+### Cross-surface consistency (terminal ↔ dashboard)
+
+| Convention | Terminal | Dashboard |
+|-----------|----------|-----------|
+| Current decision | `●` green | filled dot, blue border |
+| Superseded decision | `◌` dim + strikethrough | outlined dot, opacity-60, collapsible |
+| Learning | `◆` cyan | separate section, no icon |
+| Friction | `⚠` yellow/red by severity | amber left border + AlertTriangle |
+| Pattern | `✓` green | emerald left border + Sparkles |
+| Attribution | `@handle · Jan 14, 2026` (dim) | avatar + `@handle · Jan 14, 2026` (dim) |
+| Team sync status | `[team sync]` tag in box header | "Scope: Team + Mine" selector |
+
+---
+
 ## Next Steps
 
-1. TA reviews technical architecture — schema, sync, conflict detection feasibility
-2. UX engineer reviews dashboard topic grouping + conflict alert UX
-3. Update VISION.md to reflect team tier direction (after founder decision)
-4. Write implementation plan starting with Phase 1 (original spec + fixes)
-5. Phase 2–4 get separate specs and plans
+1. **Founder decision**: Update VISION.md to reflect team tier direction — required before Phase 3 begins (escalated by TA)
+2. **Phase 1 implementation plan**: Write plan for original spec + 3 fixes + topic tag extraction. Invoke `superpowers:writing-plans` skill.
+3. **Phase 2 plan** (can follow Phase 1 immediately): Local `context` command
+4. **Phase 3 mini-spec**: `.code-insights/team-config.yml` format + Supabase schema + RLS policies
+5. Phases 3–6 get their own specs and plans once Phase 1–2 ship
