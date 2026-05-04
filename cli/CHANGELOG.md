@@ -2,6 +2,29 @@
 
 All notable changes to `@code-insights/cli` will be documented in this file.
 
+## [4.10.3] - 2026-05-04
+
+### Fixed
+
+- **Telemetry: stop reporting expected LLM failures as exceptions** — `captureError`
+  (which emits PostHog `$exception` events) was incorrectly called for structured
+  `!result.success` returns from analysis functions — e.g. "Ollama not running", API
+  auth errors, model not found. These are handled, user-facing errors, not bugs.
+  They now only emit the existing `analysis_run` event (with `success: false`), which
+  already captures full context. PostHog `$exception` events are reserved for
+  unexpected crashes. Fixes a property name collision (`type` vs `analysis_type`)
+  that caused PostHog's cymbal exception processor to emit serde errors on every
+  exception event.
+
+- **Ollama and llama.cpp baseUrl normalization** — Leading/trailing whitespace and
+  trailing slashes in user-configured Ollama or llama.cpp base URLs are now stripped
+  at all 8 call sites (`createOllamaClient`, `discoverOllamaModels`,
+  `createLlamaCppClient`, `discoverLlamaCppModels`, `makeOllamaChat`,
+  `makeLlamaCppChat`, and the two `doctor` reachability checks). Prevents the
+  double-space in error messages (e.g. `"Cannot connect to Ollama at  http://..."`)
+  and potential fetch failures when users type a leading space or trailing slash in
+  their config.
+
 ## [4.10.2] - 2026-04-16
 
 ### Improved
